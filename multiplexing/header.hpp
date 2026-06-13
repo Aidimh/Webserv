@@ -27,6 +27,22 @@
 #define ERROR 1
 #define SUCESS 0
 
+class AFd
+{
+    protected:
+        int fd;
+    public:
+        AFd();
+        virtual ~AFd();
+        int get_fd() const;
+
+};
+
+class Isocket : public AFd
+{
+    public:
+};
+
 typedef struct Location_Config
 {
     std::string root;

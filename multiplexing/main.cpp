@@ -106,8 +106,10 @@ int main(int ac , char **av)
         if (fd_sock < 0)
             throw Error::Socket();
         open_file(av[1]);
+        validate_file();
+        std::cout << "reached\n";
         parse_config_file();
-        std::cout << Conf_File::tokens.size() << std::endl;
+        // std::cout << Conf_File::tokens.size() << std::endl;
         // size_t i = 0;
         // while (i < Conf_File::tokens.size())
         // {

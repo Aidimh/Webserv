@@ -7,7 +7,7 @@ const char* Error::Argv::what() const throw()
 
 const char* Error::Argc::what() const throw()
 {
-    return "Error!\nProgram Accepts only 1 argument!.";
+    return "Error!\nProgram Expects only 1 argument!.";
 }
 
 const char* Error::Bind::what() const throw()

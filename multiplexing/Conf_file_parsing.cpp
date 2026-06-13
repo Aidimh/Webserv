@@ -355,7 +355,7 @@ void parse_location_directives(std::string& token, size_t &i)
 void parse_config_file()
 {
     size_t i = 0;
-    // size_t server_index = 0;
+    size_t server_index = 0;
     bool in_server = false;
     int depth = 0;
     while (i < Conf_File::tokens.size())
@@ -386,10 +386,10 @@ void parse_config_file()
             // std::cout << "here's the location path : " << Conf_File::tokens[i] << std::endl;
             while (i < Conf_File::tokens.size() && Conf_File::tokens[i] != "}")
             {
-                std::cout << Conf_File::tokens[i] << std::endl;
+                // std::cout << Conf_File::tokens[i] << std::endl;
                 parse_location_directives(Conf_File::tokens[i], i);
             }
-            depth++;
+            // depth++;
             i++;  
         }
         else if (token == "{")
@@ -413,8 +413,8 @@ void parse_config_file()
         }
         usleep(110000);
         parse_directives(token, i);
-        std::cout << "reached\n";
-        std::cout << token << std::endl;
+        // std::cout << "reached\n";
+        // std::cout << token << std::endl;
         // std::cout << i << std::endl;
     }
     if (depth != 0)

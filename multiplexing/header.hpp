@@ -40,14 +40,16 @@ typedef struct Location_Config
     std::string upload_path;
     std::vector<std::string> index_files;
     std::vector<std::string> allowed_methods;
-    std::string cgi_extension;
-    std::string cgi_path;
+    std::vector<std::string> cgi_extensions;
+    std::vector<std::string> cgi_paths;
     std::map<int, std::string> error_pages;
     std::string _return;
     std::string autoindex;
     bool has_index;
     bool has_root;
     bool has_autoindex;
+    size_t cgi_paths_index;
+    size_t cgi_extns_index;
 } Location_Config;
 
 class Server_block
@@ -64,6 +66,7 @@ class Server_block
         bool client_max_body_found;
         bool uploadLimits;
         int listen_port;
+        std::string listen_port_str;
         std::string host;
         std::string server_name;
         std::string root;
@@ -74,7 +77,8 @@ class Server_block
         bool body_size_is_KB;
         bool body_size_is_BT;
         std::map<int, std::string> error_pages;
-        Location_Config location;
+        std::vector<Location_Config> location;
+        size_t location_count;
         std::vector<std::string> methods;
         std::string default_file;
         std::string autoindex;
@@ -123,7 +127,8 @@ enum ClientState
 struct Request
 {
     std::string method;
-    std::string path;
+    std::string method_path;
+    std::string cgi_extension;
     std::string version;
     std::string body;
     std::string cgi;
@@ -169,7 +174,7 @@ class Socket : public AFd
         int  acceptClient();        
 };
 
-// ---------------------------- Multiplexing Headers -------------------------------//
+// ---------------------------- Multiplexing Class -------------------------------//
 
 
 class Multiplexer {
@@ -188,8 +193,13 @@ public:
     ~Multiplexer();
     void enableWrite(int fd);
     void addServer(Socket *s);
+    int handleClient(int fd);
     void run();
 };
+
+
+// -------------------------------- CGI Class -----------------------------------//
+
 
 class CGI
 {
@@ -202,12 +212,15 @@ class CGI
         std::string script;
         std::string body;
         std::vector<std::string> env_vars;
+        
     public:
         CGI(const Client& client, const Location_Config& conf);
         void writeToChild(int fd);
         void readFromChild(int fd);
         int execute();
 };
+
+
 
 // ----------------------------- Signals Functions --------------------------------//
 void handle_sigint(int sig);
@@ -217,6 +230,7 @@ void handle_sigstp(int sig);
 
 // ----------------------------- Parsing Functions --------------------------------//
 bool is_comment(std::string& line);
+bool is_cgi_extension(std::string& extension);
 std::vector<std::string> split(const std::string& str, const std::string& delimiter);
 void parse_file();
 void skip_white_spaces(std::string& line, size_t &i);

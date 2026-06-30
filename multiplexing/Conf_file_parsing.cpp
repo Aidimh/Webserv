@@ -99,7 +99,7 @@ void parse_location_index(size_t &index)
         throw Error::Index();
     while (i < Conf_File::tokens.size() && !isKnownDirective(Conf_File::tokens[index]) && Conf_File::tokens[index] != ";")
     {
-        Conf_File::Servers[server_index].location.index_files[i] = Conf_File::tokens[index];
+        Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].index_files[i] = Conf_File::tokens[index];
         i++;
         index++;
     }
@@ -183,6 +183,9 @@ void parse_listen(size_t &index)
     if (Conf_File::tokens[index + 2] != ";")
         throw Error::Listen_port();
     char* endptr;
+    Conf_File::Servers[server_index].listen_port_str = Conf_File::tokens[index + 1];
+    std::cout << Conf_File::tokens[index + 1] << "\n";
+    exit(1);
     long port = strtol(next_token(Conf_File::tokens, index).c_str(), &endptr, 10);
     // std::cout << index << std::endl;
     // exit(1);
@@ -304,6 +307,7 @@ void parse_config_file()
         {
             Server_block new_server;
             Conf_File::Servers.push_back(new_server);
+            Conf_File::Servers[server_index].location_count = 0;
             server_index = (Conf_File::Servers.size() -1);
             // std::cout << "reached 2 \n";
             if (depth > 0)
@@ -318,11 +322,15 @@ void parse_config_file()
         else if (token == "location")
         {
             Conf_File::Servers[server_index].location_found = true;
+            Location_Config obj;
+            Conf_File::Servers[server_index].location.push_back(obj);
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extns_index = 0;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index = 0;
             if (!in_server)
                 throw std::runtime_error("Error\n'location' directive cannot be nested outside 'server'!.");
             if (i + 2 >= Conf_File::tokens.size() || Conf_File::tokens[i + 2] != "{")
                 throw std::runtime_error("Error\nExpected '{' after 'location <path>'!.");
-            Conf_File::Servers[server_index].location.path = next_token(Conf_File::tokens, i);
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].path = next_token(Conf_File::tokens, i);
             i += 2;
             // std::cout << "here's the location path : " << Conf_File::tokens[i] << std::endl;
             while (i < Conf_File::tokens.size() && Conf_File::tokens[i] != "}")
@@ -331,7 +339,8 @@ void parse_config_file()
                 parse_location_directives(Conf_File::tokens[i], i);
             }
             // depth++;
-            i++;  
+            i++;
+            Conf_File::Servers[server_index].location_count++; 
         }
         else if (token == "{")
             throw std::runtime_error("Error\nUnexpected '{'. only 'server' or 'location' can open a block!.");

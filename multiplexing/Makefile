@@ -12,6 +12,7 @@ SRCS = main.cpp \
 	   validate_conf_file.cpp \
 	   set_socket.cpp \
 	   location_parsing.cpp \
+	   CGI_class.cpp \
 
 HDRS = header.hpp Error.hpp
 

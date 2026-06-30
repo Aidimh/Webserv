@@ -67,6 +67,11 @@ bool is_http_method(std::string& method)
     return (method == "GET" || method == "POST" || method == "DELETE");
 }
 
+bool is_cgi_extension(std::string& extension)
+{
+    return (extension == ".py" || extension == ".sh" || extension == ".php" || extension == ".bla");
+}
+
 bool is_autoindex_id(std::string& id)
 {
     return (id == "on" || id == "off");

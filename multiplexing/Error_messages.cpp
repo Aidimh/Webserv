@@ -87,7 +87,7 @@ const char* Error::Missing_directive_value::what() const throw()
 
 const char* Error::CGI_Extension::what() const throw ()
 {
-    return "Error\nInvalid CGI Extension!.";
+    return "Error\nCGI Extension is invalid or not provided!.";
 }
 
 const char* Error::Max_port::what() const throw()

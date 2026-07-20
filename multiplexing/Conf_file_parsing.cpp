@@ -203,6 +203,7 @@ void parse_listen(size_t &index)
 }
 void parse_error_pages(size_t &index)
 {
+    // std::cout << Conf_File::tokens[index] << std::endl;
     size_t i = 0;
     int code = 0;
     if (index + 2 >= Conf_File::tokens.size())
@@ -261,11 +262,12 @@ void parse_directives(std::string& token, size_t &i)
     //     parse_cgi_path(i);
     else if (token == "return")
         parse_return(i);
-    // else if (token == "location")
-    // {
-    //     i++;
-    //     return ;
-    // }
+    else if (token == "location" || token == "{" || token == "}" || token == "server")
+        return;
+    // else if (token == "server")
+    //     return;
+    else
+        throw Error::Unknown_Directive();
 }
 
 
@@ -363,6 +365,7 @@ void parse_config_file()
             }
         }
         // usleep(110000);
+        // token = Conf_File::tokens[i];
         parse_directives(token, i);
 
         // std::cout << "reached\n";

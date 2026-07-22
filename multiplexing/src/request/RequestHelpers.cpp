@@ -22,3 +22,13 @@ size_t removeWhitespace(Client& client)
     }
     return (i);
 }
+
+void MyToLower(std::string &str)
+{
+    size_t i = 0;
+    while (i < str.length())
+    {
+        str[i] = ::tolower(str[i]);
+        i++;
+    }
+}

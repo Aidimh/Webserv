@@ -5,4 +5,6 @@
 
 size_t removeWhitespace(Client& client);
 bool ValidLine(std::string line);
+void MyToLower(std::string &str);
+
 #endif

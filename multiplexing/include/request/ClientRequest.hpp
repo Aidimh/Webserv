@@ -29,7 +29,8 @@ class ClientRequest
 		void		RequestLineParser(std::string RequestLine);
 		bool		RequestLineValidate(void);
 		void	    CleanUri(void);
-    	
+    	std::string	RemoveFirstLastSpaces(std::string& line);
+		
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;
     	const std::string&							getCgiExtension() const;

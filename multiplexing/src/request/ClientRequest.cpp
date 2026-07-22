@@ -44,6 +44,19 @@ void ClientRequest::setStatusCode(short StatusCode)
     this->status_code = StatusCode;
 }
 
+void ClientRequest::CleanUri()
+{
+    std::string cleanUri = "/";
+    
+    for (size_t i = 1; i < request_path.length(); i++)
+    {
+        if (request_path[i] == '/' && request_path[i - 1] == '/')
+            continue;
+            
+        cleanUri += request_path[i];
+    }
+    request_path = cleanUri;
+}
 
 bool ClientRequest::RequestLineValidate(void)
 {
@@ -78,20 +91,6 @@ bool ClientRequest::RequestLineValidate(void)
     }
     
     return (true);
-}
-
-void ClientRequest::CleanUri()
-{
-    std::string cleanUri = "/";
-    
-    for (size_t i = 1; i < request_path.length(); i++)
-    {
-        if (request_path[i] == '/' && request_path[i - 1] == '/')
-            continue;
-            
-        cleanUri += request_path[i];
-    }
-    request_path = cleanUri;
 }
 
 void ClientRequest::RequestLineParser(std::string line)
@@ -136,13 +135,51 @@ void ClientRequest::RequestLineParser(std::string line)
     CleanUri();
     
 }
+std::string	ClientRequest::RemoveFirstLastSpaces(std::string& line)
+{
+    size_t  begin;
+    size_t  finish;
+
+    begin = line.find_first_not_of(" \n\r\t");
+    finish = line.find_last_not_of(" \n\r\t");
+
+    if (begin == std::string::npos)
+        return ("");
+    return (line.substr(begin, finish - begin + 1));
+}
 
 void ClientRequest::HeadersParser(std::string headers)
 {
     std::string RequestLine;
+    size_t      endLine;
 
-    RequestLine = headers.substr(0, headers.find("\r\n"));
-    RequestLineParser(RequestLine);
+    endLine = headers.find("\r\n");
+    RequestLine = headers.substr(0, endLine);
+    RequestLineParser(RemoveFirstLastSpaces(RequestLine));
+
+    size_t  start;
+    size_t  end;
+
+    start   = endLine + 2;
+    while (end = headers.find("\r\n", start) != std::string::npos)
+    {
+        std::string header = headers.substr(start, end - start);
+        if (header.empty())
+        {
+            status_code = 400;
+            state = ERROR_STATE;
+            return;
+        }
+        size_t colon = header.find(":");
+        
+        if (colon != std::string::npos)
+        {
+            std::string key     = header.substr(0, colon);
+            std::string value   = header.substr(colon + 1);
+            MyToLower(key);
+            this->headers[RemoveFirstLastSpaces(key)] = RemoveFirstLastSpaces(value);
+        }
+    }
 }
 
 void ClientRequest::parse(Client& client)

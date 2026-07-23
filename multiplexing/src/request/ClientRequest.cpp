@@ -200,6 +200,36 @@ bool ClientRequest::CheckContentLength(void)
     return (it != headers.end() && !it->second.empty());
 }
 
+size_t ClientRequest::getContentLength(void)
+{
+    std::map<std::string, std::string>::iterator it = headers.find("content-length");
+    if (it == headers.end())
+        return (0);
+    
+    std::string&    value   = it->second;
+    size_t          length  = 0;
+    size_t          max     = std::numeric_limits<size_t>::max();
+
+    for (size_t i = 0; i < value.length(); i++)
+    {
+        if (!isdigit(value[i]))
+        {
+            status_code = 400;
+            state = ERROR_STATE;
+            return 0;
+        }
+        size_t  digit = value[i] - 48;
+        if (length > (max - digit) / 10)
+        {
+            status_code = 400;
+            state = ERROR_STATE;
+            return 0;
+        }
+        length = (length * 10) + digit;
+    }
+    return (length);
+}
+
 void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
@@ -244,6 +274,13 @@ void ClientRequest::parse(Client& client)
                 chunks.append(extra);
             else
                 body = extra;
+            #define max_body_size 9999999999 // i need to take the maxbodysize from my peer 
+            if(getContentLength() > max_body_size)
+            {
+                status_code = 413;
+                state = ERROR_STATE;
+                return;
+            }
         }
     }
 

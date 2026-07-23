@@ -363,7 +363,14 @@ void Multiplexer::_readClient(int fd)
             iter->second.parsed_request.parse(iter->second);
             if (iter->second.parsed_request.state == ClientRequest::BODY)
             {
-
+                if (iter->second.parsed_request.getContentLength() > 0 || iter->second.parsed_request.CheckTransferEncoding())
+                {
+                    if (!iter->second.parsed_request.CheckTransferEncoding() && iter->second.parsed_request.getBody().length() > iter->second.parsed_request.getContentLength())
+                    {
+                        //EPOLLOUT
+                        
+                    }
+                }
             }
         }
     }

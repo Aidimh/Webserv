@@ -32,6 +32,7 @@ class ClientRequest
     	std::string	RemoveFirstLastSpaces(std::string& line);
 		bool		CheckTransferEncoding(void);
 		bool		CheckContentLength(void);
+		size_t		getContentLength(void);
 		
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;

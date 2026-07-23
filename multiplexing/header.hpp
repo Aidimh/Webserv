@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <limits>
 #include <map>
 #include "Error.hpp"
 #define ERROR 1

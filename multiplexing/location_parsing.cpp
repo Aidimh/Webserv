@@ -24,6 +24,7 @@ void parse_autoindex(size_t &index)
         throw Error::Unkonwn_Directive_value();
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex = next_token(Conf_File::tokens, index);
     index += 2;
+    
 }
 
 

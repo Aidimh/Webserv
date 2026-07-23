@@ -188,6 +188,7 @@ int main(int ac , char **av, char **envp)
         open_file(av[1]);
         validate_file();
         parse_config_file();
+        Conf_File::Servers[0].error_pages[];
         // print();
         // exit(1);
         // Print();

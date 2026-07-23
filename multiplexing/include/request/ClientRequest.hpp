@@ -30,6 +30,8 @@ class ClientRequest
 		bool		RequestLineValidate(void);
 		void	    CleanUri(void);
     	std::string	RemoveFirstLastSpaces(std::string& line);
+		bool		CheckTransferEncoding(void);
+		bool		CheckContentLength(void);
 		
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;
@@ -50,6 +52,7 @@ class ClientRequest
 		std::map<std::string, std::string> headers;
 		std::string cgi;
 		std::string body;
+		std::string chunks;
 		short status_code;
 };
 

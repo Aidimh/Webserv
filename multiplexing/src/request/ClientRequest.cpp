@@ -182,6 +182,24 @@ void ClientRequest::HeadersParser(std::string headers)
     }
 }
 
+bool ClientRequest::CheckTransferEncoding(void)
+{
+    std::map<std::string, std::string>::iterator it;
+
+    it = headers.find("transfer-encoding");
+    return (it != headers.end() && !it->second.empty());
+}
+
+bool ClientRequest::CheckContentLength(void)
+{
+    std::map<std::string, std::string>::iterator it;
+
+    it = headers.find("content-length");
+    if (it == headers.end())
+        return (false);
+    return (it != headers.end() && !it->second.empty());
+}
+
 void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
@@ -216,6 +234,16 @@ void ClientRequest::parse(Client& client)
             extra = client.request.substr(check + 4);
             client.request.clear();
 
+            if(CheckTransferEncoding() && CheckContentLength())
+            {
+                status_code = 400;
+                state = ERROR_STATE;
+                return;
+            }
+            else if (CheckTransferEncoding())
+                chunks.append(extra);
+            else
+                body = extra;
         }
     }
 

@@ -1,4 +1,6 @@
 #include "header.hpp"
+#include "include/request/ClientRequest.hpp"
+#include "include/request/RequestHelpers.hpp"
 
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {
@@ -10,7 +12,6 @@ static std::string get_header_value(const std::map<std::string, std::string>& he
 
 void CGI::build_env_vars(Client& client)
 {
-
     env_vars.push_back("REQUEST_METHOD=" + client.parsed_request.getMethod());
     env_vars.push_back("PATH_INFO=" + client.parsed_request.getRequestPath());
     env_vars.push_back("SCRIPT_FILENAME=" + script);
@@ -79,7 +80,7 @@ int CGI::execute(std::map<int, pid_t>& map)
     }
     else
     {
-        close(stdin_pipe[0]);
+        close(stdin_pipe[0]); 
         close(stdout_pipe[1]);
     }
     map[stdout_pipe[0]] = pid;

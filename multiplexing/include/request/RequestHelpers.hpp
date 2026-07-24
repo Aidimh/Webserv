@@ -1,10 +1,10 @@
-#ifndef REQUESTHELPERS_HPP
-#define REQUESTHELPERS_HPP
+// #ifndef REQUESTHELPERS_HPP
+// #define REQUESTHELPERS_HPP
 
-#include "../../header.hpp"
+// #include "../../header.hpp"
+// // class ClientRequest;
+// struct Client;
 
-size_t removeWhitespace(Client& client);
-bool ValidLine(std::string line);
-void MyToLower(std::string &str);
 
-#endif
+
+// #endif

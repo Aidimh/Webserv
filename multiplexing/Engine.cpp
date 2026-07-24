@@ -1,4 +1,6 @@
 #include "header.hpp"
+#include "include/request/ClientRequest.hpp"
+#include "include/request/RequestHelpers.hpp"
 
 bool loop_is_true = true;
 
@@ -60,15 +62,20 @@ void Socket::setup(int port, const std::string& host)
         throw Error::Listen();
 }
 
-int Socket::acceptClient()
+int Socket::get_listen_port()
 {
-    struct sockaddr_in client_addr = {};
-    socklen_t len  = sizeof(client_addr);
-    int client_fd = accept(fd, (struct sockaddr *)&client_addr, &len);
-    if (client_fd == -1)
-        throw Error::Accept();
-    return client_fd;
+    return _port;
 }
+
+// int Socket::acceptClient()
+// {
+//     struct sockaddr_in client_addr = {};
+//     socklen_t len  = sizeof(client_addr);
+//     int client_fd = accept(fd, (struct sockaddr *)&client_addr, &len);
+//     if (client_fd == -1)
+//         throw Error::Accept();
+//     return client_fd;
+// }
 
 
 Socket::~Socket()
@@ -108,10 +115,11 @@ void Multiplexer::_acceptNewClient(Socket *s)
     Client client;
 
     client.fd = client_fd;
+    client.port = s->get_listen_port();
     client.parsed_request.state = ClientRequest::HEADERS;
-    client.search_offset = 0;
-    client.bytes_received = 0;
-    client.content_length = 0;
+    // client.search_offset = 0;
+    // client.bytes_received = 0;
+    // client.content_length = 0;
     _clients[client_fd] = client;
 
     struct pollfd pfd;
@@ -342,22 +350,30 @@ void Multiplexer::_removeClient(int fd)
     }
 }
 
+void which_status_code(int status_code)
+{
+    status_code++;
+    // std::map<int, std::string>::iterator iter = Conf_File::
+}
+
 void Multiplexer::_readClient(int fd)
 {
     char buffer[4096];
     std::map<int, Client>::iterator iter = _clients.find(fd);
     if (iter != _clients.end())
     {
-        int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
-        if (bytesRead == 0)
+        if (iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
         {
-            iter->second.parsed_request.state = ClientRequest::DONE;
-            std::cout << "Client Disconnected\n";
+            size_t status_code  =  iter->second.parsed_request.getStatusCode();
+            which_status_code(status_code);
             _removeClient(fd);
+            
         }
-        else if (bytesRead == -1)
+        int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
+        
+        if (bytesRead == -1)
             _removeClient(fd);
-        else
+        else if (bytesRead > 0)
         {
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
@@ -372,6 +388,12 @@ void Multiplexer::_readClient(int fd)
                     }
                 }
             }
+        }
+        if (bytesRead == 0)
+        {
+            iter->second.parsed_request.state = ClientRequest::DONE;
+            std::cout << "Client Disconnected\n";
+            _removeClient(fd);
         }
     }
     enableWrite(fd);

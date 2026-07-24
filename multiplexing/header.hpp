@@ -27,17 +27,22 @@
 #include <limits>
 #include <map>
 #include "Error.hpp"
+#include "include/request/ClientRequest.hpp"
+// #include "include/request/RequestHelpers.hpp"
 #define ERROR 1
 #define SUCESS 0
 #define MAX_KB 20000
 #define MAX_MB 20
+#define MAX_HEADER_SIZE 8192
 #define MAX_BY 22000000
 
-#include "include/request/ClientRequest.hpp"
+// #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
 
 
 // --------------------------------------- Config File Header Part ------------------------------------- //
+
+// class ClientRequest;
 
 typedef struct Location_Config
 {
@@ -123,11 +128,11 @@ class Conf_File
 struct Client
 {
     int fd;
-    size_t search_offset;
     std::string request;
     size_t content_length;
-    size_t bytes_received;
+    // size_t bytes_received;
     std::string response;
+    int port;
     std::string body;
     size_t end_of_header;
     ClientRequest parsed_request;
@@ -153,6 +158,7 @@ class Socket : public AFd
         Socket();
         ~Socket();
         std::string GetClientIp();
+        int get_listen_port();
         void setup(int port, const std::string& host);
         int  acceptClient();        
 };

@@ -3,8 +3,11 @@
 
 #include <map>
 #include <string>
-#include "../../header.hpp"
-#include "RequestHelpers.hpp"
+// #include "../../header.hpp"
+// #include "RequestHelpers.hpp"
+// #include "RequestHelpers.hpp"
+
+struct Client;
 
 class ClientRequest
 {
@@ -13,7 +16,7 @@ class ClientRequest
     	ClientRequest(const ClientRequest &other);
     	ClientRequest& operator=(const ClientRequest& other);
     	~ClientRequest();
-	
+
 		enum ParseState
 		{
 	    	HEADERS,
@@ -41,7 +44,7 @@ class ClientRequest
     	const std::string&							getBody() const;
     	const std::string&							getCgi() const;
     	const std::map<std::string, std::string>&	getHeaders() const;
-		const short 								getStatusCode() const;
+		short 								getStatusCode() const;
 
 		void setStatusCode(short StatusCode);
 		
@@ -56,5 +59,12 @@ class ClientRequest
 		std::string chunks;
 		short status_code;
 };
+
+
+///////////////////////////// Helper Functions ////////////////////////////
+
+size_t removeWhitespace(Client& client);
+bool ValidLine(std::string line);
+void MyToLower(std::string &str);
 
 #endif

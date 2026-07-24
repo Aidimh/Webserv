@@ -1,4 +1,6 @@
 #include "../../include/request/ClientRequest.hpp"
+#include "../../header.hpp"
+
 
 ClientRequest::ClientRequest() : state(HEADERS), status_code(200){}
 
@@ -35,7 +37,7 @@ const std::string& ClientRequest::getCgiExtension() const {return cgi_extension;
 const std::string& ClientRequest::getVersion() const {return version;}
 const std::string& ClientRequest::getBody() const {return body;}
 const std::string& ClientRequest::getCgi() const {return cgi;}
-const short ClientRequest::getStatusCode() const {return status_code;}
+short ClientRequest::getStatusCode() const {return status_code;}
 const std::map<std::string, std::string>& ClientRequest::getHeaders() const  {return headers;}
 
 
@@ -97,7 +99,6 @@ void ClientRequest::RequestLineParser(std::string line)
 {
     if (line.empty() || !ValidLine(line))
         return;
-    
     size_t start;
     size_t end;
     end = line.find(' ');
@@ -161,7 +162,7 @@ void ClientRequest::HeadersParser(std::string headers)
     size_t  end;
 
     start   = endLine + 2;
-    while (end = headers.find("\r\n", start) != std::string::npos)
+    while ((end = headers.find("\r\n", start) != std::string::npos))
     {
         std::string header = headers.substr(start, end - start);
         if (header.empty())
@@ -236,7 +237,7 @@ void ClientRequest::parse(Client& client)
         return;
     if (client.parsed_request.state == HEADERS)
     {
-        if (client.request.length() > 8192)
+        if (client.request.length() > MAX_HEADER_SIZE)
         {
             this->status_code = 431;
             this->state = ERROR_STATE;
@@ -248,7 +249,6 @@ void ClientRequest::parse(Client& client)
             client.request.erase(0, begin);
         if (client.request.empty())
             return;
-        
         size_t check;
         check = client.request.find("\r\n\r\n");
         if (check != std::string::npos)
@@ -258,7 +258,7 @@ void ClientRequest::parse(Client& client)
             
             headers = client.request.substr(0, check + 2);
             HeadersParser(headers);
-            if (this->state = ERROR_STATE)
+            if ((this->state = ERROR_STATE))
                 return;
             state = BODY;
             extra = client.request.substr(check + 4);

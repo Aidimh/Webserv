@@ -129,12 +129,12 @@ struct Client
 {
     int fd;
     std::string request;
-    size_t content_length;
+    // size_t content_length;
     // size_t bytes_received;
     std::string response;
     int port;
-    std::string body;
-    size_t end_of_header;
+    // std::string body;
+    // size_t end_of_header;
     ClientRequest parsed_request;
 };
 

@@ -285,3 +285,24 @@ void ClientRequest::parse(Client& client)
     }
 
 }
+
+
+void	ClientRequest::HandleTransferEncoding(Client& client)
+{
+
+}
+
+void    ClientRequest::BodyRequest(Client& client)
+{
+	char	buffer[65536];
+
+	if (CheckTransferEncoding())
+		HandleTransferEncoding(client);
+	else
+	{
+		if (getContentLength()  > max_body_size) //todo : i need here the exact max body size of the server
+		{
+			
+		}
+	}
+}

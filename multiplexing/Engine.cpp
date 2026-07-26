@@ -367,7 +367,7 @@ void Multiplexer::_readClient(int fd)
             size_t status_code  =  iter->second.parsed_request.getStatusCode();
             which_status_code(status_code);
             _removeClient(fd);
-            
+            return;
         }
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
         
@@ -381,9 +381,8 @@ void Multiplexer::_readClient(int fd)
             {
                 if (iter->second.parsed_request.getContentLength() > 0 || iter->second.parsed_request.CheckTransferEncoding())
                 {
-                    if (!iter->second.parsed_request.CheckTransferEncoding() && iter->second.parsed_request.getBody().length() > iter->second.parsed_request.getContentLength())
+                    if (iter->second.parsed_request.CheckTransferEncoding() || iter->second.parsed_request.getBody().length() < iter->second.parsed_request.getContentLength())
                     {
-                        //EPOLLOUT
                         
                     }
                 }

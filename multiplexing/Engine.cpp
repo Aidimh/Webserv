@@ -350,10 +350,51 @@ void Multiplexer::_removeClient(int fd)
     }
 }
 
-void which_status_code(int status_code)
+int which_status_code(int status_code)
 {
-    status_code++;
-    // std::map<int, std::string>::iterator iter = Conf_File::
+    if (status_code == 200) return HTTP_200_OK;
+    else if (status_code == 201)
+        return HTTP_201_CREATED;
+    else if (status_code == 204)
+        return HTTP_204_NO_CONTENT;
+    else if (status_code == 301)
+        return HTTP_301_MOVED_PERMANENTLY;
+    else if (status_code == 302) 
+        return HTTP_302_FOUND;
+    else if (status_code == 304) 
+        return HTTP_304_NOT_MODIFIED;
+    else if (status_code == 400) 
+        return HTTP_400_BAD_REQUEST;
+    else if (status_code == 403) 
+        return HTTP_403_FORBIDDEN;
+    else if (status_code == 404) 
+        return HTTP_404_NOT_FOUND;
+    else if (status_code == 405) 
+        return HTTP_405_METHOD_NOT_ALLOWED;
+    else if (status_code == 408) 
+        return HTTP_408_REQUEST_TIMEOUT;
+    else if (status_code == 409) 
+        return HTTP_409_CONFLICT;
+    else if (status_code == 410) 
+        return HTTP_410_GONE;
+    else if (status_code == 411) 
+        return HTTP_411_LENGTH_REQUIRED;
+    else if (status_code == 413) 
+        return HTTP_413_PAYLOAD_TOO_LARGE;
+    else if (status_code == 414) 
+        return HTTP_414_URI_TOO_LONG;
+    else if (status_code == 415) 
+        return HTTP_415_UNSUPPORTED_MEDIA;
+    else if (status_code == 500) 
+        return HTTP_500_INTERNAL_SERVER_ERROR;
+    else if (status_code == 502) 
+        return HTTP_502_BAD_GATEWAY;
+    else if (status_code == 504) 
+        return HTTP_504_GATEWAY_TIMEOUT;
+    else if (status_code == 505) 
+        return HTTP_505_HTTP_VERSION_NOT_SUPPORTED;
+    else                         
+        return HTTP_500_INTERNAL_SERVER_ERROR;
 }
 
 void Multiplexer::_readClient(int fd)

@@ -46,6 +46,40 @@
 
 // class ClientRequest;
 
+
+
+enum HttpStatus
+{
+        // 2xx Success
+        HTTP_200_OK                     = 200,
+        HTTP_201_CREATED                = 201,
+        HTTP_204_NO_CONTENT             = 204,
+
+        // 3xx Redirection
+        HTTP_301_MOVED_PERMANENTLY      = 301,
+        HTTP_302_FOUND                  = 302,
+        HTTP_304_NOT_MODIFIED           = 304,
+
+        // 4xx Client Errors
+        HTTP_400_BAD_REQUEST            = 400,
+        HTTP_403_FORBIDDEN              = 403,
+        HTTP_404_NOT_FOUND              = 404,
+        HTTP_405_METHOD_NOT_ALLOWED     = 405,
+        HTTP_408_REQUEST_TIMEOUT        = 408,
+        HTTP_409_CONFLICT               = 409,
+        HTTP_410_GONE                   = 410,
+        HTTP_411_LENGTH_REQUIRED        = 411,
+        HTTP_413_PAYLOAD_TOO_LARGE      = 413,
+        HTTP_414_URI_TOO_LONG           = 414,
+        HTTP_415_UNSUPPORTED_MEDIA      = 415,
+
+        // 5xx Server Errors
+        HTTP_500_INTERNAL_SERVER_ERROR  = 500,
+        HTTP_502_BAD_GATEWAY            = 502,
+        HTTP_504_GATEWAY_TIMEOUT        = 504,
+        HTTP_505_HTTP_VERSION_NOT_SUPPORTED = 505
+};
+
 typedef struct Location_Config
 {
     std::string root;

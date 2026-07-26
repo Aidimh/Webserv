@@ -352,7 +352,8 @@ void Multiplexer::_removeClient(int fd)
 
 int which_status_code(int status_code)
 {
-    if (status_code == 200) return HTTP_200_OK;
+    if (status_code == 200)
+        return HTTP_200_OK;
     else if (status_code == 201)
         return HTTP_201_CREATED;
     else if (status_code == 204)

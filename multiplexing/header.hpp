@@ -27,6 +27,7 @@
 #include <limits>
 #include <map>
 #include "Error.hpp"
+#include <sstream>
 #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
 #define ERROR 1
@@ -34,6 +35,7 @@
 #define MAX_KB 20000
 #define MAX_MB 20
 #define MAX_HEADER_SIZE 8192
+#define MAX_RAM_BUFFER 8192
 #define MAX_BY 22000000
 
 // #include "include/request/ClientRequest.hpp"

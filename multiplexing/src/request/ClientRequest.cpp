@@ -2,7 +2,7 @@
 #include "../../header.hpp"
 
 
-ClientRequest::ClientRequest() : state(HEADERS), status_code(200){}
+ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0){}
 
 ClientRequest::ClientRequest(const ClientRequest& other)
 {
@@ -22,6 +22,7 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
         cgi             =   other.cgi;
         body            =   other.body;
         status_code     =   other.status_code;
+        TmpFileFd       =   other.TmpFileFd;
     }
     return *this;
 }
@@ -39,12 +40,12 @@ const std::string& ClientRequest::getBody() const {return body;}
 const std::string& ClientRequest::getCgi() const {return cgi;}
 short ClientRequest::getStatusCode() const {return status_code;}
 const std::map<std::string, std::string>& ClientRequest::getHeaders() const  {return headers;}
+int ClientRequest::getTmpFileFd() const {return TmpFileFd;}
+size_t ClientRequest::getBodySize() const {return BodySize;}
 
-
-void ClientRequest::setStatusCode(short StatusCode)
-{
-    this->status_code = StatusCode;
-}
+void ClientRequest::setBodySize(size_t size) {BodySize = size;}
+void ClientRequest::setTmpFileFd(int newFd) {this->TmpFileFd = newFd;}
+void ClientRequest::setStatusCode(short StatusCode) {this->status_code = StatusCode; }
 
 void ClientRequest::CleanUri()
 {
@@ -127,7 +128,7 @@ void ClientRequest::RequestLineParser(std::string line)
         this->state = ERROR_STATE;
         return;
     }
-    end = line.find_last_not_of(" \r\n", start);
+    end = line.find_last_not_of(" \r\n");
     if (end != std::string::npos && end >= start)
         this->version = line.substr(start, end - start + 1);
     
@@ -162,7 +163,7 @@ void ClientRequest::HeadersParser(std::string headers)
     size_t  end;
 
     start   = endLine + 2;
-    while ((end = headers.find("\r\n", start) != std::string::npos))
+    while ((end = headers.find("\r\n", start)) != std::string::npos)
     {
         std::string header = headers.substr(start, end - start);
         if (header.empty())
@@ -180,7 +181,9 @@ void ClientRequest::HeadersParser(std::string headers)
             MyToLower(key);
             this->headers[RemoveFirstLastSpaces(key)] = RemoveFirstLastSpaces(value);
         }
+        start = end + 2;
     }
+    
 }
 
 bool ClientRequest::CheckTransferEncoding(void)
@@ -237,6 +240,7 @@ void ClientRequest::parse(Client& client)
         return;
     if (client.parsed_request.state == HEADERS)
     {
+        
         if (client.request.length() > MAX_HEADER_SIZE)
         {
             this->status_code = 431;
@@ -258,7 +262,7 @@ void ClientRequest::parse(Client& client)
             
             headers = client.request.substr(0, check + 2);
             HeadersParser(headers);
-            if ((this->state = ERROR_STATE))
+            if ((this->state == ERROR_STATE))
                 return;
             state = BODY;
             extra = client.request.substr(check + 4);
@@ -273,12 +277,29 @@ void ClientRequest::parse(Client& client)
             else if (CheckTransferEncoding())
                 chunks.append(extra);
             else
-                body = extra;
-            #define max_body_size 9999999999 // i need to take the maxbodysize from my peer 
+            {
+                size_t expected = getContentLength();
+                if (extra.length() > expected)
+                {
+                    body = extra.substr(0, expected);
+                    BodySize += expected;
+                }
+                else
+                {
+                    body        =   extra;
+                    BodySize    +=  extra.length();
+                }
+            }
+            #define max_body_size 9999999999 // itodo:  need to take the maxbodysize from my peer 
             if(getContentLength() > max_body_size)
             {
                 status_code = 413;
                 state = ERROR_STATE;
+                return;
+            }
+            if (!CheckTransferEncoding() && BodySize >= getContentLength())
+            {
+                state = DONE;
                 return;
             }
         }
@@ -302,7 +323,94 @@ void    ClientRequest::BodyRequest(Client& client)
 	{
 		if (getContentLength()  > max_body_size) //todo : i need here the exact max body size of the server
 		{
-			
+			if (TmpFileFd != -1)
+            {
+                close(TmpFileFd);
+                TmpFileFd = -1;
+            }
+            status_code = 413;
+            state = ERROR_STATE;
+            //EPOLLOUT
+            return;
 		}
+
+        if (body.length() >= getContentLength())
+        {
+            if (TmpFileFd != -1)
+            {
+                close(TmpFileFd);
+                TmpFileFd = -1;
+            }
+            state = DONE;
+            //EPOLLOUT
+            return;
+        }
+        ssize_t bytesRead = recv(client.fd, buffer, sizeof(buffer), 0);
+        if (bytesRead < 0)
+            return;
+        if (bytesRead > 0)
+        {
+            //timeout part
+            size_t remaining = getContentLength() - BodySize;
+            size_t bytesToTake = (bytesRead > remaining) ? remaining : bytesRead;
+            BodySize += bytesToTake;
+            if (getContentLength() <= MAX_RAM_BUFFER)
+                body.append(buffer, bytesToTake);
+            else
+            {
+                if (TmpFileFd == -1)
+                {
+                    struct stat meta;
+                    if (stat("www/upload", &meta) != 0)
+                        mkdir ("www/upload", 0755);
+                
+                    std::stringstream stream;
+                    stream << client.fd;
+                    std::string filePath = "www/upload/storage_" + stream.str();
+                    int fd = open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+                    if (fd == -1)
+                    {
+                        status_code = 500;
+                        state = ERROR_STATE;
+                        return;
+                    }
+                    TmpFileFd = fd;
+                    if (!body.empty())
+                    {
+                        write(fd, body.c_str(), body.length());
+                        std::string().swap(body);
+                    }
+
+                }
+
+                ssize_t written = write(TmpFileFd, buffer, bytesToTake);
+                if (written < 0)
+                {
+                    status_code = 500;
+                    state = ERROR_STATE;
+                    return;
+                }
+            }
+            
+            if (BodySize >= getContentLength())
+            {
+                if (TmpFileFd != -1)
+                {
+                    close(TmpFileFd);
+                    TmpFileFd = -1;
+                }
+                //EPOLLOUT
+                state = DONE;
+            }
+        }
+
+        else
+        {
+            if (TmpFileFd != -1)
+            {
+                close(TmpFileFd);
+                TmpFileFd = -1;
+            }
+        }
 	}
 }

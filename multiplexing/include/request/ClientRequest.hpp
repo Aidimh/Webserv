@@ -51,9 +51,13 @@ class ClientRequest
     	const std::string&							getCgi() const;
     	const std::map<std::string, std::string>&	getHeaders() const;
 		short 										getStatusCode() const;
+		int											getTmpFileFd() const;
+		size_t										getBodySize() const;
 
+		void										setTmpFileFd(int newFd);
 		void										setStatusCode(short StatusCode);
-		
+		void										setBodySize(size_t size);
+
 	private:
 		std::string									method;
 		std::string									request_path;
@@ -64,6 +68,8 @@ class ClientRequest
 		std::string									body;
 		std::string									chunks;
 		short										status_code;
+		int											TmpFileFd;
+		size_t										BodySize;
 };
 
 

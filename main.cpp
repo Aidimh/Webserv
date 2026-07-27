@@ -1,4 +1,3 @@
-
 #include "header.hpp"
 #include "Error.hpp"
 
@@ -352,3 +351,10 @@ int main(int ac , char **av, char **envp)
     // for (size_t i = 0; i < fds.size(); i++)
     //     close(fds[i].fd);
     // close(fd_sock);
+
+
+
+
+
+
+

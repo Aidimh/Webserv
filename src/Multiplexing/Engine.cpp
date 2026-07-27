@@ -408,6 +408,7 @@ void Multiplexer::_readClient(int fd)
         {
             size_t status_code  =  iter->second.parsed_request.getStatusCode();
             which_status_code(status_code);
+            
             _removeClient(fd);
             return;
         }

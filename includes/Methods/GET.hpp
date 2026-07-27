@@ -35,8 +35,6 @@ class GET : public AMethod
         Response buildFileResponse(const std::string& body,const std::string& contentType) const;
         std::vector<std::string> resolveIndexFiles(const Server_block& server, const Location_Config* location) const;
         bool isAutoindexEnabled(const Server_block& server, const Location_Config* location) const;
-
-
     public:
         GET();
         virtual ~GET();

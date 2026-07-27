@@ -1,9 +1,9 @@
 #ifndef AMETHOD_HPP
 #define AMETHOD_HPP
 
-#include "Response.hpp"
-#include "HttpRequest.hpp"
-#include "PathType.hpp"
+#include "Response/Response.hpp"
+#include "Request/HttpRequest.hpp"
+#include "Core/PathType.hpp"
 // #include "MultipartUploadStrategy.hpp"
 
 #include <iostream>
@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-// struct Location_Config;
-// class Server_block;
+struct Location_Config;
+class Server_block;
 
 class AMethod
 {

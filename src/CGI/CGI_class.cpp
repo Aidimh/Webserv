@@ -1,6 +1,6 @@
 #include "header.hpp"
-#include "include/request/ClientRequest.hpp"
-#include "include/request/RequestHelpers.hpp"
+#include "includes/request/ClientRequest.hpp"
+#include "includes/request/RequestHelpers.hpp"
 
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {

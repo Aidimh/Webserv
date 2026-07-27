@@ -50,17 +50,17 @@
 
 enum HttpStatus
 {
-        // 2xx Success
+        // Success
         HTTP_200_OK                     = 200,
         HTTP_201_CREATED                = 201,
         HTTP_204_NO_CONTENT             = 204,
 
-        // 3xx Redirection
+        // Redirection
         HTTP_301_MOVED_PERMANENTLY      = 301,
         HTTP_302_FOUND                  = 302,
         HTTP_304_NOT_MODIFIED           = 304,
 
-        // 4xx Client Errors
+        // Client Errors
         HTTP_400_BAD_REQUEST            = 400,
         HTTP_403_FORBIDDEN              = 403,
         HTTP_404_NOT_FOUND              = 404,
@@ -73,7 +73,7 @@ enum HttpStatus
         HTTP_414_URI_TOO_LONG           = 414,
         HTTP_415_UNSUPPORTED_MEDIA      = 415,
 
-        // 5xx Server Errors
+        // Server Errors
         HTTP_500_INTERNAL_SERVER_ERROR  = 500,
         HTTP_502_BAD_GATEWAY            = 502,
         HTTP_504_GATEWAY_TIMEOUT        = 504,

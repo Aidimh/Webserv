@@ -1,4 +1,4 @@
-#include "MultipartUploadStrategy.hpp"
+#include "Methods/MultipartUploadStrategy.hpp"
 
 bool MultipartUploadStrategy::isMultipartUpload(const HttpRequest& request) const
 {

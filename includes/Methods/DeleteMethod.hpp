@@ -2,12 +2,8 @@
 #define DELETEMETHOD_HPP
 
 #include "AMethod.hpp"
-#include "Response.hpp"
-#include "PathType.hpp"
-#include "HttpRequest.hpp"
-
-
-
+#include <unistd.h>
+#include <cstdio>
 class DeleteMethod : public AMethod
 {
     public:

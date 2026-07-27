@@ -2,19 +2,10 @@
 #define GET_HPP
 
 #include "AMethod.hpp"
-#include "Response.hpp"
-#include "PathType.hpp"
-#include "HttpRequest.hpp"
-
-
 #include <dirent.h> // open directory
-#include <fstream>
 #include <sstream>
-#include <string>
-#include <iostream>
-#include <stdexcept>
-#include <sys/stat.h>
 #include <vector>
+#include <fstream>
 
 
 class GET : public AMethod

@@ -1,7 +1,6 @@
 #ifndef HttpRequest_hpp
 #define HttpRequest_hpp
 
-#include "ClientRequest.hpp"
 #include <string>
 #include <map>
 

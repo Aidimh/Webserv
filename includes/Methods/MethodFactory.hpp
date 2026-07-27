@@ -5,9 +5,7 @@
 #include "GET.hpp"
 #include "POST.hpp"
 #include "DeleteMethod.hpp"
-#include "HttpRequest.hpp"
-
-// class Server_block;
+#include <string>
 
 class MethodFactory
 {

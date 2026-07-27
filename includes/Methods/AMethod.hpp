@@ -3,16 +3,13 @@
 
 #include "Response/Response.hpp"
 #include "Request/HttpRequest.hpp"
+#include "Core/ConfigTypes.hpp"
 #include "Core/PathType.hpp"
-// #include "MultipartUploadStrategy.hpp"
 
-#include <iostream>
-#include <cstdio>
-#include <unistd.h>
+#include <string>
+#include <sstream> //ostringstream and oss
 #include <sys/stat.h>
 
-struct Location_Config;
-class Server_block;
 
 class AMethod
 {

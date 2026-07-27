@@ -2,11 +2,8 @@
 #define POST_HPP
 
 #include "AMethod.hpp"
-#include "Response.hpp"
-#include "PathType.hpp"
-#include "HttpRequest.hpp"
 #include "MultipartUploadStrategy.hpp"
-#include <sys/stat.h>
+
 #include <fstream>
 #include <unistd.h>
 

@@ -1,16 +1,10 @@
-// #include "include/MethodFactory.hpp"
-// #include "include/Response.hpp"
-// #include "include/AMethod.hpp"
-// #include "include/Request/HttpRequest.hpp"
-// #include "multiplexing/header.hpp"
-// #include "include/Dispatcher.hpp"
-
-
-#include "Methods/POST.hpp"
+#include "Methods/Dispatcher.hpp"
 #include "Request/HttpRequest.hpp"
 #include "Response/Response.hpp"
+#include "Core/ConfigTypes.hpp"
 
 #include <iostream>
+
 
 // void    runTest(const HttpRequest& request)
 // {

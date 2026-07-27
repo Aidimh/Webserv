@@ -1,5 +1,4 @@
-#include "AMethod.hpp"
-#include "../multiplexing/header.hpp"
+#include "Methods/AMethod.hpp"
 
 AMethod::~AMethod()
 {
@@ -49,7 +48,7 @@ std::string AMethod::resolveTarget(const HttpRequest& request,const Server_block
 }
 
 //POST /salah.mp4
-//Path =  /home/moel-aid/Desktop/Webserv/multiplexing/salah
+//Path =  /home/moel-aid/Desktop/Webserv/Multiplexing/salah
 
 PathType AMethod::getPathType(const std::string& path) const
 {

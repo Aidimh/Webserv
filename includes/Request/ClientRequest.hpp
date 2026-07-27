@@ -1,11 +1,19 @@
 #ifndef CLIENTREQUEST_HPP
 #define CLIENTREQUEST_HPP
 
-#include <map>
+#include <limits>
+#include <sstream>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string>
+#include <map>
+
 // #include "../../header.hpp"
 // #include "RequestHelpers.hpp"
 // #include "RequestHelpers.hpp"
+
 
 struct Client;
 

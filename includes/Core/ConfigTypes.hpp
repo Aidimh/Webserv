@@ -1,40 +1,17 @@
-#pragma once
-#include <iostream>
-#include <sys/socket.h>
-// #include <netinit/in.h>
-#include <arpa/inet.h>
-#include <vector>
-#include <sys/select.h>
-#include <poll.h>
-#include <sys/epoll.h>
-#include <cstring>
-#include <stdio.h>
-#include <unistd.h>
-#include <iostream>
-#include <sys/epoll.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <cstring>
-#include <fcntl.h>
-#include <csignal>
-#include <string>
-#include <cerrno>
-#include <fstream>
-#include <cstdlib>
-#include <sys/stat.h>
-#include <sys/wait.h>
+#ifndef CONFIGTYPES_HPP
+#define CONFIGTYPES_HPP
+
 #include <map>
-#include "Error.hpp"
+#include <string>
+#include <vector>
+
 #define ERROR 1
 #define SUCESS 0
 #define MAX_KB 20000
 #define MAX_MB 20
 #define MAX_BY 22000000
 
-#include "includes/request/ClientRequest.hpp"
-
-typedef struct Location_Config
+struct Location_Config
 {
     std::string root;
     std::string path;
@@ -51,8 +28,7 @@ typedef struct Location_Config
     bool has_autoindex;
     size_t cgi_paths_index;
     size_t cgi_extns_index;
-} Location_Config;
-
+};
 
 class Server_block
 {
@@ -84,6 +60,7 @@ class Server_block
         std::vector<std::string> methods;
         std::string default_file;
         std::string autoindex;
+
         void reset_flags()
         {
             server_found = false;
@@ -97,3 +74,5 @@ class Server_block
             client_max_body_found = false;
         }
 };
+
+#endif

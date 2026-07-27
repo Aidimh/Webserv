@@ -1,13 +1,6 @@
 #ifndef STATUSCODE_HPP
 #define STATUSCODE_HPP
 
-enum PathType
-{
-    NOT_FOUND,
-    FILE_PATH,
-    DIRECTORY_PATH
-};
-
 enum HttpStatusCode
 {
     // Success

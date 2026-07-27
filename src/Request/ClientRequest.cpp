@@ -1,6 +1,4 @@
-#include "../../includes/request/ClientRequest.hpp"
-#include "../../header.hpp"
-
+#include "Multiplexing/Client.hpp"
 
 ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0){}
 

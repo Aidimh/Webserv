@@ -1,5 +1,4 @@
-#include "POST.hpp"
-#include <unistd.h>
+#include "Methods/POST.hpp"
 
 POST::POST()
 {

@@ -1,5 +1,4 @@
-#include "GET.hpp"
-#include "../multiplexing/header.hpp"
+#include "Methods/GET.hpp"
 
 GET::GET()
 {

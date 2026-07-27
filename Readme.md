@@ -53,7 +53,7 @@ server
     listen 8080;
     host 0.0.0.0;
     server_name localhost:8080;
-    root /home/mzanana/Desktop/Github/webserv/multiplexing;
+    root /home/mzanana/Desktop/Github/webserv/Multiplexing;
     index index.html;
     client_max_body_size 1000000; 
 

@@ -68,7 +68,13 @@ SRCS = \
 
 OBJS = $(SRCS:.cpp=.o)
 
-INCLUDES = -I$(INC_DIR)
+INCLUDES = -I$(INC_DIR) \
+	-I$(INC_DIR)/Core \
+	-I$(INC_DIR)/Errors \
+	-I$(INC_DIR)/Methods \
+	-I$(INC_DIR)/Request \
+	-I$(INC_DIR)/Response \
+	-I$(INC_DIR)/Multiplexing
 
 all: $(NAME)
 

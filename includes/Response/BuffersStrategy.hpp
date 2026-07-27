@@ -1,9 +1,7 @@
 #ifndef BUFFERSSTRATEGY_HPP
 #define BUFFERSSTRATEGY_HPP
 
-#include "AMethod.hpp"
-#include "Response.hpp"
-#include "Request.hpp"
+#include <string>
 class BuffersStrategy
 {
     public:

@@ -1,5 +1,5 @@
-#include "header.hpp"
-#include "Error.hpp"
+#include "../../includes/Multiplexing/header.hpp"
+#include "../../includes/Errors/Error.hpp"
 
 extern int server_index;
 

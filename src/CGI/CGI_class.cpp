@@ -1,6 +1,6 @@
-#include "header.hpp"
-#include "includes/request/ClientRequest.hpp"
-#include "includes/request/RequestHelpers.hpp"
+#include "../../includes/Multiplexing/header.hpp"
+#include "../../includes/Request/ClientRequest.hpp"
+#include "../../includes/Request/RequestHelpers.hpp"
 
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {
@@ -18,7 +18,7 @@ void CGI::build_env_vars(Client& client)
     env_vars.push_back("CONTENT_TYPE=" + get_header_value(client.parsed_request.getHeaders(), "content_type"));
     env_vars.push_back("QUERY_STRING=");
     char buff[32];
-    sprintf(buff, "%zu", client.content_length);
+    sprintf(buff, "%zu", client.parsed_request.getContentLength());
     std::string result = buff;
     env_vars.push_back("CONTENT_LENGTH=" + result);
     request_vars = new char *[env_vars.size() + 1];

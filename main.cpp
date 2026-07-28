@@ -638,7 +638,7 @@ int main()
 //         if (!av || av[1][0] == '\0')
 //             throw Error::Argv();
 //         open_file(av[1]);
-//         validate_file();
+//         check_braces();
 //         parse_config_file();
 //         // std::cout << Conf_File::Servers[0].error_pages[404];
 //         // exit(1);

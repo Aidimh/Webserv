@@ -1,9 +1,8 @@
-#include "header.hpp"
-#include "Error.hpp"
+#include "../../includes/Multiplexing/header.hpp"
+#include "../../includes/Errors/Error.hpp"
 
 
-
-void validate_file()
+void check_braces()
 {
     size_t i = 0;
     int depth = 0;

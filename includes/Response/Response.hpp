@@ -3,7 +3,7 @@
 
 #include <string>
 #include <map>
-
+#include <sstream>
 class Response
 {
     private:

@@ -7,6 +7,7 @@
 #include "Multiplexing/Client.hpp"
 
 #include <map>
+#include <string.h>
 #include <poll.h>
 #include <string>
 #include <sys/types.h>
@@ -140,7 +141,7 @@ void parse_file();
 void skip_white_spaces(std::string& line, size_t& i);
 void skip_directive(std::string& line, size_t& i);
 bool path_file_exists(std::string& name);
-void validate_file();
+void check_braces();
 void expected_token(std::vector<std::string>& vector, size_t& i, std::string& expected);
 std::string next_token(std::vector<std::string>& vector, size_t& i);
 void parse_config_file();

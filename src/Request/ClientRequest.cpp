@@ -308,10 +308,10 @@ void ClientRequest::parse(Client& client)
 }
 
 
-void	ClientRequest::HandleTransferEncoding(Client& client)
-{
+// void	ClientRequest::HandleTransferEncoding(Client& client)
+// {
 
-}
+// }
 
 void    ClientRequest::BodyRequest(Client& client)
 {

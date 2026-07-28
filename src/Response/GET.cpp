@@ -1,6 +1,20 @@
 #include "GET.hpp"
 #include "../multiplexing/header.hpp"
 
+#include <fcntl.h>
+#include <unistd.h>
+
+#ifndef GET_STREAMING_THRESHOLD
+# define GET_STREAMING_THRESHOLD (8 * 1024 * 1024)
+#endif
+
+namespace
+{
+    const off_t STREAMING_THRESHOLD = static_cast<off_t>(GET_STREAMING_THRESHOLD);
+}
+
+bool isStreaming() const;
+
 GET::GET()
 {
 }
@@ -8,7 +22,6 @@ GET::GET()
 GET::~GET()
 {
 }
-
 
 std::string GET::getContentType(const std::string& path) const
 {
@@ -56,15 +69,32 @@ std::string GET::readFile(const std::string& path, bool& success) const
     return buffer.str();
 }
 
-Response GET::serveFile(const std::string& path) const
+Response GET::serveFile(Client& client, const std::string& path) const
 {
+    struct stat fileInfo;
+
+    if (stat(path.c_str(), &fileInfo) != 0)
+        return buildErrorResponse(500, "Internal Server Error");
+
+    std::string type = getContentType(path);
+
+    if (fileInfo.st_size > STREAMING_THRESHOLD)
+    {
+        int streamFd = open(path.c_str(), O_RDONLY);
+
+        if (streamFd == -1)
+            return buildErrorResponse(500, "Internal Server Error");
+
+        client.stream_file_fd = streamFd;
+        client.stream_bytes_remaining = fileInfo.st_size;
+        return buildStreamingFileResponse(fileInfo.st_size, type);
+    }
+
     bool success = false;
     std::string body = readFile(path, success);
 
     if (!success)
         return buildErrorResponse(500, "Internal Server Error");
-
-    std::string type = getContentType(path);
 
     return buildFileResponse(body, type);
 }
@@ -85,7 +115,7 @@ bool GET::isAutoindexEnabled(const Server_block& server, const Location_Config* 
     return server.autoindex == "on";
 }
 
-Response GET::handleDirectory(const std::string& path, const Server_block& server, const Location_Config* location) const
+Response GET::handleDirectory(Client& client, const std::string& path, const Server_block& server, const Location_Config* location) const
 {
     std::vector<std::string> indexFiles = resolveIndexFiles(server, location);
 
@@ -99,7 +129,7 @@ Response GET::handleDirectory(const std::string& path, const Server_block& serve
         candidatePath += indexFiles[i];
 
         if (fileExists(candidatePath) && !isDirectory(candidatePath))
-            return serveFile(candidatePath);
+            return serveFile(client, candidatePath);
     }
 
     if (isAutoindexEnabled(server, location))
@@ -147,6 +177,20 @@ Response GET::buildFileResponse(const std::string& body, const std::string& cont
     return response;
 }
 
+Response GET::buildStreamingFileResponse(off_t fileSize, const std::string& contentType) const
+{
+    Response response;
+    std::ostringstream length;
+
+    response.setStatusCode(200);
+    response.setReasonPhrase("OK");
+    length << fileSize;
+    response.addHeader("Content-Length", length.str());
+    response.addHeader("content-type", contentType);
+
+    return response;
+}
+
 Response GET::execute(Client& client, const Server_block& server)
 {
     const Location_Config* location = resolveLocation(client, server);
@@ -160,10 +204,10 @@ Response GET::execute(Client& client, const Server_block& server)
             return buildErrorResponse(404, "Not Found");
 
         case FILE_PATH:
-            return serveFile(target);
+            return serveFile(client, target);
 
         case DIRECTORY_PATH:
-            return handleDirectory(target, server, location);
+            return handleDirectory(client, target, server, location);
         default:
             return buildErrorResponse(500, "Internal Server Error");
     }

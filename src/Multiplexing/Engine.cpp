@@ -310,6 +310,15 @@ void Multiplexer::_writeClient(int fd)
     if (iter == _clients.end())
         return;
     Response parsed_response =  Dispatcher::dispatch(iter->second, which_server(iter->second.port));
+    // if (parsed_response.isStreaming())
+    // {
+    //     // Team1 logic
+    // }
+    // else
+    // {
+    //     iter->second.response = parsed_response.toString();
+    // }
+    iter->second.response = parsed_response.toString();
     // parse_request();
     // iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";
     // iter->second.parsed_request.getRequestPath();

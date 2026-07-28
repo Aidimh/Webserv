@@ -23,6 +23,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <limits>
 #include <map>
@@ -169,9 +170,14 @@ struct Client
     // size_t bytes_received;
     std::string response;
     int port;
+    int stream_file_fd;
+    off_t stream_bytes_remaining;
+    bool response_prepared;
     // std::string body;
     // size_t end_of_header;
     ClientRequest parsed_request;
+
+    Client() : fd(-1), port(0), stream_file_fd(-1), stream_bytes_remaining(0), response_prepared(false) {}
 };
 
 class AFd

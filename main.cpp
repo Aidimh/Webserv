@@ -1,11 +1,21 @@
-#include "header.hpp"
+#include "Response/Response.hpp"
+#include "Response/Dispatcher.hpp"
+#include "Request/ClientRequest.hpp"
+#include "Request/RequestHelpers.hpp"
+#include "multiplexing/header.hpp"
 #include "Error.hpp"
+#include <iostream>
+#include <unistd.h>
+#include <fcntl.h>
 
-int server_index = 0;
+// #include "header.hpp"
+// #include "Error.hpp"
+
+// int server_index = 0;
 
 
-std::vector<Server_block> Conf_File::Servers;
-std::vector<std::string> Conf_File::tokens;
+// std::vector<Server_block> Conf_File::Servers;
+// std::vector<std::string> Conf_File::tokens;
 
 // int main(int ac, char **av)
 // {
@@ -39,59 +49,59 @@ std::vector<std::string> Conf_File::tokens;
                                 // std::cout << "Request received:\n" << buffer << "\n";
                                 
                                 // IMPORTANT: Send a response so the browser doesn't hang!
-void open_file(std::string filename)
-{
-    std::ifstream file(filename.c_str());
-    if (!file.is_open())
-        throw Error::FileNotFound();
+// void open_file(std::string filename)
+// {
+//     std::ifstream file(filename.c_str());
+//     if (!file.is_open())
+//         throw Error::FileNotFound();
 
-    std::string content((std::istreambuf_iterator<char>(file)),
-                         std::istreambuf_iterator<char>());
-    file.close();
-    size_t i = 0;
-    // std::cout << content << "\n";
-    // exit(1);
+//     std::string content((std::istreambuf_iterator<char>(file)),
+//                          std::istreambuf_iterator<char>());
+//     file.close();
+//     size_t i = 0;
+//     // std::cout << content << "\n";
+//     // exit(1);
 
-    while (i < content.size())
-    {
-        if (isspace(content[i]))
-        {
-            i++;
-            continue;
-        }
-        if (content[i] == '#')
-        {
-            while (i < content.size() && content[i] != '\n')
-                i++;
-            continue;
-        }
-        if (content[i] == '{' || content[i] == '}' || content[i] == ';')
-        {
-            Conf_File::tokens.push_back(std::string(1, content[i]));
-            i++;
-            continue;
-        }
-        std::string word;
-        while (i < content.size()
-                && !isspace(content[i])
-                && content[i] != '{'
-                && content[i] != '}'
-                && content[i] != ';'
-                && content[i] != '#')
-        {
-            word += content[i];
-            i++;
-        }
-        Conf_File::tokens.push_back(word);
-    }
+//     while (i < content.size())
+//     {
+//         if (isspace(content[i]))
+//         {
+//             i++;
+//             continue;
+//         }
+//         if (content[i] == '#')
+//         {
+//             while (i < content.size() && content[i] != '\n')
+//                 i++;
+//             continue;
+//         }
+//         if (content[i] == '{' || content[i] == '}' || content[i] == ';')
+//         {
+//             Conf_File::tokens.push_back(std::string(1, content[i]));
+//             i++;
+//             continue;
+//         }
+//         std::string word;
+//         while (i < content.size()
+//                 && !isspace(content[i])
+//                 && content[i] != '{'
+//                 && content[i] != '}'
+//                 && content[i] != ';'
+//                 && content[i] != '#')
+//         {
+//             word += content[i];
+//             i++;
+//         }
+//         Conf_File::tokens.push_back(word);
+//     }
 
-    if (Conf_File::tokens.empty())
-        throw Error::EmptyConfig();
-}
+//     if (Conf_File::tokens.empty())
+//         throw Error::EmptyConfig();
+// }
 
 
-void Print()
-{
+// void Print()
+// {
     // size_t i = 0;
         // std::cout << Conf_File::Servers[0].error_pages[500] << "\n";
     // while (i < Conf_File::Servers[server_index].error_pages.size())
@@ -156,7 +166,7 @@ void Print()
     // // --- Location_Config block placeholder
     // std::cout << "location:               [Location_Config object loaded]" << std::endl;
     // std::cout << "==========================================" << std::endl;
-}
+// }
 
 // void print()
 // {
@@ -172,47 +182,107 @@ void Print()
 // }
 
 
-
-int main(int ac , char **av, char **envp)  
+int main()
 {
-    signal(SIGINT, handle_sigint);
-    signal(SIGQUIT, handle_sigquit);
-    signal(SIGTSTP, handle_sigstp);
-    try
-    {
-        if (ac != 2)
-            throw Error::Argc();
-        if (!av || av[1][0] == '\0')
-            throw Error::Argv();
-        open_file(av[1]);
-        validate_file();
-        parse_config_file();
-        // std::cout << Conf_File::Servers[0].error_pages[404];
-        // exit(1);
-        // print();
-        // exit(1);
-        // Print();
-        // // Print();
-        // exit(1);
-        size_t i = 0;
-        Multiplexer Mux;
-        while(i < Conf_File::Servers.size())
-        {
-            Socket *s = new Socket();
-            Mux.env = envp;
-            s->setup(Conf_File::Servers[i].listen_port, Conf_File::Servers[i].host);
-            Mux.addServer(s);
-            i++;
-        }
-        Mux.run();
-        // std::cout << "after run\n";
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
+    Client client;
+
+    client.request =
+    "GET /index.html HTTP/1.1\r\n"
+    "Host: localhost\r\n"
+    "\r\n";
+
+    client.parsed_request.parse(client);
+
+    Server_block server;
+
+    // fill server configuration
+
+    Response res =
+        Dispatcher::dispatch(client, server);
+
+    std::cout << res.toString() << std::endl;
+    // Client client;
+
+    // client.parsed_request.setMethod("GET");
+    // client.parsed_request.setRequestPath("/index.html");
+    // client.parsed_request.setVersion("HTTP/1.1");
+
+    // Server_block server;
+
+    // // 3mr server fields li kay7tajhom GET
+
+    // GET get;
+    // Response res = get.execute(client, server);
+
+    // std::cout << res.toString();
+    // Client client;
+
+    // // Fake HTTP request
+    // client.request =
+    //     "GET /index.html HTTP/1.1\r\n"
+    //     "Host: localhost\r\n"
+    //     "\r\n";
+
+    // // Parse request
+    // client.parsed_request.parse(client);
+
+    // // Fake server configuration
+    // Server_block server;
+
+    // server.root = "./www";
+    // server.index_files.push_back("index.html");
+    // server.autoindex = "off";
+
+    // // Dispatch
+    // Response response =
+    //     Dispatcher::dispatch(client, server);
+
+    // std::cout << "========== HTTP RESPONSE ==========\n";
+    // std::cout << response.toString() << std::endl;
+
     return 0;
 }
+
+// int main(int ac , char **av, char **envp)  
+// {
+//     signal(SIGINT, handle_sigint);
+//     signal(SIGQUIT, handle_sigquit);
+//     signal(SIGTSTP, handle_sigstp);
+//     try
+//     {
+//         if (ac != 2)
+//             throw Error::Argc();
+//         if (!av || av[1][0] == '\0')
+//             throw Error::Argv();
+//         open_file(av[1]);
+//         validate_file();
+//         parse_config_file();
+//         // std::cout << Conf_File::Servers[0].error_pages[404];
+//         // exit(1);
+//         // print();
+//         // exit(1);
+//         // Print();
+//         // // Print();
+//         // exit(1);
+//         size_t i = 0;
+//         Multiplexer Mux;
+//         while(i < Conf_File::Servers.size())
+//         {
+//             Socket *s = new Socket();
+//             Mux.env = envp;
+//             s->setup(Conf_File::Servers[i].listen_port, Conf_File::Servers[i].host);
+//             Mux.addServer(s);
+//             i++;
+//         }
+//         Mux.run();
+//         // std::cout << "after run\n";
+//     }
+//     catch(const std::exception& e)
+//     {
+//         std::cerr << e.what() << '\n';
+//     }
+//     return 0;
+// }
 
         // int fd_sock = socket(AF_INET, SOCK_STREAM, 0);
         // if (fd_sock < 0)
@@ -351,7 +421,6 @@ int main(int ac , char **av, char **envp)
     // for (size_t i = 0; i < fds.size(); i++)
     //     close(fds[i].fd);
     // close(fd_sock);
-
 
 
 

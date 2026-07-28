@@ -4,6 +4,7 @@
 #include "Response.hpp"
 #include "HttpRequest.hpp"
 #include "PathType.hpp"
+#include "../multiplexing/header.hpp"
 // #include "MultipartUploadStrategy.hpp"
 
 #include <iostream>
@@ -18,7 +19,7 @@ class AMethod
 {
     public:
         virtual ~AMethod();
-        virtual Response execute(const HttpRequest& request,const Server_block& server,const Location_Config* location) = 0;
+        virtual Response execute(Client& Client, const Server_block& server) = 0;
     protected:
         Response buildErrorResponse(int status,const std::string& message) const;
         std::string resolveTarget(const HttpRequest& request,const Server_block& server,const Location_Config* location) const;

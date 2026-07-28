@@ -38,14 +38,14 @@ Response AMethod::buildErrorResponse(int statusCode, const std::string& message)
 }
 
 
-std::string AMethod::resolveTarget(const HttpRequest& request,const Server_block& server,const Location_Config* location) const
+std::string AMethod::resolveTarget(Client& client, const Server_block& server,const Location_Config* location) const
 {
     std::string root = server.root;
 
     if (location && !location->root.empty())
         root = location->root;
 
-    return root + request.path;
+    return root + client.parsed_request.getRequestPath();
 }
 
 //POST /salah.mp4

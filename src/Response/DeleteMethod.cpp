@@ -25,9 +25,9 @@ Response DeleteMethod::buildNoContentResponse() const
     return response;
 }
 
-Response DeleteMethod::execute(const HttpRequest& request,const Server_block& server,const Location_Config* location)
+Response DeleteMethod::execute(Client& client, const Server_block& server,const Location_Config* location)
 {
-    if (request.path.empty())
+    if (client.parsed_request.getRequestPath().empty())
         return buildErrorResponse(400, "Bad Request");
 
     std::string target = resolveTarget(request, server, location);

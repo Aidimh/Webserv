@@ -147,7 +147,7 @@ Response GET::buildFileResponse(const std::string& body, const std::string& cont
     return response;
 }
 
-Response GET::execute(const HttpRequest& request, const Server_block& server, const Location_Config* location)
+Response GET::execute(Client& Client, const Server_block& server)
 {
     std::string target = resolveTarget(request, server, location);
 

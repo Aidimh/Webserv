@@ -95,14 +95,14 @@ bool POST::isMultipartRequest(const HttpRequest& request) const
     return contentType.find("multipart/") != std::string::npos;
 }
 
-bool POST::isRequestValid(const HttpRequest& request) const
+bool POST::isRequestValid(std::string path) const
 {
-    return !request.path.empty();
+    return !path.empty();
 }
 
-Response POST::execute(const HttpRequest& request,const Server_block& server,const Location_Config* location)
+Response POST::execute(Client& client, const Server_block& server,const Location_Config* location)
 {
-    if (!isRequestValid(request))
+    if (!isRequestValid(client.parsed_request.getRequestPath()))
         return buildErrorResponse(400, "Bad Request");
 
     std::string target = resolveTarget(request, server, location);

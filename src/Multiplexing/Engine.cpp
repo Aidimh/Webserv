@@ -1,6 +1,7 @@
 #include "header.hpp"
-#include "include/request/ClientRequest.hpp"
-#include "include/request/RequestHelpers.hpp"
+#include "../../includes/Request/ClientRequest.hpp"
+#include "../../includes/Request/RequestHelpers.hpp"
+#include "../../includes/Response/Dispatcher.hpp"
 
 bool loop_is_true = true;
 
@@ -291,14 +292,27 @@ Multiplexer::~Multiplexer()
 //     std::string full_path = Conf
 // }
 
+Server_block& which_server(int port)
+{
+    size_t i = 0;
+    while (i < Conf_File::Servers.size())
+    {
+        if (Conf_File::Servers[i].listen_port == port)
+            return Conf_File::Servers[i];
+    }
+    return Conf_File::Servers[0];
+}
+
 void Multiplexer::_writeClient(int fd)
 {
     // char buffer[4096];
     std::map<int, Client>::iterator iter = _clients.find(fd);
     if (iter == _clients.end())
         return;
+    Response parsed_response =  Dispatcher::dispatch(iter->second, which_server(iter->second.port));
     // parse_request();
-    iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";
+    // iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";
+    // iter->second.parsed_request.getRequestPath();
     int n = send(fd, iter->second.response.c_str(), iter->second.response.size(), MSG_NOSIGNAL);
     if (n <= -1)
     {
@@ -407,9 +421,9 @@ void Multiplexer::_readClient(int fd)
         if (iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
         {
             size_t status_code  =  iter->second.parsed_request.getStatusCode();
-            which_status_code(status_code);
+            // which_status_code(status_code);
             
-            _removeClient(fd);
+            enableWrite(fd);
             return;
         }
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
@@ -434,9 +448,11 @@ void Multiplexer::_readClient(int fd)
         if (bytesRead == 0)
         {
             iter->second.parsed_request.state = ClientRequest::DONE;
-            std::cout << "Client Disconnected\n";
-            _removeClient(fd);
+            // std::cout << "Client Disconnected\n";
+            // _removeClient(fd);
+            enableWrite(fd);
+            return;
         }
     }
-    enableWrite(fd);
+    // enableWrite(fd);
 }

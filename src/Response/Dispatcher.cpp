@@ -1,19 +1,20 @@
-#include "Dispatcher.hpp"
+#include "../../includes/Response/Dispatcher.hpp"
 #include "MethodFactory.hpp"
+#include "../../includes/multiplexing/header.hpp"
 
-Response Dispatcher::dispatch(const HttpRequest& request,const Server_block& server,const Location_Config* location)
+Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
-    AMethod* method = MethodFactory::createMethod(request.method);
+    AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());
 
     if (!method)
     {
         Response res;
         res.setStatusCode(501);
-        res.setReasonPhrase("Not Implemented");
+        res.setReasonPhrase("Not Implemented"); 
         return res;
     }
 
-    Response response = method->execute(request, server, location);
+    Response response = method->execute(client, server);
 
     delete method;
 

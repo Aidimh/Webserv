@@ -1,4 +1,7 @@
 #include "Multiplexing/Client.hpp"
+#include "../../header.hpp"
+
+
 
 ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0){}
 
@@ -59,6 +62,26 @@ void ClientRequest::CleanUri()
     request_path = cleanUri;
 }
 
+size_t  ClientRequest::getServerMaxBodySize(Client& client)
+{
+    size_t i = 0;
+    for (i = 0; i < Conf_File::Servers.size(); i++)
+    {
+        if (Conf_File::Servers[i].listen_port == client.port)
+            break;
+    }
+    if (i == Conf_File::Servers.size() || !Conf_File::Servers[i].client_max_body_found)
+        return(1048576);
+    size_t founded = Conf_File::Servers[i].max_body_size;
+
+    if (Conf_File::Servers[i].body_size_is_MB)
+        founded *= (1024 * 1024);
+    else if (Conf_File::Servers[i].body_size_is_KB)
+        founded *= 1024;
+    return (founded);
+}
+
+
 bool ClientRequest::RequestLineValidate(void)
 {
     if (method != "GET" && method != "POST" && method != "DELETE")
@@ -68,6 +91,14 @@ bool ClientRequest::RequestLineValidate(void)
         return (false);
     }
 
+    if (request_path.find("http://") == 0)
+    {
+        size_t path_start = request_path.find('/', 7);
+        if (path_start != std::string::npos)
+            request_path = request_path.substr(path_start);
+        else
+            request_path = "/";
+    }
     if (request_path.empty() || request_path[0] != '/')
     {
         status_code = 400;
@@ -98,43 +129,41 @@ void ClientRequest::RequestLineParser(std::string line)
 {
     if (line.empty() || !ValidLine(line))
         return;
-    size_t start;
-    size_t end;
-    end = line.find(' ');
-    if (end == std::string::npos)
-    {
-        this->status_code = 400;
-        this->state = ERROR_STATE;
-        return;
-    }
-    this->method = line.substr(0, end);
+    
+    size_t  first_space;
+    size_t  second_space;
 
-    start = line.find_first_not_of(' ', end);
-    end = line.find(' ', start);
-    if (start == std::string::npos || end == std::string::npos)
+    first_space = line.find(" ");
+    if (first_space == std::string::npos)
     {
         status_code = 400;
         state = ERROR_STATE;
         return;
     }
-    this->request_path = line.substr(start, end - start);
-
-    start = line.find_first_not_of(' ', end);
-    if (start == std::string::npos)
+    second_space = line.find(" ", first_space + 1);
+    if (second_space == std::string::npos || second_space == first_space + 1)
     {
-        this->status_code = 400;
-        this->state = ERROR_STATE;
+        status_code = 400;
+        state = ERROR_STATE;
         return;
     }
+    method = line.substr(0, first_space);
+    request_path = line.substr(first_space + 1, second_space - first_space -1);
+
+    size_t  end;
     end = line.find_last_not_of(" \r\n");
-    if (end != std::string::npos && end >= start)
-        this->version = line.substr(start, end - start + 1);
-    
+    if (end == std::string::npos || end < second_space)
+    {
+        status_code = 400;
+        state = ERROR_STATE;
+        return;
+    }
+    version = line.substr(second_space + 1, end - second_space);
     if (!RequestLineValidate())
-        return; 
+        return;
     CleanUri();
-    
 }
+
 std::string	ClientRequest::RemoveFirstLastSpaces(std::string& line)
 {
     size_t  begin;
@@ -156,7 +185,9 @@ void ClientRequest::HeadersParser(std::string headers)
     endLine = headers.find("\r\n");
     RequestLine = headers.substr(0, endLine);
     RequestLineParser(RemoveFirstLastSpaces(RequestLine));
-
+    if (state == ERROR_STATE)
+        return;
+    
     size_t  start;
     size_t  end;
 
@@ -174,14 +205,39 @@ void ClientRequest::HeadersParser(std::string headers)
         
         if (colon != std::string::npos)
         {
+            if (colon > 0 && header[colon -1] == ' ')
+            {
+                status_code     = 400;
+                state           = ERROR_STATE;
+                return;
+            }
             std::string key     = header.substr(0, colon);
             std::string value   = header.substr(colon + 1);
             MyToLower(key);
-            this->headers[RemoveFirstLastSpaces(key)] = RemoveFirstLastSpaces(value);
+            key = RemoveFirstLastSpaces(key);
+            if (key == "content-length" && this->headers.find(key) != this->headers.end())
+            {
+                status_code = 400;
+                state = ERROR_STATE;
+                return;
+            }
+            value = RemoveFirstLastSpaces(value);
+            this->headers[key] = value;
+        }
+        else
+        {
+            status_code = 400;
+            state = ERROR_STATE;
+            return;
         }
         start = end + 2;
     }
-    
+    if (this->headers.find("host") == this->headers.end())
+    {
+        status_code = 400;
+        state = ERROR_STATE;
+        return;
+    }  
 }
 
 bool ClientRequest::CheckTransferEncoding(void)
@@ -189,7 +245,17 @@ bool ClientRequest::CheckTransferEncoding(void)
     std::map<std::string, std::string>::iterator it;
 
     it = headers.find("transfer-encoding");
-    return (it != headers.end() && !it->second.empty());
+    if (it != headers.end() && !it->second.empty())
+    {
+        if (it->second.find("chunked") == std::string::npos)
+        {
+            status_code = 501;
+            state = ERROR_STATE;
+            return false;
+        }
+        return (true);
+    }
+    return (false);
 }
 
 bool ClientRequest::CheckContentLength(void)
@@ -236,6 +302,13 @@ void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
         return;
+    if (client.request.find('\0') != std::string::npos)
+    {
+        status_code = 400;
+        state = ERROR_STATE;
+        return;
+    }
+
     if (client.parsed_request.state == HEADERS)
     {
         
@@ -260,19 +333,22 @@ void ClientRequest::parse(Client& client)
             
             headers = client.request.substr(0, check + 2);
             HeadersParser(headers);
-            if ((this->state == ERROR_STATE))
+            if (this->state == ERROR_STATE)
                 return;
             state = BODY;
             extra = client.request.substr(check + 4);
             client.request.clear();
 
-            if(CheckTransferEncoding() && CheckContentLength())
+            bool is_chunked = CheckTransferEncoding();
+            if(is_chunked && CheckContentLength())
             {
                 status_code = 400;
                 state = ERROR_STATE;
                 return;
             }
-            else if (CheckTransferEncoding())
+            if (state == ERROR_STATE)
+                return;
+            else if (is_chunked)
                 chunks.append(extra);
             else
             {
@@ -288,14 +364,15 @@ void ClientRequest::parse(Client& client)
                     BodySize    +=  extra.length();
                 }
             }
-            #define max_body_size 9999999999 // itodo:  need to take the maxbodysize from my peer 
+            size_t max_body_size = getServerMaxBodySize(client); 
+            
             if(getContentLength() > max_body_size)
             {
                 status_code = 413;
                 state = ERROR_STATE;
                 return;
             }
-            if (!CheckTransferEncoding() && BodySize >= getContentLength())
+            if (!is_chunked && BodySize >= getContentLength())
             {
                 state = DONE;
                 return;

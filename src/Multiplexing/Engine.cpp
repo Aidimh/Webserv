@@ -420,9 +420,6 @@ void Multiplexer::_readClient(int fd)
     {
         if (iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
         {
-            size_t status_code  =  iter->second.parsed_request.getStatusCode();
-            // which_status_code(status_code);
-            
             enableWrite(fd);
             return;
         }

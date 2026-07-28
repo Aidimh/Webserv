@@ -4,7 +4,6 @@
 #include "AMethod.hpp"
 #include "Response.hpp"
 #include "PathType.hpp"
-#include "HttpRequest.hpp"
 
 
 #include <dirent.h> // open directory
@@ -41,8 +40,7 @@ class GET : public AMethod
         GET();
         virtual ~GET();
 
-        virtual Response execute(const HttpRequest& request,const Server_block& server,const Location_Config* location);
-        // virtual Response execute(const HttpRequest& request);
+        virtual Response execute(Client& client, const Server_block& server);
 };
 
 

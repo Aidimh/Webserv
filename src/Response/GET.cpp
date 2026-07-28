@@ -147,9 +147,10 @@ Response GET::buildFileResponse(const std::string& body, const std::string& cont
     return response;
 }
 
-Response GET::execute(Client& Client, const Server_block& server)
+Response GET::execute(Client& client, const Server_block& server)
 {
-    std::string target = resolveTarget(request, server, location);
+    const Location_Config* location = resolveLocation(client, server);
+    std::string target = resolveTarget(client, server, location);
 
     if (target.empty())
         return buildErrorResponse(400, "Bad Request");

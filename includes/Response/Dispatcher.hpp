@@ -3,6 +3,7 @@
 
 #include "MethodFactory.hpp"
 #include "../multiplexing/header.hpp"
+#include "../Request/ClientRequest.hpp"
 
 class Dispatcher
 {

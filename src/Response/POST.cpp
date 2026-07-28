@@ -61,20 +61,20 @@ bool POST::validateParentDirectory(const std::string& target) const
     return (getPathType(parent) == DIRECTORY_PATH);
 }
 
-Response POST::handleRegularRequest(const HttpRequest& request,const std::string& target)
+Response POST::handleRegularRequest(const Client& client, const std::string& target)
 {
     if (!validateParentDirectory(target))
         return buildErrorResponse(404, "Not Found");
     if (!canWrite(target))
         return buildErrorResponse(403, "Forbidden");
 
-    if (!saveBody(target, request.body))
+    if (!saveBody(target, client.parsed_request.getBody()))
         return buildErrorResponse(500, "Internal Server Error");
 
     return buildCreatedResponse(200, "Ok");
 }
 
-Response POST::handleMultipartRequest(const HttpRequest& request,const std::string& target)
+Response POST::handleMultipartRequest(const Client& client, const std::string& target)
 {
     if (getPathType(target) != DIRECTORY_PATH)
         return buildErrorResponse(400, "Upload target must be a directory");
@@ -82,34 +82,37 @@ Response POST::handleMultipartRequest(const HttpRequest& request,const std::stri
     if (!canWrite(target))
         return buildErrorResponse(403, "Forbidden");
 
-    return multiPart.handleMultipartUpload(request, target);
+    return multiPart.handleMultipartUpload(client.parsed_request, target);
 }
 
-bool POST::isMultipartRequest(const HttpRequest& request) const
+bool POST::isMultipartRequest(const Client& client) const
 {
-    if (request.headers.find("content-type") == request.headers.end())
+    const std::map<std::string, std::string>& headers = client.parsed_request.getHeaders();
+    std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
+
+    if (it == headers.end())
         return false;
 
-    std::string contentType = request.headers.at("content-type");
+    const std::string& contentType = it->second;
 
     return contentType.find("multipart/") != std::string::npos;
 }
 
-bool POST::isRequestValid(std::string path) const
+bool POST::isRequestValid(const Client& client) const
 {
-    return !path.empty();
+    return !client.parsed_request.getRequestPath().empty();
 }
 
-Response POST::execute(Client& client, const Server_block& server,const Location_Config* location)
+Response POST::execute(Client& client, const Server_block& server)
 {
-    if (!isRequestValid(client.parsed_request.getRequestPath()))
+    if (!isRequestValid(client))
         return buildErrorResponse(400, "Bad Request");
 
-    std::string target = resolveTarget(request, server, location);
+    const Location_Config* location = resolveLocation(client, server);
+    std::string target = resolveTarget(client, server, location);
 
-    if (isMultipartRequest(request))
-        return handleMultipartRequest(request, target);
+    if (isMultipartRequest(client))
+        return handleMultipartRequest(client, target);
 
-    // std::cout<<"Target : "<< target<<std::endl;
-    return handleRegularRequest(request, target);
+    return handleRegularRequest(client, target);
 }

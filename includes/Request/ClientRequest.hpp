@@ -49,6 +49,7 @@ class ClientRequest
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
 
+		size_t										getServerMaxBodySize(Client& client);
 
 
 		const std::string&							getMethod() const;

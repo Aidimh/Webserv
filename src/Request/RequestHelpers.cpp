@@ -1,5 +1,5 @@
 #include "../../header.hpp"
-#include "../../include/request/ClientRequest.hpp"
+#include "../../include/Request/ClientRequest.hpp"
 
 bool ValidLine(std::string line)
 {

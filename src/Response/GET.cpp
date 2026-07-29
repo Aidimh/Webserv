@@ -4,16 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifndef GET_STREAMING_THRESHOLD
-# define GET_STREAMING_THRESHOLD (8 * 1024 * 1024)
-#endif
-
-namespace
-{
-    const off_t STREAMING_THRESHOLD = static_cast<off_t>(GET_STREAMING_THRESHOLD);
-}
-
-bool isStreaming() const;
+const off_t STREAMING_THRESHOLD = 8 * 1024 * 1024;
 
 GET::GET()
 {
@@ -87,7 +78,9 @@ Response GET::serveFile(Client& client, const std::string& path) const
 
         client.stream_file_fd = streamFd;
         client.stream_bytes_remaining = fileInfo.st_size;
-        return buildStreamingFileResponse(fileInfo.st_size, type);
+        Response response = buildStreamingFileResponse(fileInfo.st_size, type);
+        response.setResponseMode(Response::STREAMING_RESPONSE);
+        return response;
     }
 
     bool success = false;

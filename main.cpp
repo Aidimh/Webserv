@@ -182,66 +182,66 @@
 // }
 
 
-int main()
-{
-    Client client;
+// int main()
+// {
+//     Client client;
 
-    client.request =
-    "GET /index.html HTTP/1.1\r\n"
-    "Host: localhost\r\n"
-    "\r\n";
+//     client.request =
+//     "GET /index.html HTTP/1.1\r\n"
+//     "Host: localhost\r\n"
+//     "\r\n";
 
-    client.parsed_request.parse(client);
+//     client.parsed_request.parse(client);
 
-    Server_block server;
+//     Server_block server;
 
-    // fill server configuration
+//     // fill server configuration
 
-    Response res =
-        Dispatcher::dispatch(client, server);
+//     Response res =
+//         Dispatcher::dispatch(client, server);
 
-    std::cout << res.toString() << std::endl;
-    // Client client;
+//     std::cout << res.toString() << std::endl;
+//     // Client client;
 
-    // client.parsed_request.setMethod("GET");
-    // client.parsed_request.setRequestPath("/index.html");
-    // client.parsed_request.setVersion("HTTP/1.1");
+//     // client.parsed_request.setMethod("GET");
+//     // client.parsed_request.setRequestPath("/index.html");
+//     // client.parsed_request.setVersion("HTTP/1.1");
 
-    // Server_block server;
+//     // Server_block server;
 
-    // // 3mr server fields li kay7tajhom GET
+//     // // 3mr server fields li kay7tajhom GET
 
-    // GET get;
-    // Response res = get.execute(client, server);
+//     // GET get;
+//     // Response res = get.execute(client, server);
 
-    // std::cout << res.toString();
-    // Client client;
+//     // std::cout << res.toString();
+//     // Client client;
 
-    // // Fake HTTP request
-    // client.request =
-    //     "GET /index.html HTTP/1.1\r\n"
-    //     "Host: localhost\r\n"
-    //     "\r\n";
+//     // // Fake HTTP request
+//     // client.request =
+//     //     "GET /index.html HTTP/1.1\r\n"
+//     //     "Host: localhost\r\n"
+//     //     "\r\n";
 
-    // // Parse request
-    // client.parsed_request.parse(client);
+//     // // Parse request
+//     // client.parsed_request.parse(client);
 
-    // // Fake server configuration
-    // Server_block server;
+//     // // Fake server configuration
+//     // Server_block server;
 
-    // server.root = "./www";
-    // server.index_files.push_back("index.html");
-    // server.autoindex = "off";
+//     // server.root = "./www";
+//     // server.index_files.push_back("index.html");
+//     // server.autoindex = "off";
 
-    // // Dispatch
-    // Response response =
-    //     Dispatcher::dispatch(client, server);
+//     // // Dispatch
+//     // Response response =
+//     //     Dispatcher::dispatch(client, server);
 
-    // std::cout << "========== HTTP RESPONSE ==========\n";
-    // std::cout << response.toString() << std::endl;
+//     // std::cout << "========== HTTP RESPONSE ==========\n";
+//     // std::cout << response.toString() << std::endl;
 
-    return 0;
-}
+//     return 0;
+// }
 
 // int main(int ac , char **av, char **envp)  
 // {

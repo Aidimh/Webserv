@@ -7,16 +7,25 @@
 
 class Response
 {
+    public:
+        enum ResponseMode
+        {
+            NORMAL_RESPONSE,
+            STREAMING_RESPONSE
+        };
+
     private:
         int statusCode;
         std::string reasonPhrase;
         std::map<std::string, std::string> headers;
         std::string body;
+        ResponseMode _mode;
 
     public:
 
         Response();
         ~Response();
+        
 
         // void    Response::MethodFactory();
         std::string toString() const;
@@ -28,6 +37,9 @@ class Response
         const std::map<std::string,std::string>& getHeaders() const;
         void setBody(const std::string& content);
         const std::string& getBody() const;
+        void setResponseMode(ResponseMode mode);
+        ResponseMode getResponseMode() const;
+        bool isStreaming() const;
 };
 
 #endif

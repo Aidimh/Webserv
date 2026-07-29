@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
 Response::Response()
-    : statusCode(0), reasonPhrase(""), body("")
+    : statusCode(0), reasonPhrase(""), body(""), _mode(NORMAL_RESPONSE)
 {
 }
 
@@ -52,6 +52,21 @@ void Response::setBody(const std::string& content)
 const std::string& Response::getBody() const
 {
     return body;
+}
+
+void Response::setResponseMode(ResponseMode mode)
+{
+    _mode = mode;
+}
+
+Response::ResponseMode Response::getResponseMode() const
+{
+    return _mode;
+}
+
+bool Response::isStreaming() const
+{
+    return _mode == STREAMING_RESPONSE;
 }
 
 std::string Response::toString() const

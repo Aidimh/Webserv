@@ -170,8 +170,8 @@ struct Client
     // size_t bytes_received;
     std::string response;
     int port;
-    int stream_file_fd;
-    off_t stream_bytes_remaining;
+    int stream_file_fd; // call serveFile 
+    off_t stream_bytes_remaining; // call serveFile 
     bool response_prepared;
     // std::string body;
     // size_t end_of_header;

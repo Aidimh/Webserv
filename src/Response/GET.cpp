@@ -193,12 +193,12 @@ Response GET::execute(Client& client, const Server_block& server)
         return buildErrorResponse(400, "Bad Request");
     switch (getPathType(target))
     {
+        case PERMISSION_DENIED:
+            return buildErrorResponse(403,"Forbidden");
         case NOT_FOUND:
             return buildErrorResponse(404, "Not Found");
-
         case FILE_PATH:
             return serveFile(client, target);
-
         case DIRECTORY_PATH:
             return handleDirectory(client, target, server, location);
         default:

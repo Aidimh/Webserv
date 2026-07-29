@@ -33,7 +33,6 @@ Response POST::buildCreatedResponse(int statusCode, const std::string& reasonPhr
     response.setReasonPhrase(reasonPhrase);
 
     response.setBody("");
-    response.addHeader("Content-Length", "0");
     response.addHeader("content-type", "text/plain");
 
     return response;

@@ -262,7 +262,7 @@ void ClientRequest::parse(Client& client)
             
             headers = client.request.substr(0, check + 2);
             HeadersParser(headers);
-            if ((this->state == ERROR_STATE))
+            if (this->state == ERROR_STATE)
                 return;
             state = BODY;
             extra = client.request.substr(check + 4);

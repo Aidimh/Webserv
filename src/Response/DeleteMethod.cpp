@@ -21,7 +21,6 @@ Response DeleteMethod::buildNoContentResponse() const
     response.setStatusCode(204);
     response.setReasonPhrase("No Content");
     response.setBody("");
-    response.addHeader("Content-Length","0");
     return response;
 }
 

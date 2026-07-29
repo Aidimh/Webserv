@@ -305,7 +305,7 @@ Server_block& which_server(int port)
 
 void Multiplexer::_writeClient(int fd)
 {
-    // char buffer[4096];
+    char buffer[4096];
     std::map<int, Client>::iterator iter = _clients.find(fd);
     if (iter == _clients.end())
         return;
@@ -313,10 +313,11 @@ void Multiplexer::_writeClient(int fd)
     iter->second.response = parsed_response.toString();
     if (parsed_response.isStreaming())
     {
-        read(iter->second.stream_file_fd,...);
-        send(iter->second.fd,...);
-        ...
-        close(...)
+        read(iter->second.stream_file_fd, buffer, sizeof(buffer));
+        send(iter->second.fd, buffer, sizeof(buffer), MSG_NOSIGNAL);
+        close(iter->second.stream_file_fd);
+        iter->second.stream_file_fd = -1;
+        iter->second.stream_bytes_remaining = 0;
     }
     // parse_request();
     // iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";

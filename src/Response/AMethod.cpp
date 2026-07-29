@@ -5,7 +5,7 @@ AMethod::~AMethod()
 {
 }
 
-Response AMethod::buildErrorResponse(int statusCode, const std::string& message) const
+Response AMethod::buildErrorResponse(int statusCode, const std::string& message)
 {
     Response response;
 
@@ -28,27 +28,25 @@ Response AMethod::buildErrorResponse(int statusCode, const std::string& message)
 
     response.setBody(body);
     response.addHeader("content-type", "text/html");
-
-    std::ostringstream oss;
-    oss << body.size();
-
-    response.addHeader("Content-Length", oss.str());
-
     return response;
 }
-
 
 const Location_Config* AMethod::resolveLocation(const Client& client, const Server_block& server) const
 {
     const Location_Config* match = NULL;
     size_t longestMatch = 0;
+
     const std::string& requestPath = client.parsed_request.getRequestPath();
 
     for (size_t i = 0; i < server.location.size(); ++i)
     {
         const std::string& locationPath = server.location[i].path;
 
-        if (requestPath.find(locationPath) == 0 && locationPath.size() > longestMatch)
+        if (requestPath.compare(0, locationPath.size(), locationPath) != 0)
+            continue;
+        else if (requestPath.size() != locationPath.size() && requestPath[locationPath.size()] != '/')
+            continue;
+        else if (locationPath.size() > longestMatch)
         {
             match = &server.location[i];
             longestMatch = locationPath.size();
@@ -56,6 +54,7 @@ const Location_Config* AMethod::resolveLocation(const Client& client, const Serv
     }
     return match;
 }
+
 
 std::string AMethod::resolveTarget(const Client& client, const Server_block& server, const Location_Config* location) const
 {
@@ -75,7 +74,9 @@ PathType AMethod::getPathType(const std::string& path) const
     
     if (fileExists(path))
     {
-        if (isDirectory(path))
+        if(access(path.c_str(), R_OK) != 0)
+            return PERMISSION_DENIED;
+        else if (isDirectory(path))
             return DIRECTORY_PATH;
         else
             return FILE_PATH;

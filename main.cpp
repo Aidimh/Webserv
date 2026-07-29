@@ -8,6 +8,44 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// #include "Response.hpp"
+
+#include <iostream>
+
+int main()
+{
+    Response normalResponse;
+    normalResponse.setStatusCode(200);
+    normalResponse.setReasonPhrase("OK");
+    normalResponse.setBody("Small hardcoded GET response");
+
+    std::cout << "Normal response:" << std::endl;
+    std::cout << "  isStreaming = " << normalResponse.isStreaming() << std::endl;
+    std::cout << "  mode = " << normalResponse.getResponseMode() << std::endl;
+
+    Response streamingResponse;
+    streamingResponse.setStatusCode(200);
+    streamingResponse.setReasonPhrase("OK");
+    streamingResponse.setResponseMode(Response::STREAMING_RESPONSE);
+
+    std::cout << "Streaming response:" << std::endl;
+    std::cout << "  isStreaming = " << streamingResponse.isStreaming() << std::endl;
+    std::cout << "  mode = " << streamingResponse.getResponseMode() << std::endl;
+
+    if (!normalResponse.isStreaming()
+        && normalResponse.getResponseMode() == Response::NORMAL_RESPONSE
+        && streamingResponse.isStreaming()
+        && streamingResponse.getResponseMode() == Response::STREAMING_RESPONSE)
+    {
+        std::cout << "PASS: Response mode methods work." << std::endl;
+        return 0;
+    }
+
+    std::cout << "FAIL: Response mode methods do not work." << std::endl;
+    return 1;
+}
+
+
 // #include "header.hpp"
 // #include "Error.hpp"
 

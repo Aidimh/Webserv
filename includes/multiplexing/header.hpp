@@ -77,6 +77,7 @@ enum HttpStatus
         // 5xx Server Errors
         HTTP_500_INTERNAL_SERVER_ERROR  = 500,
         HTTP_502_BAD_GATEWAY            = 502,
+        HTTP_501_NOT_IMPLEMENTED        = 501,
         HTTP_504_GATEWAY_TIMEOUT        = 504,
         HTTP_505_HTTP_VERSION_NOT_SUPPORTED = 505
 };

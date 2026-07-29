@@ -16,8 +16,9 @@ class AMethod
     public:
         virtual ~AMethod();
         virtual Response execute(Client& client, const Server_block& server) = 0;
-        static Response buildErrorResponse(int status,const std::string& message);
+        static Response buildErrorResponse(short status,const std::string& message);
     protected:
+        std::string normalizePath(const std::string& path);
         const Location_Config* resolveLocation(const Client& client, const Server_block& server) const;
         std::string resolveTarget(const Client& client, const Server_block& server, const Location_Config* location) const;
         PathType getPathType(const std::string& path) const;

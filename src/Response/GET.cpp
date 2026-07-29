@@ -187,20 +187,26 @@ Response GET::buildStreamingFileResponse(off_t fileSize, const std::string& cont
 Response GET::execute(Client& client, const Server_block& server)
 {
     const Location_Config* location = resolveLocation(client, server);
+
     std::string target = resolveTarget(client, server, location);
 
     if (target.empty())
-        return buildErrorResponse(400, "Bad Request");
+        return buildErrorResponse(403, "Forbidden");
+
     switch (getPathType(target))
     {
         case PERMISSION_DENIED:
-            return buildErrorResponse(403,"Forbidden");
+            return buildErrorResponse(403, "Forbidden");
+
         case NOT_FOUND:
             return buildErrorResponse(404, "Not Found");
+
         case FILE_PATH:
             return serveFile(client, target);
+
         case DIRECTORY_PATH:
             return handleDirectory(client, target, server, location);
+
         default:
             return buildErrorResponse(500, "Internal Server Error");
     }

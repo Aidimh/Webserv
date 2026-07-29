@@ -5,7 +5,7 @@ AMethod::~AMethod()
 {
 }
 
-Response AMethod::buildErrorResponse(int statusCode, const std::string& message)
+Response AMethod::buildErrorResponse(short statusCode, const std::string& message)
 {
     Response response;
 
@@ -55,19 +55,90 @@ const Location_Config* AMethod::resolveLocation(const Client& client, const Serv
     return match;
 }
 
-
-std::string AMethod::resolveTarget(const Client& client, const Server_block& server, const Location_Config* location) const
+std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds)
 {
-    std::string root = server.root;
+    std::vector<std::string> stack;
+    outOfBounds = false;
 
-    if (location && !location->root.empty())
-        root = location->root;
+    size_t i = 0;
 
-    return root + client.parsed_request.getRequestPath();
+    while (i < path.size())
+    {
+        while (i < path.size() && path[i] == '/')
+            ++i;
+
+        if (i >= path.size())
+            break;
+
+        size_t start = i;
+
+        while (i < path.size() && path[i] != '/')
+            ++i;
+
+        std::string segment = path.substr(start, i - start);
+
+        if (segment == "." || segment.empty())
+            continue;
+
+        if (segment == "..")
+        {
+            if (stack.empty())
+            {
+                outOfBounds = true;
+                return "";
+            }
+            stack.pop_back();
+        }
+        else
+        {
+            stack.push_back(segment);
+        }
+    }
+
+    std::string result;
+
+    for (size_t j = 0; j < stack.size(); ++j)
+        result += "/" + stack[j];
+
+    if (result.empty())
+        result = "/";
+
+    return result;
 }
 
-//POST /salah.mp4
-//Path =  /home/moel-aid/Desktop/Webserv/multiplexing/salah
+std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
+{
+    const std::string& requestPath = client.parsed_request.getRequestPath();
+
+    std::string root = server.root;
+    std::string locationPath;
+
+    if (location)
+    {
+        if (!location->root.empty())
+            root = location->root;
+        locationPath = location->path;
+    }
+
+    // Defensive programming
+    if (requestPath.size() < locationPath.size())
+        return "";
+
+    // Remove trailing '/' from root (except "/")
+    if (root.size() > 1 && root[root.size() - 1] == '/')
+        root.erase(root.size() - 1);
+
+    std::string relativePath = requestPath.substr(locationPath.size());
+
+    bool outOfBounds = false;
+    std::string normalizedRelative = normalizePath("/" + relativePath, outOfBounds);
+
+    if (outOfBounds)
+        return "";
+
+    return root + normalizedRelative;
+}
+
 
 PathType AMethod::getPathType(const std::string& path) const
 {

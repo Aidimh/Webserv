@@ -34,6 +34,9 @@ static std::string statusMessage(short code)
             return "Payload Too Large";
 
         // status code to implement : 431 
+        case HTTP_431_Request_Header_Fields_Too_Large:
+            return "Request Header Fields Too Large";
+        
         case HTTP_414_URI_TOO_LONG:
             return "URI Too Long";
 

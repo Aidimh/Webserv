@@ -75,6 +75,7 @@ enum HttpStatus
         HTTP_415_UNSUPPORTED_MEDIA      = 415,
 
         // 5xx Server Errors
+        HTTP_431_Request_Header_Fields_Too_Large = 431,
         HTTP_500_INTERNAL_SERVER_ERROR  = 500,
         HTTP_502_BAD_GATEWAY            = 502,
         HTTP_501_NOT_IMPLEMENTED        = 501,

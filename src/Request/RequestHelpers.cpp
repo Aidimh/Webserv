@@ -1,5 +1,5 @@
-#include "../../header.hpp"
-#include "../../include/Request/ClientRequest.hpp"
+#include "../../includes/multiplexing/header.hpp"
+#include "../../includes/Request/ClientRequest.hpp"
 
 bool ValidLine(std::string line)
 {
@@ -31,4 +31,17 @@ void MyToLower(std::string &str)
         str[i] = ::tolower(str[i]);
         i++;
     }
+}
+
+std::string	RemoveFirstLastSpaces(std::string& line)
+{
+    size_t  begin;
+    size_t  finish;
+
+    begin = line.find_first_not_of(" \n\r\t");
+    finish = line.find_last_not_of(" \n\r\t");
+
+    if (begin == std::string::npos)
+        return ("");
+    return (line.substr(begin, finish - begin + 1));
 }

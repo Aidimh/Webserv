@@ -55,7 +55,7 @@ const Location_Config* AMethod::resolveLocation(const Client& client, const Serv
     return match;
 }
 
-std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds)
+std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) const
 {
     std::vector<std::string> stack;
     outOfBounds = false;

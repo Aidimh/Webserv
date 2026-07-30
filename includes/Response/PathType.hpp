@@ -6,7 +6,8 @@ enum PathType
 {
     NOT_FOUND,
     FILE_PATH,
-    DIRECTORY_PATH
+    DIRECTORY_PATH,
+    PERMISSION_DENIED
 };
 
 #endif

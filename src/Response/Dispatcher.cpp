@@ -88,6 +88,7 @@ static std::string statusMessage(short code)
             return "Unknown Error";
     }
 }
+
 Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
     // 1. Parser already found an error
@@ -97,6 +98,24 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(response);
         return response;
     }
+
+    // 2. Routing: lqa location qbel ma n-executiw chi method.
+    const Location_Config* location = Router::resolveLocation(client.parsed_request.getRequestPath(), server);
+    if (!location)
+    {
+        Response response = AMethod::buildErrorResponse(HTTP_404_NOT_FOUND, "Not Found");
+        setErrorPageBody(response);
+        return response;
+    }
+
+    // 3. Had method khas-ha tkoun mssmou7a f location li lqinah.
+    if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location))
+    {
+        Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
+        setErrorPageBody(response);
+        return response;
+    }
+
     //. Normal request
     AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());
     if (!method)

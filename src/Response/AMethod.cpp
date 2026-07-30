@@ -33,26 +33,7 @@ Response AMethod::buildErrorResponse(short statusCode, const std::string& messag
 
 const Location_Config* AMethod::resolveLocation(const Client& client, const Server_block& server) const
 {
-    const Location_Config* match = NULL;
-    size_t longestMatch = 0;
-
-    const std::string& requestPath = client.parsed_request.getRequestPath();
-
-    for (size_t i = 0; i < server.location.size(); ++i)
-    {
-        const std::string& locationPath = server.location[i].path;
-
-        if (requestPath.compare(0, locationPath.size(), locationPath) != 0)
-            continue;
-        else if (requestPath.size() != locationPath.size() && requestPath[locationPath.size()] != '/')
-            continue;
-        else if (locationPath.size() > longestMatch)
-        {
-            match = &server.location[i];
-            longestMatch = locationPath.size();
-        }
-    }
-    return match;
+    return Router::resolveLocation(client.parsed_request.getRequestPath(), server);
 }
 
 std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) const

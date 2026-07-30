@@ -23,6 +23,7 @@ SRCS = \
 	src/Multiplexing/Error_messages.cpp \
 	src/Request/ClientRequest.cpp \
 	src/Request/RequestHelpers.cpp \
+	src/Routing/Router.cpp \
 	src/Response/AMethod.cpp \
 	src/Response/BuffersStrategy.cpp \
 	src/Response/DeleteMethod.cpp \

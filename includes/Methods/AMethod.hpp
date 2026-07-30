@@ -3,6 +3,7 @@
 
 #include "Response.hpp"
 #include "../Response/PathType.hpp"
+#include "../Routing/Router.hpp"
 #include "../multiplexing/header.hpp"
 
 #include <iostream>

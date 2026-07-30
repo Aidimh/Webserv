@@ -6,7 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-
+#include <sys/stat.h>
 
 struct PartHeaders
 {
@@ -20,9 +20,7 @@ struct MultipartParsingContext
     const ClientRequest& request;
     const std::string& delimiter;
     size_t             nextSearchPosition;
-
-    MultipartParsingContext(const ClientRequest& req, const std::string& delim, size_t startPosition)
-        : request(req), delimiter(delim), nextSearchPosition(startPosition) {}
+    MultipartParsingContext(const ClientRequest& req, const std::string& delim, size_t startPosition): request(req), delimiter(delim), nextSearchPosition(startPosition) {}
 };
 
 class MultipartUploadStrategy

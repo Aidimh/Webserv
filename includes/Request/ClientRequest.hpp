@@ -16,6 +16,11 @@ struct Client;
 class ClientRequest
 {
 	public:
+		void setMethod(const std::string& value);
+		void setRequestPath(const std::string& value);
+		void setBody(const std::string& value);
+		void setVersion(const std::string& value);
+		void addHeader(const std::string& key, const std::string& value);
     	ClientRequest();
     	ClientRequest(const ClientRequest &other);
     	ClientRequest& operator=(const ClientRequest& other);

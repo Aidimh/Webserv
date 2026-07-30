@@ -186,13 +186,18 @@ Response GET::buildStreamingFileResponse(off_t fileSize, const std::string& cont
 
 Response GET::execute(Client& client, const Server_block& server)
 {
+    
     const Location_Config* location = resolveLocation(client, server);
 
     std::string target = resolveTarget(client, server, location);
-
+    
+    std::cout << "Request Path : " << client.parsed_request.getRequestPath() << std::endl;
+    std::cout << "Server Root  : " << server.root << std::endl;
+    if (location)
+        std::cout << "Location Root: " << location->root << std::endl;
+    std::cout << "Resolved Target : " << target << std::endl;
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
-
     switch (getPathType(target))
     {
         case PERMISSION_DENIED:

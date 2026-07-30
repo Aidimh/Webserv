@@ -2,6 +2,7 @@
 
 AMethod* MethodFactory::createMethod(const std::string& method)
 {
+    // if(allowed_methods)
     if (method == "GET")
         return new GET();
 

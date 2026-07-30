@@ -31,7 +31,31 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 ClientRequest::~ClientRequest(){}
 
 
+void ClientRequest::setMethod(const std::string& value)
+{
+    method = value;
+}
 
+void ClientRequest::setRequestPath(const std::string& value)
+{
+    request_path = value;
+}
+
+void ClientRequest::setBody(const std::string& value)
+{
+    body = value;
+}
+
+void ClientRequest::setVersion(const std::string& value)
+{
+    version = value;
+}
+
+void ClientRequest::addHeader(const std::string& key,
+                              const std::string& value)
+{
+    headers[key] = value;
+}
 
 const std::string& ClientRequest::getMethod() const {return method;}
 const std::string& ClientRequest::getRequestPath() const {return request_path;}

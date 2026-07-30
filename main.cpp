@@ -1,58 +1,104 @@
-#include "Response/Response.hpp"
 #include "Response/Dispatcher.hpp"
 #include "Request/ClientRequest.hpp"
-// #include "Request/RequestHelpers.hpp"
 #include "multiplexing/header.hpp"
-#include "Error.hpp"
 #include <iostream>
-#include <unistd.h>
-#include <fcntl.h>
-
-// #include "Response.hpp"
-
-#include <iostream>
-
-int main()
-{
-    Response normalResponse;
-    normalResponse.setStatusCode(200);
-    normalResponse.setReasonPhrase("OK");
-    normalResponse.setBody("Small hardcoded GET response");
-
-    std::cout << "Normal response:" << std::endl;
-    std::cout << "  isStreaming = " << normalResponse.isStreaming() << std::endl;
-    std::cout << "  mode = " << normalResponse.getResponseMode() << std::endl;
-
-    Response streamingResponse;
-    streamingResponse.setStatusCode(200);
-    streamingResponse.setReasonPhrase("OK");
-    streamingResponse.setResponseMode(Response::STREAMING_RESPONSE);
-
-    std::cout << "Streaming response:" << std::endl;
-    std::cout << "  isStreaming = " << streamingResponse.isStreaming() << std::endl;
-    std::cout << "  mode = " << streamingResponse.getResponseMode() << std::endl;
-
-    if (!normalResponse.isStreaming()
-        && normalResponse.getResponseMode() == Response::NORMAL_RESPONSE
-        && streamingResponse.isStreaming()
-        && streamingResponse.getResponseMode() == Response::STREAMING_RESPONSE)
-    {
-        std::cout << "PASS: Response mode methods work." << std::endl;
-        return 0;
-    }
-
-    std::cout << "FAIL: Response mode methods do not work." << std::endl;
-    return 1;
-}
-
-
-// #include "header.hpp"
-// #include "Error.hpp"
 
 int server_index = 0;
 
 std::vector<Server_block> Conf_File::Servers;
 std::vector<std::string> Conf_File::tokens;
+
+int main()
+{
+    // ===========================
+    // Create fake server
+    // ===========================
+    Server_block server;
+    server.root = "./www";
+
+    Location_Config location;
+    location.path = "/";
+    location.root = "./www";
+
+    server.location.push_back(location);
+
+    // ===========================
+    // Fake client
+    // ===========================
+    Client client;
+
+    client.parsed_request.setMethod("GET");
+    client.parsed_request.setRequestPath("/");
+    client.parsed_request.setBody("");
+
+    Dispatcher dispatcher;
+
+    Response response = dispatcher.dispatch(client, server);
+
+    std::cout << response.toString() << std::endl;
+
+    return 0;
+}
+
+
+// #include "Response/Response.hpp"
+// #include "Response/Dispatcher.hpp"
+// #include "Request/ClientRequest.hpp"
+// // #include "Request/RequestHelpers.hpp"
+// #include "multiplexing/header.hpp"
+// #include "Error.hpp"
+// #include <iostream>
+// #include <unistd.h>
+// #include <fcntl.h>
+
+// // #include "Response.hpp"
+
+// #include <iostream>
+
+// int server_index = 0;
+
+// std::vector<Server_block> Conf_File::Servers;
+// std::vector<std::string> Conf_File::tokens;
+
+
+// // int main(int argc, char **argv, char **envp)
+// int main()
+// {
+//     Response normalResponse;
+//     normalResponse.setStatusCode(200);
+//     normalResponse.setReasonPhrase("OK");
+//     normalResponse.setBody("Small hardcoded GET response");
+
+//     std::cout << "Normal response:" << std::endl;
+//     std::cout << "  isStreaming = " << normalResponse.isStreaming() << std::endl;
+//     std::cout << "  mode = " << normalResponse.getResponseMode() << std::endl;
+
+//     Response streamingResponse;
+//     streamingResponse.setStatusCode(200);
+//     streamingResponse.setReasonPhrase("OK");
+//     streamingResponse.setResponseMode(Response::STREAMING_RESPONSE);
+
+//     std::cout << "Streaming response:" << std::endl;
+//     std::cout << "  isStreaming = " << streamingResponse.isStreaming() << std::endl;
+//     std::cout << "  mode = " << streamingResponse.getResponseMode() << std::endl;
+
+//     if (!normalResponse.isStreaming()
+//         && normalResponse.getResponseMode() == Response::NORMAL_RESPONSE
+//         && streamingResponse.isStreaming()
+//         && streamingResponse.getResponseMode() == Response::STREAMING_RESPONSE)
+//     {
+//         std::cout << "PASS: Response mode methods work." << std::endl;
+//         return 0;
+//     }
+
+//     std::cout << "FAIL: Response mode methods do not work." << std::endl;
+//     return 1;
+// }
+
+
+// #include "header.hpp"
+// #include "Error.hpp"
+
 
 // int main(int ac, char **av)
 // {

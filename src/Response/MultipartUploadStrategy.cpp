@@ -335,7 +335,6 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
     path += safeFilename;
 
     struct stat fileInfo;
-        
     if (stat(path.c_str(), &fileInfo) == 0)
         return false;
     std::ofstream outFile(path.c_str(),std::ios::binary | std::ios::trunc);

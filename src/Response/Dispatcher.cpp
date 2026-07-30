@@ -33,6 +33,7 @@ static std::string statusMessage(short code)
         case HTTP_413_PAYLOAD_TOO_LARGE:
             return "Payload Too Large";
 
+        // status code to implement : 431 
         case HTTP_414_URI_TOO_LONG:
             return "URI Too Long";
 
@@ -61,7 +62,7 @@ static std::string statusMessage(short code)
 Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
     // 1. Parser already found an error
-    if (client.parsed_request.getStatusCode() != 200)
+    if (client.parsed_request.state == ClientRequest::ERROR_STATE)
         return AMethod::buildErrorResponse(client.parsed_request.getStatusCode(),statusMessage(client.parsed_request.getStatusCode()));
     //. Normal request
     AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());

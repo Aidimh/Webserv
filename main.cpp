@@ -49,11 +49,10 @@ int main()
 // #include "header.hpp"
 // #include "Error.hpp"
 
-// int server_index = 0;
+int server_index = 0;
 
-
-// std::vector<Server_block> Conf_File::Servers;
-// std::vector<std::string> Conf_File::tokens;
+std::vector<Server_block> Conf_File::Servers;
+std::vector<std::string> Conf_File::tokens;
 
 // int main(int ac, char **av)
 // {
@@ -459,7 +458,6 @@ int main()
     // for (size_t i = 0; i < fds.size(); i++)
     //     close(fds[i].fd);
     // close(fd_sock);
-
 
 
 

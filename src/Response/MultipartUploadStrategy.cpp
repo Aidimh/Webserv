@@ -1,5 +1,7 @@
 #include "MultipartUploadStrategy.hpp"
 
+#include <sys/stat.h>
+
 bool MultipartUploadStrategy::isMultipartUpload(const ClientRequest& request) const
 {
     const std::map<std::string, std::string>& headers = request.getHeaders();
@@ -332,11 +334,11 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
 
     path += safeFilename;
 
-    if (fileExists(path))
+    struct stat fileInfo;
+        
+    if (stat(path.c_str(), &fileInfo) == 0)
         return false;
-
-    std::ofstream outFile(path.c_str(),
-                          std::ios::binary | std::ios::trunc);
+    std::ofstream outFile(path.c_str(),std::ios::binary | std::ios::trunc);
 
     if (!outFile.is_open())
         return false;

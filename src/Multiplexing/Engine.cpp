@@ -1,6 +1,6 @@
-#include "header.hpp"
+#include "../../includes/multiplexing/header.hpp"
 #include "../../includes/Request/ClientRequest.hpp"
-#include "../../includes/Request/RequestHelpers.hpp"
+// #include "../../includes/Request/RequestHelpers.hpp"
 #include "../../includes/Response/Dispatcher.hpp"
 
 bool loop_is_true = true;

@@ -1,11 +1,15 @@
 #ifndef CLIENTREQUEST_HPP
 #define CLIENTREQUEST_HPP
 
-#include <map>
+#include <limits>
+#include <sstream>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string>
-// #include "../../header.hpp"
-// #include "RequestHelpers.hpp"
-// #include "RequestHelpers.hpp"
+#include <map>
+
 
 struct Client;
 
@@ -32,12 +36,10 @@ class ClientRequest
 		void										RequestLineParser(std::string RequestLine);
 		bool										RequestLineValidate(void);
 		void	    								CleanUri(void);
-    	std::string									RemoveFirstLastSpaces(std::string& line);
 		bool										CheckTransferEncoding(void);
 		bool										CheckContentLength(void);
 		size_t										getContentLength(void);
 		
-
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
 
@@ -53,6 +55,8 @@ class ClientRequest
 		short 										getStatusCode() const;
 		int											getTmpFileFd() const;
 		size_t										getBodySize() const;
+		size_t										getServerMaxBodySize(Client& client);
+
 
 		void										setTmpFileFd(int newFd);
 		void										setStatusCode(short StatusCode);
@@ -75,8 +79,9 @@ class ClientRequest
 
 ///////////////////////////// Helper Functions ////////////////////////////
 
-size_t removeWhitespace(Client& client);
-bool ValidLine(std::string line);
-void MyToLower(std::string &str);
+size_t		removeWhitespace(Client& client);
+bool		ValidLine(std::string line);
+void		MyToLower(std::string &str);
+std::string	RemoveFirstLastSpaces(std::string& line);
 
 #endif

@@ -2,6 +2,32 @@
 #include "MethodFactory.hpp"
 #include "../../includes/multiplexing/header.hpp"
 
+#include <fstream>
+
+/*
+ * Error pages are served internally, keeping the original HTTP status code.
+ * A 302 redirect here would turn, for example, a 404 into a successful
+ * redirect and would hide the real error from the client.
+ */
+static void setErrorPageBody(Response& response)
+{
+    if (response.getStatusCode() < 400)
+        return;
+
+    std::ostringstream path;
+    path << "www/error_pages/" << response.getStatusCode() << ".html";
+
+    std::ifstream file(path.str().c_str(), std::ios::binary);
+    if (!file.is_open())
+        return;
+
+    std::ostringstream page;
+    page << file.rdbuf();
+
+    response.setBody(page.str());
+    response.addHeader("content-type", "text/html");
+}
+
 static std::string statusMessage(short code)
 {
     switch (code)
@@ -66,14 +92,19 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
     // 1. Parser already found an error
     if (client.parsed_request.state == ClientRequest::ERROR_STATE)
-        return AMethod::buildErrorResponse(client.parsed_request.getStatusCode(),statusMessage(client.parsed_request.getStatusCode()));
+    {
+        Response response = AMethod::buildErrorResponse(client.parsed_request.getStatusCode(), statusMessage(client.parsed_request.getStatusCode()));
+        setErrorPageBody(response);
+        return response;
+    }
     //. Normal request
     AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());
     if (!method)
     {
         Response res;
         res.setStatusCode(501);
-        res.setReasonPhrase("Not Implemented"); 
+        res.setReasonPhrase("Not Implemented");
+        setErrorPageBody(res);
         return res;
     }
 
@@ -81,5 +112,6 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
 
     delete method;
 
+    setErrorPageBody(response);
     return response;
 }

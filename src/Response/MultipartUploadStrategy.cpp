@@ -332,16 +332,17 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
 
     path += safeFilename;
 
-    std::ofstream outFile(
-        path.c_str(),
-        std::ios::binary | std::ios::trunc);
+    if (fileExists(path))
+        return false;
+
+    std::ofstream outFile(path.c_str(),
+                          std::ios::binary | std::ios::trunc);
 
     if (!outFile.is_open())
         return false;
 
-    outFile.write(
-        content.data(),
-        static_cast<std::streamsize>(content.size()));
+    outFile.write(content.data(),
+                  static_cast<std::streamsize>(content.size()));
 
     bool success = outFile.good();
 

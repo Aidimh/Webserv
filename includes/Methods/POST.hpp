@@ -17,7 +17,7 @@ class POST : public AMethod
         Response buildCreatedResponse(int statusCode,const std::string& reasonPhrase) const;
         std::string getParentDirectory(const std::string& target) const;
         bool canWrite(const std::string& path) const;
-        bool validateParentDirectory(const std::string& target) const;
+        PathType validateParentDirectory(const std::string& target) const;
         bool saveBody(const std::string& path, const std::string& body) const;
         bool isMultipartRequest(const Client& client) const;
         bool isRequestValid(const Client& client) const;

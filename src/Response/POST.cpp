@@ -45,33 +45,46 @@ bool POST::saveBody(const std::string& path, const std::string& body) const
     if (!file.is_open())
         return false;
 
-    file.write(body.data(),
-           static_cast<std::streamsize>(body.size()));
-    bool success = file.good();
+    file.write(body.data(), static_cast<std::streamsize>(body.size()));
 
+    bool success = file.good();
     file.close();
+
     return success;
 }
 
-bool POST::validateParentDirectory(const std::string& target) const
+PathType POST::validateParentDirectory(const std::string& target) const
 {
     std::string parent = getParentDirectory(target);
 
-    return (getPathType(parent) == DIRECTORY_PATH);
+    return getPathType(parent);
 }
 
 Response POST::handleRegularRequest(const Client& client, const std::string& target)
 {
-    if (!validateParentDirectory(target))
+    PathType type = validateParentDirectory(target);
+
+    if (type == NOT_FOUND)
         return buildErrorResponse(404, "Not Found");
+
+    if (type == PERMISSION_DENIED)
+        return buildErrorResponse(403, "Forbidden");
+
+    if (type != DIRECTORY_PATH)
+        return buildErrorResponse(400, "Bad Request");
+
     if (!canWrite(target))
         return buildErrorResponse(403, "Forbidden");
+
+    if (fileExists(target))
+        return buildErrorResponse(409, "Conflict");
 
     if (!saveBody(target, client.parsed_request.getBody()))
         return buildErrorResponse(500, "Internal Server Error");
 
-    return buildCreatedResponse(200, "Ok");
+    return buildCreatedResponse(201, "Created");
 }
+
 
 Response POST::handleMultipartRequest(const Client& client, const std::string& target)
 {
@@ -110,6 +123,8 @@ Response POST::execute(Client& client, const Server_block& server)
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
+    if (target.empty())
+        return buildErrorResponse(403, "Forbidden");
     if (isMultipartRequest(client))
         return handleMultipartRequest(client, target);
 

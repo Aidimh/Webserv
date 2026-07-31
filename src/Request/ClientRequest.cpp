@@ -226,7 +226,7 @@ void ClientRequest::HeadersParser(std::string headers)
             std::string value   = header.substr(colon + 1);
             MyToLower(key);
             key = RemoveFirstLastSpaces(key);
-            if (key == "content-length" && this->headers.find(key) != this->headers.end())
+            if ((key == "content-length" || key == "transfer-encoding") && this->headers.find(key) != this->headers.end())
             {
                 status_code = 400;
                 state = ERROR_STATE;
@@ -316,82 +316,91 @@ void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
         return;
-    if (client.request.find('\0') != std::string::npos)
-    {
-        status_code = 400;
-        state = ERROR_STATE;
-        return;
-    }
 
     if (this->state == HEADERS)
     {
-        if (client.request.length() > MAX_HEADER_SIZE)
-        {
-            this->status_code = 431;
-            this->state = ERROR_STATE;
-            return;
-        }
-
         size_t begin = removeWhitespace(client);
         if (begin > 0)
             client.request.erase(0, begin);
         if (client.request.empty())
             return;
         size_t check = client.request.find("\r\n\r\n");
-        if (check != std::string::npos)
-        {
-            std::string headers;
-            std::string extra;
-            
-            headers = client.request.substr(0, check + 2);
-            HeadersParser(headers);
-            if (this->state == ERROR_STATE)
-                return;
-            state = BODY;
-            extra = client.request.substr(check + 4);
-            client.request.clear();
+        if (check == std::string::npos)
+		{
+			if (client.request.length() > MAX_HEADER_SIZE)
+			{
+				this->status_code = 431;
+				this->state = ERROR_STATE;
+			}
+			return;
+		}
+		if (check > MAX_HEADER_SIZE)
+		{
+			this->status_code = 431;
+			this->state = ERROR_STATE;
+			return;
+		}
+		std::string headers;
+		std::string extra;
+		
+		headers = client.request.substr(0, check + 2);
+		if (headers.find('\0') != std::string::npos)
+		{
+			status_code = 400;
+			state = ERROR_STATE;
+			return;
+		}
+		HeadersParser(headers);
+		if (this->state == ERROR_STATE)
+			return;
+		bool has_body = CheckContentLength() || CheckTransferEncoding();
+		if (has_body && (this->method == "GET" || this->method == "DELETE"))
+		{
+			this->status_code = 400;
+			this->state = ERROR_STATE;
+			return;
+		}
+		state = BODY;
+		extra = client.request.substr(check + 4);
+		client.request.clear();
 
-            bool is_chunked = CheckTransferEncoding();
-            if(is_chunked && CheckContentLength())
-            {
-                status_code = 400;
-                state = ERROR_STATE;
-                return;
-            }
-            if (state == ERROR_STATE)
-                return;
-            else if (is_chunked)
-                chunks.append(extra);
-            else
-            {
-                size_t expected = getContentLength();
-                if (extra.length() > expected)
-                {
-                    body = extra.substr(0, expected);
-                    BodySize += expected;
-                }
-                else
-                {
-                    body        =   extra;
-                    BodySize    +=  extra.length();
-                }
-            }
-            size_t max_body_size = getServerMaxBodySize(client); 
-            
-            if(getContentLength() > max_body_size)
-            {
-                status_code = 413;
-                state = ERROR_STATE;
-                return;
-            }
-            if (!is_chunked && BodySize >= getContentLength())
-            {
-                state = DONE;
-                return;
-            }
-        }
+		bool is_chunked = CheckTransferEncoding();
+		if(is_chunked && CheckContentLength())
+		{
+			status_code = 400;
+			state = ERROR_STATE;
+			return;
+		}
+		else if (is_chunked)
+			chunks.append(extra);
+		else
+		{
+			size_t expected = getContentLength();
+			if (extra.length() > expected)
+			{
+				body = extra.substr(0, expected);
+				BodySize += expected;
+			}
+			else
+			{
+				body        =   extra;
+				BodySize    +=  extra.length();
+			}
+		}
+		size_t max_body_size = getServerMaxBodySize(client); 
+		
+		if(getContentLength() > max_body_size)
+		{
+			status_code = 413;
+			state = ERROR_STATE;
+			return;
+		}
+		if (!is_chunked && BodySize >= getContentLength())
+		{
+			state = DONE;
+			return;
+		}
     }
-
 }
 
 
@@ -416,6 +425,7 @@ void    ClientRequest::BodyRequest(Client& client)
                 close(TmpFileFd);
                 TmpFileFd = -1;
             }
+			std::string().swap(body);
             status_code = 413;
             state = ERROR_STATE;
             return;
@@ -439,7 +449,6 @@ void    ClientRequest::BodyRequest(Client& client)
             //timeout part
             ssize_t remaining = getContentLength() - BodySize;
             ssize_t bytesToTake = (bytesRead > remaining) ? remaining : bytesRead;
-            BodySize += bytesToTake;
             if (getContentLength() <= MAX_RAM_BUFFER)
                 body.append(buffer, bytesToTake);
             else
@@ -447,6 +456,8 @@ void    ClientRequest::BodyRequest(Client& client)
                 if (TmpFileFd == -1)
                 {
                     struct stat meta;
+					if (stat("www", &meta) != 0)
+						mkdir("www", 0755);
                     if (stat("www/upload", &meta) != 0)
                         mkdir ("www/upload", 0755);
                 
@@ -463,7 +474,7 @@ void    ClientRequest::BodyRequest(Client& client)
                     TmpFileFd = fd;
                     if (!body.empty())
                     {
-                        write(fd, body.c_str(), body.length());
+                        write(fd, body.data(), body.length());
                         std::string().swap(body);
                     }
 
@@ -476,6 +487,7 @@ void    ClientRequest::BodyRequest(Client& client)
                     state = ERROR_STATE;
                     return;
                 }
+				BodySize += bytesToTake;
             }
             
             if (BodySize >= getContentLength())

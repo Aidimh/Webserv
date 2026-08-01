@@ -301,61 +301,74 @@ void Multiplexer::_writeClient(int fd)
         return;
 
     Client &client = it->second;
-
-    // Dispatch only once
-    if (client.response_prepared == false)
+    // Prepare response only once
+    if (!client.response_prepared)
     {
         Response response = Dispatcher::dispatch(client, which_server(client.port));
         client.response = response.toString();
         client.response_prepared = true;
-        if (response.isStreaming())
-        {
-            // stream_file_fd and stream_bytes_remaining
-            // are already filled by GET::serveFile()
-        }
     }
-    // Send pending HTTP response (headers + body if normal)
+    // Send HTTP headers / normal response
     if (!client.response.empty())
     {
-        ssize_t n = send(fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
-        if (n <= 0)
+        ssize_t sent = send(fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+        if (sent <= 0)
         {
             _removeClient(fd);
             return;
         }
-        client.response.erase(0, n);
-        // Wait until all headers are sent
+        client.response.erase(0, sent);
         if (!client.response.empty())
             return;
     }
-
-    // Streaming file
+    // Streaming
     if (client.stream_file_fd != -1)
     {
-        char buffer[4096];
-        ssize_t bytesRead = read(client.stream_file_fd,buffer,sizeof(buffer));
-        if (bytesRead > 0)
+        // Read a new chunk only if previous one is fully sent
+        if (client.stream_buffer_offset == client.stream_buffer_size)
         {
-            ssize_t sent =send(fd,buffer,bytesRead,MSG_NOSIGNAL);
-            if (sent <= 0)
+            client.stream_buffer_size = read(client.stream_file_fd,client.stream_buffer,sizeof(client.stream_buffer));
+            client.stream_buffer_offset = 0;
+            if (client.stream_buffer_size <= 0)
             {
                 close(client.stream_file_fd);
-                _removeClient(fd);
+                client.stream_file_fd = -1;
+                client.stream_bytes_remaining = 0;
+                client.stream_buffer_size = 0;
+                client.stream_buffer_offset = 0;
+                client.response_prepared = false;
+
+                for (size_t i = 0; i < _pollfds.size(); i++)
+                {
+                    if (_pollfds[i].fd == fd)
+                    {
+                        _pollfds[i].events &= ~POLLOUT;
+                        break;
+                    }
+                }
                 return;
             }
-            client.stream_bytes_remaining -= sent;
         }
-        if (bytesRead <= 0 || client.stream_bytes_remaining <= 0)
+        ssize_t sent = send(fd,client.stream_buffer + client.stream_buffer_offset,client.stream_buffer_size - client.stream_buffer_offset,MSG_NOSIGNAL);
+        if (sent <= 0)
         {
-            close(client.stream_file_fd);
-
             client.stream_file_fd = -1;
             client.stream_bytes_remaining = 0;
+            client.stream_buffer_size = 0;
+            client.stream_buffer_offset = 0;
+            client.response_prepared = false;
+            close(client.stream_file_fd);
+            _removeClient(fd);
+            return;
         }
+        client.stream_buffer_offset += sent;
+        client.stream_bytes_remaining -= sent;
+
         return;
     }
-    // Finished
+    // Finished normal response
     client.response_prepared = false;
+
     for (size_t i = 0; i < _pollfds.size(); i++)
     {
         if (_pollfds[i].fd == fd)
@@ -365,6 +378,7 @@ void Multiplexer::_writeClient(int fd)
         }
     }
 }
+
 
 // void Multiplexer::_writeClient(int fd)
 // {

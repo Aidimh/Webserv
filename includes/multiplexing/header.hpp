@@ -175,11 +175,22 @@ struct Client
     int stream_file_fd; // call serveFile 
     off_t stream_bytes_remaining; // call serveFile 
     bool response_prepared;
+    char    stream_buffer[4096];
+    ssize_t stream_buffer_size;
+    ssize_t stream_buffer_offset;
     // std::string body;
     // size_t end_of_header;
     ClientRequest parsed_request;
-
-    Client() : fd(-1), port(0), stream_file_fd(-1), stream_bytes_remaining(0), response_prepared(false) {}
+    
+    Client()
+    : fd(-1),
+    port(0),
+    stream_file_fd(-1),
+    stream_bytes_remaining(0),
+    response_prepared(false),
+    stream_buffer_size(0),
+    stream_buffer_offset(0)
+    {}
 };
 
 class AFd

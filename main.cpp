@@ -1,44 +1,141 @@
-#include "Response/Dispatcher.hpp"
-#include "Request/ClientRequest.hpp"
 #include "multiplexing/header.hpp"
-#include <iostream>
+#include "Error.hpp"
 
 int server_index = 0;
+int loop_is_true = 1;
 
 std::vector<Server_block> Conf_File::Servers;
 std::vector<std::string> Conf_File::tokens;
 
-int main()
+void open_file(std::string filename)
 {
-    // ===========================
-    // Create fake server
-    // ===========================
-    Server_block server;
-    server.root = "./www";
+    std::ifstream file(filename.c_str());
+    if (!file.is_open())
+        throw Error::FileNotFound();
 
-    Location_Config location;
-    location.path = "/";
-    location.root = "./www";
+    std::string content((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    file.close();
+    size_t i = 0;
+    // std::cout << content << "\n";
+    // exit(1);
 
-    server.location.push_back(location);
+    while (i < content.size())
+    {
+        if (isspace(content[i]))
+        {
+            i++;
+            continue;
+        }
+        if (content[i] == '#')
+        {
+            while (i < content.size() && content[i] != '\n')
+                i++;
+            continue;
+        }
+        if (content[i] == '{' || content[i] == '}' || content[i] == ';')
+        {
+            Conf_File::tokens.push_back(std::string(1, content[i]));
+            i++;
+            continue;
+        }
+        std::string word;
+        while (i < content.size()
+                && !isspace(content[i])
+                && content[i] != '{'
+                && content[i] != '}'
+                && content[i] != ';'
+                && content[i] != '#')
+        {
+            word += content[i];
+            i++;
+        }
+        Conf_File::tokens.push_back(word);
+    }
 
-    // ===========================
-    // Fake client
-    // ===========================
-    Client client;
+    if (Conf_File::tokens.empty())
+        throw Error::EmptyConfig();
+}
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/");
-    client.parsed_request.setBody("");
 
-    Dispatcher dispatcher; 
+int main(int ac, char **av, char **envp)
+{
+    signal(SIGINT, handle_sigint);
+    signal(SIGQUIT, handle_sigquit);
+    signal(SIGTSTP, handle_sigstp);
 
-    Response response = dispatcher.dispatch(client, server);
+    try
+    {
+        if (ac != 2)
+            throw Error::Argc();
 
-    std::cout << response.toString() << std::endl;
+        if (!av || av[1][0] == '\0')
+            throw Error::Argv();
+
+        // Parse configuration
+        open_file(av[1]);
+        validate_file();
+        parse_config_file();
+
+        // Create engine
+        Multiplexer mux;
+        mux.env = envp;
+
+        for (size_t i = 0; i < Conf_File::Servers.size(); ++i)
+        {
+            Socket *s = new Socket();
+
+            s->setup(
+                Conf_File::Servers[i].listen_port,
+                Conf_File::Servers[i].host
+            );
+
+            mux.addServer(s);
+        }
+
+        std::cout << "========================================\n";
+        std::cout << " Webserv started successfully\n";
+        std::cout << " Loaded servers: "
+                  << Conf_File::Servers.size()
+                  << std::endl;
+        std::cout << "========================================\n";
+
+        mux.run();
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
     return 0;
 }
+
+// int main()
+// {
+//     Server_block server;
+//     server.root = "./www";
+
+//     Location_Config location;
+//     location.path = "/";
+//     location.root = "./www";
+
+//     server.location.push_back(location);
+
+//     Client client;
+
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/");
+//     client.parsed_request.setBody("");
+
+//     Dispatcher dispatcher;
+
+//     Response response = dispatcher.dispatch(client, server);
+
+//     std::cout << response.toString() << std::endl;
+
+//     return 0;
+// }
 
 
 // #include "Response/Response.hpp"
@@ -132,55 +229,6 @@ int main()
                                 // std::cout << "Request received:\n" << buffer << "\n";
                                 
                                 // IMPORTANT: Send a response so the browser doesn't hang!
-// void open_file(std::string filename)
-// {
-//     std::ifstream file(filename.c_str());
-//     if (!file.is_open())
-//         throw Error::FileNotFound();
-
-//     std::string content((std::istreambuf_iterator<char>(file)),
-//                          std::istreambuf_iterator<char>());
-//     file.close();
-//     size_t i = 0;
-//     // std::cout << content << "\n";
-//     // exit(1);
-
-//     while (i < content.size())
-//     {
-//         if (isspace(content[i]))
-//         {
-//             i++;
-//             continue;
-//         }
-//         if (content[i] == '#')
-//         {
-//             while (i < content.size() && content[i] != '\n')
-//                 i++;
-//             continue;
-//         }
-//         if (content[i] == '{' || content[i] == '}' || content[i] == ';')
-//         {
-//             Conf_File::tokens.push_back(std::string(1, content[i]));
-//             i++;
-//             continue;
-//         }
-//         std::string word;
-//         while (i < content.size()
-//                 && !isspace(content[i])
-//                 && content[i] != '{'
-//                 && content[i] != '}'
-//                 && content[i] != ';'
-//                 && content[i] != '#')
-//         {
-//             word += content[i];
-//             i++;
-//         }
-//         Conf_File::tokens.push_back(word);
-//     }
-
-//     if (Conf_File::tokens.empty())
-//         throw Error::EmptyConfig();
-// }
 
 
 // void Print()

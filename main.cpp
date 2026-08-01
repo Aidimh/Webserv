@@ -31,7 +31,7 @@ int main()
     client.parsed_request.setRequestPath("/");
     client.parsed_request.setBody("");
 
-    Dispatcher dispatcher;
+    Dispatcher dispatcher; 
 
     Response response = dispatcher.dispatch(client, server);
 

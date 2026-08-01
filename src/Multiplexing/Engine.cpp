@@ -434,12 +434,7 @@ void Multiplexer::_readClient(int fd)
         }
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
         if (bytesRead == -1)
-        {
-            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-                return;
-            else
-                _removeClient(fd);
-        }
+            _removeClient(fd);
         else if (bytesRead > 0)
         {
             iter->second.request.append(buffer, bytesRead);

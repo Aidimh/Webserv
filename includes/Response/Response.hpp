@@ -11,21 +11,23 @@ class Response
         enum ResponseMode
         {
             NORMAL_RESPONSE,
-            STREAMING_RESPONSE
+            STREAMING_RESPONSE,
+            CGI_RESPONSE
         };
 
     private:
+        
         int statusCode;
         std::string reasonPhrase;
         std::map<std::string, std::string> headers;
         std::string body;
         ResponseMode _mode;
 
+
     public:
 
         Response();
         ~Response();
-        
 
         // void    Response::MethodFactory();
         std::string toString() const;
@@ -40,6 +42,7 @@ class Response
         void setResponseMode(ResponseMode mode);
         ResponseMode getResponseMode() const;
         bool isStreaming() const;
+        bool isCGI() const;
 };
 
 #endif

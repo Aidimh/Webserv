@@ -48,3 +48,23 @@ bool Router::isMethodAllowed(const std::string& method,const Location_Config& lo
     }
     return false;
 }
+
+bool Router::isCGIRequest(const ClientRequest& request,const Location_Config& location)
+{
+    size_t pos = request.getRequestPath().find('.');
+    // PATH = www/folder/foledr/script.py
+    //PATH = www/folder/script.c
+    // PATH = .www/folder/script.js
+    
+    if (pos == std::string::npos)
+        return false;
+
+    std::string extension = request.getRequestPath().substr(pos);
+
+    for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
+    {
+        if (location.cgi_extensions[i] == extension)
+            return true;
+    }
+    return false;
+}

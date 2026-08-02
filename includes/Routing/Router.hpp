@@ -11,6 +11,7 @@
 class Router
 {
     public:
+        static bool isCGIRequest(const ClientRequest& request,const Location_Config& location);
         static const Location_Config* resolveLocation(const std::string& uri,const Server_block& server);
         static bool isMethodAllowed(const std::string& method,const Location_Config& location);
 

@@ -312,7 +312,6 @@ void Multiplexer::_writeClient(int fd)
         handleClient(fd);
         return;
     }
-
     iter->second.response = parsed_response.toString();
     if (parsed_response.isStreaming())
     {

@@ -317,7 +317,7 @@ void ClientRequest::parse(Client& client)
     if (this->state == ERROR_STATE)
         return;
 
-    if (this->state == HEADERS)
+     
     {
         size_t begin = removeWhitespace(client);
         if (begin > 0)
@@ -353,13 +353,6 @@ void ClientRequest::parse(Client& client)
 		HeadersParser(headers);
 		if (this->state == ERROR_STATE)
 			return;
-		bool has_body = CheckContentLength() || CheckTransferEncoding();
-		if (has_body && (this->method == "GET" || this->method == "DELETE"))
-		{
-			this->status_code = 400;
-			this->state = ERROR_STATE;
-			return;
-		}
 		state = BODY;
 		extra = client.request.substr(check + 4);
 		client.request.clear();
@@ -410,28 +403,31 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
     return;
 }
 
-void    ClientRequest::BodyRequest(Client& client)
+void ClientRequest::BodyRequest(Client& client)
 {
-	char	buffer[65536];
-    size_t  max_body_size = getServerMaxBodySize(client);
-	if (CheckTransferEncoding())
-		HandleTransferEncoding(client);
-	else
-	{
-		if (getContentLength()  > max_body_size)
-		{
-			if (TmpFileFd != -1)
+    if (client.request.empty())
+        return;
+
+    size_t max_body_size = getServerMaxBodySize(client);
+
+    if (CheckTransferEncoding())
+        HandleTransferEncoding(client);
+    else
+    {
+        if (getContentLength() > max_body_size)
+        {
+            if (TmpFileFd != -1)
             {
                 close(TmpFileFd);
                 TmpFileFd = -1;
             }
-			std::string().swap(body);
+            std::string().swap(body);
             status_code = 413;
             state = ERROR_STATE;
             return;
-		}
+        }
 
-        if (body.length() >= getContentLength())
+        if (BodySize >= getContentLength())
         {
             if (TmpFileFd != -1)
             {
@@ -441,74 +437,73 @@ void    ClientRequest::BodyRequest(Client& client)
             state = DONE;
             return;
         }
-        ssize_t bytesRead = recv(client.fd, buffer, sizeof(buffer), 0);
-        if (bytesRead < 0)
-            return;
-        if (bytesRead > 0)
+
+        size_t remaining = getContentLength() - BodySize;
+        size_t bytesToTake = (client.request.length() > remaining) ? remaining : client.request.length();
+
+        if (this->method == "GET" || this->method == "DELETE")
         {
-            //timeout part
-            ssize_t remaining = getContentLength() - BodySize;
-            ssize_t bytesToTake = (bytesRead > remaining) ? remaining : bytesRead;
-            if (getContentLength() <= MAX_RAM_BUFFER)
-                body.append(buffer, bytesToTake);
-            else
+            BodySize += bytesToTake;
+            client.request.erase(0, bytesToTake);
+            if (BodySize >= getContentLength())
+                state = DONE;
+            return;
+        }
+
+        if (getContentLength() <= MAX_RAM_BUFFER)
+        {
+            body.append(client.request, 0, bytesToTake);
+            BodySize += bytesToTake;
+        }
+        else
+        {
+            if (TmpFileFd == -1)
             {
-                if (TmpFileFd == -1)
-                {
-                    struct stat meta;
-					if (stat("www", &meta) != 0)
-						mkdir("www", 0755);
-                    if (stat("www/upload", &meta) != 0)
-                        mkdir ("www/upload", 0755);
+                struct stat meta;
+                if (stat("www", &meta) != 0)
+                    mkdir("www", 0755);
+                if (stat("www/upload", &meta) != 0)
+                    mkdir("www/upload", 0755);
                 
-                    std::stringstream stream;
-                    stream << client.fd;
-                    std::string filePath = "www/upload/storage_" + stream.str();
-                    int fd = open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-                    if (fd == -1)
-                    {
-                        status_code = 500;
-                        state = ERROR_STATE;
-                        return;
-                    }
-                    TmpFileFd = fd;
-                    if (!body.empty())
-                    {
-                        write(fd, body.data(), body.length());
-                        std::string().swap(body);
-                    }
-
-                }
-
-                ssize_t written = write(TmpFileFd, buffer, bytesToTake);
-                if (written < 0)
+                std::stringstream stream; stream << client.fd;
+                std::string filePath = "www/upload/storage_" + stream.str();
+                
+                int fd = open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+                if (fd == -1)
                 {
                     status_code = 500;
                     state = ERROR_STATE;
                     return;
                 }
-				BodySize += bytesToTake;
-            }
-            
-            if (BodySize >= getContentLength())
-            {
-                if (TmpFileFd != -1)
+                TmpFileFd = fd;
+                
+                if (!body.empty())
                 {
-                    close(TmpFileFd);
-                    TmpFileFd = -1;
+                    write(fd, body.data(), body.length());
+                    std::string().swap(body);
                 }
-                //EPOLLOUT
-                state = DONE;
             }
-        }
 
-        else
+            ssize_t written = write(TmpFileFd, client.request.data(), bytesToTake);
+            if (written < 0)
+            {
+                status_code = 500;
+                state = ERROR_STATE;
+                return;
+            }
+            bytesToTake = written;
+            BodySize += written;
+        }
+        client.request.erase(0, bytesToTake);
+
+        if (BodySize >= getContentLength())
         {
             if (TmpFileFd != -1)
             {
                 close(TmpFileFd);
                 TmpFileFd = -1;
             }
+            state = DONE;
         }
-	}
+    }
 }

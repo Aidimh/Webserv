@@ -60,14 +60,34 @@ Server_block& which_server(int port)
     return Conf_File::Servers[0];
 }
 
+std::string& Multiplexer::_fill_cgi_response(int fd)
+{
+    char buffer[4096];
+    std::string content;
+    ssize_t bytes_read;
+    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+    {
+        content.append(buffer, static_cast<std::size_t>(bytes_read));
+    }
+    return content;
+}
+
 void    Multiplexer::prepareResponse(Client &client)
 {
     if (client.response_prepared)
         return;
     Response response = Dispatcher::dispatch(client, which_server(client.port));
+    if (client.cgi_started)
+    {
+        int client_fd = handleClient(client.fd);
+        client.response = _fill_cgi_response(client_fd);
+        client.response_prepared = true;
+        return;
+    }
     client.response = response.toString();
     client.response_prepared = true;
 }
+
 
 bool    Multiplexer::sendResponse(int fd, Client &client)
 {
@@ -115,6 +135,24 @@ void    Multiplexer::disableWrite(int fd)
             break;
         }
     }
+}
+
+void    Multiplexer::_writeClient(int fd)
+{
+    std::map<int, Client>::iterator it = _clients.find(fd);
+    if (it == _clients.end())
+        return;
+    Client &client = it->second;
+    prepareResponse(client);
+    if (!sendResponse(fd, client))
+        return;
+    if (client.stream_file_fd != -1)
+    {
+        sendStreaming(fd, client);
+        return;
+    }
+    client.response_prepared = false;
+    disableWrite(fd);
 }
 
 
@@ -388,23 +426,7 @@ bool Response::isCGI() const
     return _mode == CGI_RESPONSE;
 }
 
-void    Multiplexer::_writeClient(int fd)
-{
-    std::map<int, Client>::iterator it = _clients.find(fd);
-    if (it == _clients.end())
-        return;
-    Client &client = it->second;
-    prepareResponse(client);
-    if (!sendResponse(fd, client))
-        return;
-    if (client.stream_file_fd != -1)
-    {
-        sendStreaming(fd, client);
-        return;
-    }
-    client.response_prepared = false;
-    disableWrite(fd);
-}
+
 
 // void Multiplexer::_writeClient(int fd)
 // {

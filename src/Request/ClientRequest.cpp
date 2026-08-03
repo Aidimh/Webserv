@@ -36,6 +36,7 @@ void ClientRequest::setMethod(const std::string& value)
     method = value;
 }
 
+
 void ClientRequest::setRequestPath(const std::string& value)
 {
     request_path = value;

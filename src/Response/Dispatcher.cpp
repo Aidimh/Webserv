@@ -122,6 +122,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     {
         Response response;
         response.setResponseMode(Response::CGI_RESPONSE);
+        client.cgi_started = true;
         return response;
     }
 

@@ -44,7 +44,6 @@ class ClientRequest
 		bool										CheckTransferEncoding(void);
 		bool										CheckContentLength(void);
 		size_t										getContentLength(void);
-		
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
 

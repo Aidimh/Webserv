@@ -427,38 +427,28 @@ void Multiplexer::_readClient(int fd)
     std::map<int, Client>::iterator iter = _clients.find(fd);
     if (iter != _clients.end())
     {
-        if (iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
+        int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
+        if (bytesRead == -1)
         {
-            enableWrite(fd);
+            if (errno != EAGAIN && errno != EWOULDBLOCK)
+                _removeClient(fd);
             return;
         }
-        int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
-        
-        if (bytesRead == -1)
-            _removeClient(fd);
         else if (bytesRead > 0)
         {
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
+
             if (iter->second.parsed_request.state == ClientRequest::BODY)
-            {
-                if (iter->second.parsed_request.getContentLength() > 0 || iter->second.parsed_request.CheckTransferEncoding())
-                {
-                    if (iter->second.parsed_request.CheckTransferEncoding() || iter->second.parsed_request.getBody().length() < iter->second.parsed_request.getContentLength())
-                    {
-                        
-                    }
-                }
-            }
+                iter->second.parsed_request.BodyRequest(iter->second);
         }
-        if (bytesRead == 0)
+        else if (bytesRead == 0)
         {
             iter->second.parsed_request.state = ClientRequest::DONE;
-            // std::cout << "Client Disconnected\n";
-            // _removeClient(fd);
             enableWrite(fd);
             return;
         }
+        if (iter->second.parsed_request.state == ClientRequest::DONE || iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
+            enableWrite(fd);
     }
-    // enableWrite(fd);
 }

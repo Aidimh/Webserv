@@ -264,6 +264,7 @@ int Multiplexer::handleClient(int fd)
         {
             CGI cgi(_clients[fd], loc);
             int pipe_fd = cgi.execute(_cgi_pids);
+            cgi_timeouts[pipe_fd] = time(NULL);
             if (pipe_fd == -1)
                 return ERROR;
             cgi.writeToChild();
@@ -283,6 +284,36 @@ void Multiplexer::run()
 {
     while (loop_is_true)  
     {
+        std::map<int , time_t>::iterator iter = cgi_timeouts.begin();
+        time_t current = time(NULL);
+        while (iter != cgi_timeouts.end())
+        {
+            if ((current - iter->second) > 5)
+            {
+                int pipe_fd = iter->first;
+                int client_fd = _cgi_pipes[iter->first];
+                kill(_cgi_pids[pipe_fd], SIGKILL);
+                waitpid(_cgi_pids[pipe_fd], NULL, 0);
+                _clients[_cgi_pipes[pipe_fd]].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
+                enableWrite(_cgi_pipes[pipe_fd]);
+
+                close(pipe_fd);
+                _cgi_pipes.erase(pipe_fd);
+                _cgi_pids.erase(pipe_fd);
+                cgi_timeouts.erase(iter++);
+
+                for (size_t i = 0; i < _pollfds.size(); i++)
+                {
+                    if (_pollfds[i].fd == client_fd)
+                    {
+                        _pollfds.erase(_pollfds.begin() + i);
+                        break;
+                    }
+                }
+            }
+            else 
+                iter++;
+        }
         int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
         if (poll_ret < 0)
         {
@@ -652,7 +683,7 @@ void Multiplexer::_removeClient(int fd)
 //     else if (status_code == 414) 
 //         return HTTP_414_URI_TOO_LONG;
 //     else if (status_code == 415) 
-//         return HTTP_415_UNSUPPORTED_MEDIA;
+//         return HTTP_415_UNSUPPORTED_MEDIA;   
 //     else if (status_code == 500) 
 //         return HTTP_500_INTERNAL_SERVER_ERROR;
 //     else if (status_code == 502) 
@@ -679,9 +710,7 @@ void Multiplexer::readCGI(int fd)
         client.response.append(buffer, n);
         return;
     }
-
     close(fd);
-
     _cgi_pipes.erase(fd);
 
     client.cgi_started = false;

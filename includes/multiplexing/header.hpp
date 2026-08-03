@@ -38,6 +38,7 @@
 #define MAX_HEADER_SIZE 8192
 #define MAX_RAM_BUFFER 8192
 #define MAX_BY 22000000
+#define CGI_TIMEOUT 5
 
 // #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
@@ -231,6 +232,7 @@ class Multiplexer
         std::vector<struct pollfd>     _pollfds;
         std::map<int , int>          _cgi_pipes;
         std::map<int, pid_t>        _cgi_pids;
+        std::map<int, time_t>  cgi_timeouts;
 
         void _acceptNewClient(Socket *server);
         void _readClient(int fd);

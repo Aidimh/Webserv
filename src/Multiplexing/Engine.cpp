@@ -39,6 +39,85 @@ Socket::Socket() : _port(0)
     
 }
 
+Multiplexer::~Multiplexer()
+{
+    size_t i = 0;
+    while (i < _servers.size())
+    {
+        delete _servers[i];
+        i++;
+    }
+}
+
+Server_block& which_server(int port)
+{
+    size_t i = 0;
+    while (i < Conf_File::Servers.size())
+    {
+        if (Conf_File::Servers[i].listen_port == port)
+            return Conf_File::Servers[i];
+    }
+    return Conf_File::Servers[0];
+}
+
+void    Multiplexer::prepareResponse(Client &client)
+{
+    if (client.response_prepared)
+        return;
+    Response response = Dispatcher::dispatch(client, which_server(client.port));
+    client.response = response.toString();
+    client.response_prepared = true;
+}
+
+bool    Multiplexer::sendResponse(int fd, Client &client)
+{
+    if (client.response.empty())
+        return true;
+    ssize_t sent = send( fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+    if (sent <= 0)
+        return false;
+    client.response.erase(0, sent);
+    return client.response.empty();
+}
+
+void    Multiplexer::sendStreaming(int fd, Client &client)
+{
+    if (client.stream_buffer_offset == client.stream_buffer_size)
+    {
+        client.stream_buffer_size = read(client.stream_file_fd,client.stream_buffer,sizeof(client.stream_buffer));
+        client.stream_buffer_offset = 0;
+        if (client.stream_buffer_size <= 0)
+        {
+            close(client.stream_file_fd);
+            client.stream_file_fd = -1;
+            client.stream_bytes_remaining = 0;
+            return;
+        }
+    }
+    ssize_t sent = send(fd,client.stream_buffer + client.stream_buffer_offset,client.stream_buffer_size - client.stream_buffer_offset,MSG_NOSIGNAL);
+    if (sent <= 0)
+    {
+        close(client.stream_file_fd);
+        _removeClient(fd);
+        return;
+    }
+    client.stream_buffer_offset += sent;
+    client.stream_bytes_remaining -= sent;
+}
+
+void    Multiplexer::disableWrite(int fd)
+{
+    for (size_t i = 0; i < _pollfds.size(); i++)
+    {
+        if (_pollfds[i].fd == fd)
+        {
+            _pollfds[i].events &= ~POLLOUT;
+            break;
+        }
+    }
+}
+
+
 void Socket::setup(int port, const std::string& host)
 {
     _port = port;
@@ -185,6 +264,7 @@ int Multiplexer::handleClient(int fd)
         {
             CGI cgi(_clients[fd], loc);
             int pipe_fd = cgi.execute(_cgi_pids);
+            cgi_timeouts[pipe_fd] = time(NULL);
             if (pipe_fd == -1)
                 return ERROR;
             cgi.writeToChild();
@@ -204,6 +284,36 @@ void Multiplexer::run()
 {
     while (loop_is_true)  
     {
+        std::map<int , time_t>::iterator iter = cgi_timeouts.begin();
+        time_t current = time(NULL);
+        while (iter != cgi_timeouts.end())
+        {
+            if ((current - iter->second) > 5)
+            {
+                int pipe_fd = iter->first;
+                int client_fd = _cgi_pipes[iter->first];
+                kill(_cgi_pids[pipe_fd], SIGKILL);
+                waitpid(_cgi_pids[pipe_fd], NULL, 0);
+                _clients[_cgi_pipes[pipe_fd]].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
+                enableWrite(_cgi_pipes[pipe_fd]);
+
+                close(pipe_fd);
+                _cgi_pipes.erase(pipe_fd);
+                _cgi_pids.erase(pipe_fd);
+                cgi_timeouts.erase(iter++);
+
+                for (size_t i = 0; i < _pollfds.size(); i++)
+                {
+                    if (_pollfds[i].fd == client_fd)
+                    {
+                        _pollfds.erase(_pollfds.begin() + i);
+                        break;
+                    }
+                }
+            }
+            else 
+                iter++;
+        }
         int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
         if (poll_ret < 0)
         {
@@ -273,74 +383,239 @@ void Multiplexer::run()
 }
 
 
-Multiplexer::~Multiplexer()
+bool Response::isCGI() const
 {
-    size_t i = 0;
-    while (i < _servers.size())
-    {
-        delete _servers[i];
-        i++;
-    }
+    return _mode == CGI_RESPONSE;
 }
 
+void    Multiplexer::_writeClient(int fd)
+{
+    std::map<int, Client>::iterator it = _clients.find(fd);
+    if (it == _clients.end())
+        return;
+    Client &client = it->second;
+    prepareResponse(client);
+    if (!sendResponse(fd, client))
+        return;
+    if (client.stream_file_fd != -1)
+    {
+        sendStreaming(fd, client);
+        return;
+    }
+    client.response_prepared = false;
+    disableWrite(fd);
+}
 
-
-// int Multiplexer::
-
-// std::string serve_index(int fd)
+// void Multiplexer::_writeClient(int fd)
 // {
-//     std::string full_path = Conf
+//     char buffer[4096];
+
+//     std::map<int, Client>::iterator iter = _clients.find(fd);
+//     if (iter == _clients.end())
+//         return;
+
+//     Client &client = iter->second;
+//     // Prepare response only once
+//     if (client.response_prepared == false)
+//     {
+//         Response parsed_response = Dispatcher::dispatch(client, which_server(client.port));
+//         client.response = parsed_response.toString();
+//         client.response_prepared = true;
+
+//         if (parsed_response.isCGI())
+//         {
+//             int cgi_fd = handleClient(fd);
+//             if (cgi_fd == ERROR)
+//             {
+//                 _removeClient(fd);
+//                 return;
+//             }
+
+//             client.cgi_started = true;
+//             return;
+//         }
+//     }
+//     // Send normal response
+//     int n = send(fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+//     if (n <= 0)
+//     {
+//         _removeClient(fd);
+//         return;
+//     }
+//     client.response.erase(0, n);
+//     if (!client.response.empty())
+//         return;
+//     if (client.stream_file_fd != -1)
+//     {
+//         ssize_t bytesRead =
+//             read(client.stream_file_fd, buffer, sizeof(buffer));
+
+//         if (bytesRead > 0)
+//             send(fd, buffer, bytesRead, MSG_NOSIGNAL);
+
+//         close(client.stream_file_fd);
+//         client.stream_file_fd = -1;
+//         client.stream_bytes_remaining = 0;
+//     }
+//     // Finished
+//     client.response_prepared = false;
+//     for (size_t i = 0; i < _pollfds.size(); i++)
+//     {
+//         if (_pollfds[i].fd == fd)
+//         {
+//             _pollfds[i].events &= ~POLLOUT;
+//             break;
+//         }
+//     }
 // }
 
-Server_block& which_server(int port)
-{
-    size_t i = 0;
-    while (i < Conf_File::Servers.size())
-    {
-        if (Conf_File::Servers[i].listen_port == port)
-            return Conf_File::Servers[i];
-    }
-    return Conf_File::Servers[0];
-}
 
-void Multiplexer::_writeClient(int fd)
-{
-    char buffer[4096];
-    std::map<int, Client>::iterator iter = _clients.find(fd);
-    if (iter == _clients.end())
-        return;
-    Response parsed_response =  Dispatcher::dispatch(iter->second, which_server(iter->second.port));
-    iter->second.response = parsed_response.toString();
-    if (parsed_response.isStreaming())
-    {
-        read(iter->second.stream_file_fd, buffer, sizeof(buffer));
-        send(iter->second.fd, buffer, sizeof(buffer), MSG_NOSIGNAL);
-        close(iter->second.stream_file_fd);
-        iter->second.stream_file_fd = -1;
-        iter->second.stream_bytes_remaining = 0;
-    }
-    // parse_request();
-    // iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";
-    // iter->second.parsed_request.getRequestPath();
-    int n = send(fd, iter->second.response.c_str(), iter->second.response.size(), MSG_NOSIGNAL);
-    if (n <= -1)
-    {
-        _removeClient(fd);
-        return ;
-    }
-    iter->second.response.erase(0, n);
-    if (iter->second.response.empty())
-    {
-        for (size_t i = 0; i < _pollfds.size(); i++)
-        {
-            if (_pollfds[i].fd == fd)
-            {
-                _pollfds[i].events &= ~POLLOUT;
-                break;
-            }
-        }
-    }
-}
+// void Multiplexer::_writeClient(int fd)
+// {
+//     std::map<int, Client>::iterator it = _clients.find(fd);
+//     if (it == _clients.end())
+//         return;
+
+//     Client &client = it->second;
+//     // Prepare response only once
+//     if (!client.response_prepared)
+//     {
+//         Response response = Dispatcher::dispatch(client, which_server(client.port));
+//         client.response = response.toString();
+//         client.response_prepared = true;
+//     }
+//     // Send HTTP headers / normal response
+//     if (!client.response.empty())
+//     {
+//         ssize_t sent = send(fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+//         if (sent <= 0)
+//         {
+//             _removeClient(fd);
+//             return;
+//         }
+//         client.response.erase(0, sent);
+//         if (!client.response.empty())
+//             return;
+//     }
+//     // Streaming
+//     if (client.stream_file_fd != -1)
+//     {
+//         // Read a new chunk only if previous one is fully sent
+//         if (client.stream_buffer_offset == client.stream_buffer_size)
+//         {
+//             client.stream_buffer_size = read(client.stream_file_fd,client.stream_buffer,sizeof(client.stream_buffer));
+//             client.stream_buffer_offset = 0;
+//             if (client.stream_buffer_size <= 0)
+//             {
+//                 close(client.stream_file_fd);
+//                 client.stream_file_fd = -1;
+//                 client.stream_bytes_remaining = 0;
+//                 client.stream_buffer_size = 0;
+//                 client.stream_buffer_offset = 0;
+//                 client.response_prepared = false;
+
+//                 for (size_t i = 0; i < _pollfds.size(); i++)
+//                 {
+//                     if (_pollfds[i].fd == fd)
+//                     {
+//                         _pollfds[i].events &= ~POLLOUT;
+//                         break;
+//                     }
+//                 }
+//                 return;
+//             }
+//         }
+//         ssize_t sent = send(fd,client.stream_buffer + client.stream_buffer_offset,client.stream_buffer_size - client.stream_buffer_offset,MSG_NOSIGNAL);
+//         if (sent <= 0)
+//         {
+//             client.stream_file_fd = -1;
+//             client.stream_bytes_remaining = 0;
+//             client.stream_buffer_size = 0;
+//             client.stream_buffer_offset = 0;
+//             client.response_prepared = false;
+//             close(client.stream_file_fd);
+//             _removeClient(fd);
+//             return;
+//         }
+//         client.stream_buffer_offset += sent;
+//         client.stream_bytes_remaining -= sent;
+
+//         return;
+//     }
+//     // Finished normal response
+//     client.response_prepared = false;
+
+//     for (size_t i = 0; i < _pollfds.size(); i++)
+//     {
+//         if (_pollfds[i].fd == fd)
+//         {
+//             _pollfds[i].events &= ~POLLOUT;
+//             break;
+//         }
+//     }
+// }
+
+
+// void Multiplexer::_writeClient(int fd)
+// {
+//     char buffer[4096];
+//     std::map<int, Client>::iterator iter = _clients.find(fd);
+//     if (iter == _clients.end())
+//         return;
+//     Response parsed_response =  Dispatcher::dispatch(iter->second, which_server(iter->second.port));
+//     iter->second.response = parsed_response.toString();
+//     int n = send(fd,iter->second.response.c_str(),iter->second.response.size(),MSG_NOSIGNAL);
+//     if (!parsed_response.isStreaming())
+//     {
+//         iter->second.response = parsed_response.toString();
+//         send(fd,iter->second.response.c_str(),iter->second.response.size(),MSG_NOSIGNAL);
+//     }
+//     else
+//     {
+//         while(iter->second.stream_bytes_remaining > 0)
+//         {
+//             ssize_t bytesRead = read(iter->second.stream_file_fd, buffer, sizeof(buffer));
+//             if (bytesRead <= 0)
+//                 break;
+//             send(iter->second.fd, buffer, bytesRead, MSG_NOSIGNAL);
+//             iter->second.stream_bytes_remaining -= bytesRead;
+//         }
+//     }
+//     // if (!parsed_response.isStreaming())
+//     // {
+//     //     iter->second.response = parsed_response.toString();
+//     //     send(fd,iter->second.response.c_str(),iter->second.response.size(),MSG_NOSIGNAL);
+//     // }
+//     // if (parsed_response.isStreaming())
+//     // {
+//     //     read(iter->second.stream_file_fd, buffer, sizeof(buffer));
+//     //     send(iter->second.fd, buffer, sizeof(buffer), MSG_NOSIGNAL);
+//     //     close(iter->second.stream_file_fd);
+//     //     iter->second.stream_file_fd = -1;
+//     //     iter->second.stream_bytes_remaining = 0;
+//     // }
+//     // parse_request();
+//     // iter->second.response = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nHello";
+//     // iter->second.parsed_request.getRequestPath();
+//     // int n = send(fd, iter->second.response.c_str(), iter->second.response.size(), MSG_NOSIGNAL);
+//     if (n <= -1)
+//     {
+//         _removeClient(fd);
+//         return ;
+//     }
+//     iter->second.response.erase(0, n);
+//     if (iter->second.response.empty())
+//     {
+//         for (size_t i = 0; i < _pollfds.size(); i++)
+//         {
+//             if (_pollfds[i].fd == fd)
+//             {
+//                 _pollfds[i].events &= ~POLLOUT;
+//                 break;
+//             }
+//         }
+//     }
+// }
 
 void Multiplexer::enableWrite(int fd)
 {
@@ -373,65 +648,92 @@ void Multiplexer::_removeClient(int fd)
     }
 }
 
-int which_status_code(int status_code)
+// int which_status_code(int status_code)
+// {
+//     if (status_code == 200)
+//         return HTTP_200_OK;
+//     else if (status_code == 201)
+//         return HTTP_201_CREATED;
+//     else if (status_code == 204)
+//         return HTTP_204_NO_CONTENT;
+//     else if (status_code == 301)
+//         return HTTP_301_MOVED_PERMANENTLY;
+//     else if (status_code == 302) 
+//         return HTTP_302_FOUND;
+//     else if (status_code == 304) 
+//         return HTTP_304_NOT_MODIFIED;
+//     else if (status_code == 400) 
+//         return HTTP_400_BAD_REQUEST;
+//     else if (status_code == 403) 
+//         return HTTP_403_FORBIDDEN;
+//     else if (status_code == 404) 
+//         return HTTP_404_NOT_FOUND;
+//     else if (status_code == 405) 
+//         return HTTP_405_METHOD_NOT_ALLOWED;
+//     else if (status_code == 408) 
+//         return HTTP_408_REQUEST_TIMEOUT;
+//     else if (status_code == 409) 
+//         return HTTP_409_CONFLICT;
+//     else if (status_code == 410) 
+//         return HTTP_410_GONE;
+//     else if (status_code == 411) 
+//         return HTTP_411_LENGTH_REQUIRED;
+//     else if (status_code == 413) 
+//         return HTTP_413_PAYLOAD_TOO_LARGE;
+//     else if (status_code == 414) 
+//         return HTTP_414_URI_TOO_LONG;
+//     else if (status_code == 415) 
+//         return HTTP_415_UNSUPPORTED_MEDIA;   
+//     else if (status_code == 500) 
+//         return HTTP_500_INTERNAL_SERVER_ERROR;
+//     else if (status_code == 502) 
+//         return HTTP_502_BAD_GATEWAY;
+//     else if (status_code == 504) 
+//         return HTTP_504_GATEWAY_TIMEOUT;
+//     else if (status_code == 505) 
+//         return HTTP_505_HTTP_VERSION_NOT_SUPPORTED;
+//     else                         
+//         return HTTP_500_INTERNAL_SERVER_ERROR;
+// }
+
+void Multiplexer::readCGI(int fd)
 {
-    if (status_code == 200)
-        return HTTP_200_OK;
-    else if (status_code == 201)
-        return HTTP_201_CREATED;
-    else if (status_code == 204)
-        return HTTP_204_NO_CONTENT;
-    else if (status_code == 301)
-        return HTTP_301_MOVED_PERMANENTLY;
-    else if (status_code == 302) 
-        return HTTP_302_FOUND;
-    else if (status_code == 304) 
-        return HTTP_304_NOT_MODIFIED;
-    else if (status_code == 400) 
-        return HTTP_400_BAD_REQUEST;
-    else if (status_code == 403) 
-        return HTTP_403_FORBIDDEN;
-    else if (status_code == 404) 
-        return HTTP_404_NOT_FOUND;
-    else if (status_code == 405) 
-        return HTTP_405_METHOD_NOT_ALLOWED;
-    else if (status_code == 408) 
-        return HTTP_408_REQUEST_TIMEOUT;
-    else if (status_code == 409) 
-        return HTTP_409_CONFLICT;
-    else if (status_code == 410) 
-        return HTTP_410_GONE;
-    else if (status_code == 411) 
-        return HTTP_411_LENGTH_REQUIRED;
-    else if (status_code == 413) 
-        return HTTP_413_PAYLOAD_TOO_LARGE;
-    else if (status_code == 414) 
-        return HTTP_414_URI_TOO_LONG;
-    else if (status_code == 415) 
-        return HTTP_415_UNSUPPORTED_MEDIA;
-    else if (status_code == 500) 
-        return HTTP_500_INTERNAL_SERVER_ERROR;
-    else if (status_code == 502) 
-        return HTTP_502_BAD_GATEWAY;
-    else if (status_code == 504) 
-        return HTTP_504_GATEWAY_TIMEOUT;
-    else if (status_code == 505) 
-        return HTTP_505_HTTP_VERSION_NOT_SUPPORTED;
-    else                         
-        return HTTP_500_INTERNAL_SERVER_ERROR;
+    char buffer[4096];
+
+    ssize_t n = read(fd, buffer, sizeof(buffer));
+
+    int client_fd = _cgi_pipes[fd];
+    Client &client = _clients[client_fd];
+
+    if (n > 0)
+    {
+        client.response.append(buffer, n);
+        return;
+    }
+    close(fd);
+    _cgi_pipes.erase(fd);
+
+    client.cgi_started = false;
+
+    enableWrite(client_fd);
 }
 
 void Multiplexer::_readClient(int fd)
 {
     char buffer[4096];
     std::map<int, Client>::iterator iter = _clients.find(fd);
+
+    if (_cgi_pipes.count(fd))
+    {
+        readCGI(fd);
+        return;
+    }
     if (iter != _clients.end())
     {
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
         if (bytesRead == -1)
         {
-            if (errno != EAGAIN && errno != EWOULDBLOCK)
-                _removeClient(fd);
+            _removeClient(fd);
             return;
         }
         else if (bytesRead > 0)

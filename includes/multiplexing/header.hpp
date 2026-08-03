@@ -38,6 +38,7 @@
 #define MAX_HEADER_SIZE 8192
 #define MAX_RAM_BUFFER 8192
 #define MAX_BY 22000000
+#define CGI_TIMEOUT 5
 
 // #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
@@ -100,6 +101,7 @@ typedef struct Location_Config
     bool has_autoindex;
     size_t cgi_paths_index;
     size_t cgi_extns_index;
+
 } Location_Config;
 
 class Server_block
@@ -175,11 +177,24 @@ struct Client
     int stream_file_fd; // call serveFile 
     off_t stream_bytes_remaining; // call serveFile 
     bool response_prepared;
+    char    stream_buffer[4096];
+    ssize_t stream_buffer_size;
+    ssize_t stream_buffer_offset;
+    bool cgi_started;
     // std::string body;
     // size_t end_of_header;
     ClientRequest parsed_request;
-
-    Client() : fd(-1), port(0), stream_file_fd(-1), stream_bytes_remaining(0), response_prepared(false) {}
+    
+    Client()
+    : fd(-1),
+    port(0),
+    stream_file_fd(-1),
+    stream_bytes_remaining(0),
+    response_prepared(false),
+    stream_buffer_size(0),
+    stream_buffer_offset(0),
+    cgi_started(false)
+    {}
 };
 
 class AFd
@@ -209,27 +224,33 @@ class Socket : public AFd
 
 // ---------------------------- Multiplexing Class -------------------------------//
 
-class Multiplexer {
-private:
-    std::vector<Socket *>          _servers;
-    std::map<int, Client>        _clients;
-    std::vector<struct pollfd>     _pollfds;
-    std::map<int , int>          _cgi_pipes;
-    std::map<int, pid_t>        _cgi_pids;
+class Multiplexer 
+{
+    private:
+        std::vector<Socket *>          _servers;
+        std::map<int, Client>        _clients;
+        std::vector<struct pollfd>     _pollfds;
+        std::map<int , int>          _cgi_pipes;
+        std::map<int, pid_t>        _cgi_pids;
+        std::map<int, time_t>  cgi_timeouts;
 
-    void _acceptNewClient(Socket *server);
-    void _readClient(int fd);
-    void _writeClient(int fd);
-    void _removeClient(int fd);
-
-public:
-    char** env;
-    Multiplexer();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-    ~Multiplexer();
-    void enableWrite(int fd);
-    void addServer(Socket *s);
-    int handleClient(int fd);
-    void run();
+        void _acceptNewClient(Socket *server);
+        void _readClient(int fd);
+        void _writeClient(int fd);
+        void _removeClient(int fd);
+        void    prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
+        bool    sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
+        void    sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
+        void    disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn requst jdida.
+        void    readCGI(int fd); // Read l CGI output, w sfto l client.
+    public:
+        char** env;
+        Multiplexer();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+        ~Multiplexer();
+        void enableWrite(int fd);
+        void addServer(Socket *s);
+        int handleClient(int fd); // thi one executes CGI
+        void run();
 };
 
 // -------------------------------- CGI Class -----------------------------------//

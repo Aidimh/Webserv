@@ -1,4 +1,4 @@
-#include "header.hpp"
+#include "../../includes/multiplexing/header.hpp"
 
 extern int server_index;
 
@@ -12,7 +12,7 @@ void parse_root_path(size_t &index)
         throw std::runtime_error(Conf_File::tokens[index + 1] + " : No such File or Directory!.");
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
     index += 2;
-}
+} 
 
 void parse_autoindex(size_t &index)
 {
@@ -23,8 +23,8 @@ void parse_autoindex(size_t &index)
     if (!is_autoindex_id(Conf_File::tokens[index + 1]))
         throw Error::Unkonwn_Directive_value();
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex = next_token(Conf_File::tokens, index);
+    Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_autoindex = true;
     index += 2;
-    
 }
 
 

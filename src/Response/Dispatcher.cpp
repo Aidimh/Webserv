@@ -9,6 +9,7 @@
  * A 302 redirect here would turn, for example, a 404 into a successful
  * redirect and would hide the real error from the client.
  */
+
 static void setErrorPageBody(Response& response)
 {
     if (response.getStatusCode() < 400)
@@ -27,6 +28,7 @@ static void setErrorPageBody(Response& response)
     response.setBody(page.str());
     response.addHeader("content-type", "text/html");
 }
+
 
 static std::string statusMessage(short code)
 {
@@ -91,6 +93,14 @@ static std::string statusMessage(short code)
 
 Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
+    // Temporary validation (for testing only)
+    if (client.parsed_request.getRequestPath().empty() || client.parsed_request.getRequestPath()[0] != '/')
+    {
+        Response response = AMethod::buildErrorResponse(HTTP_400_BAD_REQUEST, "Bad Request");
+        setErrorPageBody(response);
+        return response;
+    }
+
     // 1. Parser already found an error
     if (client.parsed_request.state == ClientRequest::ERROR_STATE)
     {
@@ -105,6 +115,13 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     {
         Response response = AMethod::buildErrorResponse(HTTP_404_NOT_FOUND, "Not Found");
         setErrorPageBody(response);
+        return response;
+    }
+
+    if (Router::isCGIRequest(client.parsed_request,*location) == true)
+    {
+        Response response;
+        response.setResponseMode(Response::CGI_RESPONSE);
         return response;
     }
 
@@ -126,11 +143,8 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(res);
         return res;
     }
-
     Response response = method->execute(client, server);
-
     delete method;
-
     setErrorPageBody(response);
     return response;
 }

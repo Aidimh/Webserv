@@ -470,7 +470,41 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		}
 		else
 		{
+			if (TmpFileFd == -1)
+			{
+				struct stat meta;
+				if (stat("www", &meta) != 0)
+					mkdir ("www", 0755);
+				if (stat("www/upload", &meta) != 0)
+					mkdir ("www/upload", 0755);
+				
+				std::stringstream	stream;
+				stream << client.fd;
 
+				std::string			FilePath;
+				FilePath = "www/upload/storage_" + stream.str();
+				int	fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+				if (fd == -1)
+				{
+					status_code = 500;
+					state		= ERROR_STATE;
+					return;
+				}
+				TmpFileFd = fd;
+				if (!body.empty())
+				{
+					write(fd, body.data(), body.length());
+					std::string().swap(body);
+				}
+			}
+			ssize_t written = write(TmpFileFd, chunk.data(), ChunkSize);
+			if (written < 0 || (size_t)written != ChunkSize)
+			{
+				status_code = 500;
+				state = ERROR_STATE;
+				return;
+			}
+			BodySize += written;
 		}
 		client.request.erase(0, needs);
     }

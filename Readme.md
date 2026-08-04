@@ -94,7 +94,27 @@ username=admin&password=123
   + **Headers :**  From the second line until the empty line, defines key-value pairs separated by colon and space `: `,They describe the metadata of the request, like the `Host`, the client `User-Agent` or the `Content-Length` of the body, etc.      
   + **Empty line**    
   + **Body :**  Contain the data associated with the message, generally used on the `POST` method, usually `GET` or `DELETE` methods don't have body.  might be POST data to send to the server in a request. 
+### Transfer Encoding   
+HTTP request usually require **content length** of the body on the headers so the server gonna know exactly how many bytes gonna read from the request body received from the socket.   
+What if the client is streaming a live video?? The client himself don't know how many bytes the request gonna take, for those cases we use the **transfer encoding**, which is a way of sending only small chunks to the server and the server keep reading the body based on a structure of the transfer encoding which is like this :   
+```http
+13\r\n
+hello world! \r\n
+18\r\n
+my name is mohamed\r\n
+0\r\n
+\r\n
+```
 
+which is in the form of :  
+```http 
+{NextChunkSizeInHexadecimal}{\r\n}
+{Chunk}{\r\n}
+... keeps on the same loop
+```
+
+Every single chunk contain three steps exactly which keep in a loop until we got size 0 of the final line, we start by the size of the next chunk in hexadecimal and "\r\n" and then the chunk content forwarded by "\r\n".    
+### tringstream in C++
 #### Response
 The web server returns a HTTP based response. The response is divides by three sections also :  
   + Start line : Contain the http version and the status code;   

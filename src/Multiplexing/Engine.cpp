@@ -752,37 +752,27 @@ void Multiplexer::_readClient(int fd)
     }
     if (iter != _clients.end())
     {
-        if (iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
-        {
-            enableWrite(fd);
-            return;
-        }
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
         if (bytesRead == -1)
+        {
             _removeClient(fd);
+            return;
+        }
         else if (bytesRead > 0)
         {
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
+
             if (iter->second.parsed_request.state == ClientRequest::BODY)
-            {
-                if (iter->second.parsed_request.getContentLength() > 0 || iter->second.parsed_request.CheckTransferEncoding())
-                {
-                    if (iter->second.parsed_request.CheckTransferEncoding() || iter->second.parsed_request.getBody().length() < iter->second.parsed_request.getContentLength())
-                    {
-                        
-                    }
-                }
-            }
+                iter->second.parsed_request.BodyRequest(iter->second);
         }
-        if (bytesRead == 0)
+        else if (bytesRead == 0)
         {
             iter->second.parsed_request.state = ClientRequest::DONE;
-            // std::cout << "Client Disconnected\n";
-            // _removeClient(fd);
             enableWrite(fd);
             return;
         }
+        if (iter->second.parsed_request.state == ClientRequest::DONE || iter->second.parsed_request.state == ClientRequest::ERROR_STATE)
+            enableWrite(fd);
     }
-    // enableWrite(fd);
 }

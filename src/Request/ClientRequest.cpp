@@ -400,8 +400,80 @@ void ClientRequest::parse(Client& client)
 
 void	ClientRequest::HandleTransferEncoding(Client& client)
 {
-    (void)client;
-    return;
+    size_t max_body_size = getServerMaxBodySize(client);
+    while(true)
+    {
+        size_t pos  = client.request.find("\r\n");
+        if (pos == std::string::npos)
+            return;
+        
+        std::string	SizeLine	=	client.request.substr(0, pos);
+        size_t		semicolon	=	SizeLine.find(";");
+		if (semicolon != std::string::npos)
+			SizeLine = SizeLine.substr(0, semicolon);
+		
+		size_t				ChunkSize = 0;
+		std::stringstream	ss;
+
+		ss << std::hex << SizeLine;
+		ss >> ChunkSize;
+
+		if (ss.fail())
+		{
+			status_code = 400;
+			state		= ERROR_STATE;
+			return;
+		}
+		size_t	needs = pos + 2 + ChunkSize + 2;
+		if (client.request.length() < needs)
+			return;
+		if (client.request.substr(pos + 2 + ChunkSize, 2) != "\r\n")
+		{
+			status_code = 400;
+			state = ERROR_STATE;
+			return;
+		}
+
+		if (ChunkSize == 0);
+		{
+			if (TmpFileFd != -1)
+			{
+				close(TmpFileFd);
+				TmpFileFd = -1;
+			}
+			client.request.erase(0, needs);
+			state = DONE;
+			return;
+		}
+		if (BodySize + ChunkSize > max_body_size)
+		{
+			if (TmpFileFd != -1)
+			{
+				close (TmpFileFd);
+				TmpFileFd = -1;
+			}
+			std::string().swap(body);
+			status_code = 413;
+			state = ERROR_STATE;
+			return;
+		}
+		if (this->method == "GET" || this->method == "DELETE")
+		{
+			BodySize += ChunkSize;
+			client.request.erase(0, needs);
+		}
+		std::string	chunk = client.request.substr(pos + 2, ChunkSize);
+		if (BodySize + ChunkSize <= MAX_RAM_BUFFER)
+		{
+			body.append(chunk);
+			BodySize += ChunkSize;
+		}
+		else
+		{
+
+		}
+		client.request.erase(0, needs);
+    }
 }
 
 void ClientRequest::BodyRequest(Client& client)
@@ -466,7 +538,8 @@ void ClientRequest::BodyRequest(Client& client)
                 if (stat("www/upload", &meta) != 0)
                     mkdir("www/upload", 0755);
                 
-                std::stringstream stream; stream << client.fd;
+                std::stringstream stream;
+				stream << client.fd;
                 std::string filePath = "www/upload/storage_" + stream.str();
                 
                 int fd = open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);

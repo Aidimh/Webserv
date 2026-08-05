@@ -3,7 +3,7 @@
 // #define max_body_size 9999999
 
 
-ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0){}
+ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0), ContentLength(0), HasContentLength(false), HasTransferEncoding(false){}
 
 ClientRequest::ClientRequest(const ClientRequest& other)
 {
@@ -28,35 +28,21 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
     return *this;
 }
 
-ClientRequest::~ClientRequest(){}
-
-
-void ClientRequest::setMethod(const std::string& value)
+ClientRequest::~ClientRequest()
 {
-    method = value;
+	if (TmpFileFd != -1)
+    {
+        close(TmpFileFd);
+        TmpFileFd = -1;
+    }
 }
 
 
-void ClientRequest::setRequestPath(const std::string& value)
-{
-    request_path = value;
-}
-
-void ClientRequest::setBody(const std::string& value)
-{
-    body = value;
-}
-
-void ClientRequest::setVersion(const std::string& value)
-{
-    version = value;
-}
-
-void ClientRequest::addHeader(const std::string& key,
-                              const std::string& value)
-{
-    headers[key] = value;
-}
+void ClientRequest::setMethod(const std::string& value){method = value;}
+void ClientRequest::setRequestPath(const std::string& value){request_path = value;}
+void ClientRequest::setBody(const std::string& value){body = value;}
+void ClientRequest::setVersion(const std::string& value){version = value;}
+void ClientRequest::addHeader(const std::string& key, const std::string& value){headers[key] = value;}
 
 const std::string& ClientRequest::getMethod() const {return method;}
 const std::string& ClientRequest::getRequestPath() const {return request_path;}
@@ -173,6 +159,12 @@ void ClientRequest::RequestLineParser(std::string line)
     }
     method = line.substr(0, first_space);
     request_path = line.substr(first_space + 1, second_space - first_space -1);
+	if (request_path.length() > 2048)
+	{
+		status_code = 414;
+		state = ERROR_STATE;
+		return;
+	}
 
     size_t  end;
     end = line.find_last_not_of(" \r\n");
@@ -227,6 +219,15 @@ void ClientRequest::HeadersParser(std::string headers)
             std::string value   = header.substr(colon + 1);
             MyToLower(key);
             key = RemoveFirstLastSpaces(key);
+			for (size_t i = 0; i < key.length(); i++)
+			{
+				if (isspace(key[i]))
+				{
+					status_code = 400;
+					state = ERROR_STATE;
+					return;
+				}
+			}
             if ((key == "content-length" || key == "transfer-encoding") && this->headers.find(key) != this->headers.end())
             {
                 status_code = 400;
@@ -235,6 +236,13 @@ void ClientRequest::HeadersParser(std::string headers)
             }
             value = RemoveFirstLastSpaces(value);
             this->headers[key] = value;
+			if (key == "content-length")
+			{
+				HasContentLength = true;
+				ContentLength = getContentLength();
+			}
+			if (key == "transfer-encoding")
+				HasTransferEncoding = CheckTransferEncoding();
         }
         else
         {
@@ -273,16 +281,6 @@ bool ClientRequest::CheckTransferEncoding(void)
     return (false);
 }
 
-bool ClientRequest::CheckContentLength(void)
-{
-    std::map<std::string, std::string>::iterator it;
-
-    it = headers.find("content-length");
-    if (it == headers.end())
-        return (false);
-    return (it != headers.end() && !it->second.empty());
-}
-
 size_t ClientRequest::getContentLength(void)
 {
     std::map<std::string, std::string>::iterator it = headers.find("content-length");
@@ -318,85 +316,102 @@ void ClientRequest::parse(Client& client)
     if (this->state == ERROR_STATE)
         return;
 
-     
-    {
-        size_t begin = removeWhitespace(client);
-        if (begin > 0)
-            client.request.erase(0, begin);
-        if (client.request.empty())
-            return;
-        size_t check = client.request.find("\r\n\r\n");
-        if (check == std::string::npos)
-		{
-			if (client.request.length() > MAX_HEADER_SIZE)
-			{
-				this->status_code = 431;
-				this->state = ERROR_STATE;
-			}
-			return;
-		}
-		if (check > MAX_HEADER_SIZE)
+	size_t begin = removeWhitespace(client);
+	if (begin > 0)
+		client.request.erase(0, begin);
+	if (client.request.empty())
+		return;
+
+	size_t check = client.request.find("\r\n\r\n");
+	if (check == std::string::npos)
+	{
+		if (client.request.length() > MAX_HEADER_SIZE)
 		{
 			this->status_code = 431;
 			this->state = ERROR_STATE;
-			return;
 		}
-		std::string headers;
-		std::string extra;
-		
-		headers = client.request.substr(0, check + 2);
-		if (headers.find('\0') != std::string::npos)
-		{
-			status_code = 400;
-			state = ERROR_STATE;
-			return;
-		}
-		HeadersParser(headers);
-		if (this->state == ERROR_STATE)
-			return;
-		state = BODY;
-		extra = client.request.substr(check + 4);
-		client.request.clear();
+		return;
+	}
 
-		bool is_chunked = CheckTransferEncoding();
-		if(is_chunked && CheckContentLength())
-		{
-			status_code = 400;
-			state = ERROR_STATE;
-			return;
-		}
-		else if (is_chunked)
-			chunks.append(extra);
-		else
-		{
-			size_t expected = getContentLength();
-			if (extra.length() > expected)
-			{
-				body = extra.substr(0, expected);
-				BodySize += expected;
-			}
-			else
-			{
-				body        =   extra;
-				BodySize    +=  extra.length();
-			}
-		}
-		size_t max_body_size = getServerMaxBodySize(client); 
-		
-		if(getContentLength() > max_body_size)
-		{
-			status_code = 413;
-			state = ERROR_STATE;
-			return;
-		}
-		if (!is_chunked && BodySize >= getContentLength())
-		{
-			state = DONE;
-			return;
-		}
-    }
+	if (check > MAX_HEADER_SIZE)
+	{
+		this->status_code = 431;
+		this->state = ERROR_STATE;
+		return;
+	}
+	std::string headers = client.request.substr(0, check + 2);
+
+	if (headers.find('\0') != std::string::npos)
+	{
+		status_code = 400;
+		state = ERROR_STATE;
+		return;
+	}
+
+	HeadersParser(headers);
+	if (this->state == ERROR_STATE)
+		return;
+
+	bool is_chunked = HasTransferEncoding;
+	if(is_chunked && HasContentLength)
+	{
+		status_code = 400;
+		state = ERROR_STATE;
+		return;
+	}
+
+	state = BODY;
+	client.request.erase(0, check + 4);
 }
 
+void ClientRequest::BodyRequest(Client& client)
+{
+	if (!HasContentLength && !HasTransferEncoding)
+	{
+		state = DONE; 
+		return;
+	}
+	if (client.request.empty())
+        return;
+
+	else if (HasTransferEncoding)
+        HandleTransferEncoding(client);
+	else
+		HandleContentLength(client);
+	return;
+}
+
+bool ClientRequest::openTempFile(int ClientFd)
+{
+	struct stat meta;
+
+	if (stat("www", &meta) != 0)
+		mkdir ("www", 0755);
+	if (stat("www/upload", &meta) != 0)
+		mkdir ("www/upload", 0755);
+	
+	std::stringstream	stream;
+	stream << ClientFd;
+
+	std::string			FilePath = "www/upload/storage_" + stream.str();
+
+	int	fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	if (fd == -1)
+	{
+		status_code = 500;
+		state		= ERROR_STATE;
+		return false;
+	}
+
+	TmpFileFd = fd;
+	if (!body.empty())
+	{
+		write(fd, body.data(), body.length());
+		std::string().swap(body);
+	}
+
+	return true;
+}
 
 void	ClientRequest::HandleTransferEncoding(Client& client)
 {
@@ -406,9 +421,20 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
         size_t pos  = client.request.find("\r\n");
         if (pos == std::string::npos)
             return;
-        
+        if (pos > 100)
+		{
+			status_code = 400;
+			state = ERROR_STATE;
+			return;
+		}
         std::string	SizeLine	=	client.request.substr(0, pos);
-        size_t		semicolon	=	SizeLine.find(";");
+		if (SizeLine.find('-') != std::string::npos)
+		{
+			status_code = 400;
+			state = ERROR_STATE;
+			return;
+		}
+        size_t	semicolon	=	SizeLine.find(";");
 		if (semicolon != std::string::npos)
 			SizeLine = SizeLine.substr(0, semicolon);
 		
@@ -418,7 +444,7 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		ss << std::hex << SizeLine;
 		ss >> ChunkSize;
 
-		if (ss.fail())
+		if (ss.fail() || !ss.eof())
 		{
 			status_code = 400;
 			state		= ERROR_STATE;
@@ -434,7 +460,7 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 			return;
 		}
 
-		if (ChunkSize == 0);
+		if (ChunkSize == 0)
 		{
 			if (TmpFileFd != -1)
 			{
@@ -461,6 +487,7 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		{
 			BodySize += ChunkSize;
 			client.request.erase(0, needs);
+			continue;
 		}
 		std::string	chunk = client.request.substr(pos + 2, ChunkSize);
 		if (BodySize + ChunkSize <= MAX_RAM_BUFFER)
@@ -472,30 +499,8 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		{
 			if (TmpFileFd == -1)
 			{
-				struct stat meta;
-				if (stat("www", &meta) != 0)
-					mkdir ("www", 0755);
-				if (stat("www/upload", &meta) != 0)
-					mkdir ("www/upload", 0755);
-				
-				std::stringstream	stream;
-				stream << client.fd;
-
-				std::string			FilePath;
-				FilePath = "www/upload/storage_" + stream.str();
-				int	fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-				if (fd == -1)
-				{
-					status_code = 500;
-					state		= ERROR_STATE;
+				if (!openTempFile(client.fd))
 					return;
-				}
-				TmpFileFd = fd;
-				if (!body.empty())
-				{
-					write(fd, body.data(), body.length());
-					std::string().swap(body);
-				}
 			}
 			ssize_t written = write(TmpFileFd, chunk.data(), ChunkSize);
 			if (written < 0 || (size_t)written != ChunkSize)
@@ -510,108 +515,79 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
     }
 }
 
-void ClientRequest::BodyRequest(Client& client)
+void ClientRequest::HandleContentLength(Client& client)
 {
-    if (client.request.empty())
-        return;
-
     size_t max_body_size = getServerMaxBodySize(client);
 
-    if (CheckTransferEncoding())
-        HandleTransferEncoding(client);
-    else
-    {
-        if (getContentLength() > max_body_size)
-        {
-            if (TmpFileFd != -1)
-            {
-                close(TmpFileFd);
-                TmpFileFd = -1;
-            }
-            std::string().swap(body);
-            status_code = 413;
-            state = ERROR_STATE;
-            return;
-        }
+	if (getContentLength() > max_body_size)
+	{
+		if (TmpFileFd != -1)
+		{
+			close(TmpFileFd);
+			TmpFileFd = -1;
+		}
+		std::string().swap(body);
+		status_code = 413;
+		state = ERROR_STATE;
+		return;
+	}
 
-        if (BodySize >= getContentLength())
-        {
-            if (TmpFileFd != -1)
-            {
-                close(TmpFileFd);
-                TmpFileFd = -1;
-            }
-            state = DONE;
-            return;
-        }
+	if (BodySize >= getContentLength())
+	{
+		if (TmpFileFd != -1)
+		{
+			close(TmpFileFd);
+			TmpFileFd = -1;
+		}
+		state = DONE;
+		return;
+	}
 
-        size_t remaining = getContentLength() - BodySize;
-        size_t bytesToTake = (client.request.length() > remaining) ? remaining : client.request.length();
+	size_t remaining = getContentLength() - BodySize;
+	size_t bytesToTake = (client.request.length() > remaining) ? remaining : client.request.length();
 
-        if (this->method == "GET" || this->method == "DELETE")
-        {
-            BodySize += bytesToTake;
-            client.request.erase(0, bytesToTake);
-            if (BodySize >= getContentLength())
-                state = DONE;
-            return;
-        }
+	if (this->method == "GET" || this->method == "DELETE")
+	{
+		BodySize += bytesToTake;
+		client.request.erase(0, bytesToTake);
+		if (BodySize >= getContentLength())
+			state = DONE;
+		return;
+	}
 
-        if (getContentLength() <= MAX_RAM_BUFFER)
-        {
-            body.append(client.request, 0, bytesToTake);
-            BodySize += bytesToTake;
-        }
-        else
-        {
-            if (TmpFileFd == -1)
-            {
-                struct stat meta;
-                if (stat("www", &meta) != 0)
-                    mkdir("www", 0755);
-                if (stat("www/upload", &meta) != 0)
-                    mkdir("www/upload", 0755);
-                
-                std::stringstream stream;
-				stream << client.fd;
-                std::string filePath = "www/upload/storage_" + stream.str();
-                
-                int fd = open(filePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
-                if (fd == -1)
-                {
-                    status_code = 500;
-                    state = ERROR_STATE;
-                    return;
-                }
-                TmpFileFd = fd;
-                
-                if (!body.empty())
-                {
-                    write(fd, body.data(), body.length());
-                    std::string().swap(body);
-                }
-            }
+	if (getContentLength() <= MAX_RAM_BUFFER)
+	{
+		body.append(client.request, 0, bytesToTake);
+		BodySize += bytesToTake;
+	}
+	else
+	{
+		if (TmpFileFd == -1)
+		{
+			if (!openTempFile(client.fd))
+				return;
+		}
 
-            ssize_t written = write(TmpFileFd, client.request.data(), bytesToTake);
-            if (written < 0)
-            {
-                status_code = 500;
-                state = ERROR_STATE;
-                return;
-            }
-            bytesToTake = written;
-            BodySize += written;
-        }
-        client.request.erase(0, bytesToTake);
+		ssize_t written = write(TmpFileFd, client.request.data(), bytesToTake);
+		if (written < 0)
+		{
+			status_code = 500;
+			state = ERROR_STATE;
+			return;
+		}
+		bytesToTake = written;
+		BodySize += written;
+	}
+	client.request.erase(0, bytesToTake);
 
-        if (BodySize >= getContentLength())
-        {
-            if (TmpFileFd != -1)
-            {
-                close(TmpFileFd);
-                TmpFileFd = -1;
-            }
-            state = DONE;
-        }
-    }
+	if (BodySize >= getContentLength())
+	{
+		if (TmpFileFd != -1)
+		{
+			close(TmpFileFd);
+			TmpFileFd = -1;
+		}
+		state = DONE;
+	}
+
 }

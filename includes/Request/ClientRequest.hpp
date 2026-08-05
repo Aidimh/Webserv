@@ -44,8 +44,10 @@ class ClientRequest
 		bool										CheckTransferEncoding(void);
 		bool										CheckContentLength(void);
 		size_t										getContentLength(void);
+		bool										openTempFile(int ClientFd);
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
+		void										HandleContentLength(Client& client);
 
 
 
@@ -74,11 +76,15 @@ class ClientRequest
 		std::map<std::string, std::string>			headers;
 		std::string									cgi;
 		std::string									body;
-		std::string									chunks;
 		short										status_code;
 		int											TmpFileFd;
 		size_t										BodySize;
+		size_t										ContentLength;
+		bool										HasContentLength;
+		bool										HasTransferEncoding;
+
 };
+
 
 
 ///////////////////////////// Helper Functions ////////////////////////////

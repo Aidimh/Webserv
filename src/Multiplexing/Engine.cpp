@@ -415,7 +415,7 @@ void Multiplexer::run()
                             }
                         }
                     }
-                    std::cout << _pollfds[i].revents << "\n";
+                    // std::cout << _pollfds[i].revents << "\n";
 
                     if (_pollfds[i].revents & POLLIN)
                         _readClient(_pollfds[i].fd);

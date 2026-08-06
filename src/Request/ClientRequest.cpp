@@ -314,8 +314,8 @@ size_t ClientRequest::getContentLength(void)
 void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
-        return;
-
+		return;
+	
 	size_t begin = removeWhitespace(client);
 	if (begin > 0)
 		client.request.erase(0, begin);

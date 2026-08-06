@@ -91,6 +91,8 @@ std::string AMethod::resolveTarget(const Client& client,const Server_block& serv
 {
     const std::string& requestPath = client.parsed_request.getRequestPath();
 
+    // path = "/"
+
     std::string root = server.root;
     std::string locationPath;
 
@@ -123,7 +125,6 @@ std::string AMethod::resolveTarget(const Client& client,const Server_block& serv
 
 PathType AMethod::getPathType(const std::string& path) const
 {
-    
     if (fileExists(path))
     {
         if(access(path.c_str(), R_OK) != 0)

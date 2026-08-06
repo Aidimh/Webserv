@@ -13,306 +13,306 @@ std::vector<std::string> Conf_File::tokens;
 // ----------------------------------------------------------------------
 // Fixture setup
 // ----------------------------------------------------------------------
-static void setupFixtures()
-{
-    system("mkdir -p ./www");
-    system("mkdir -p ./www/uploads");
-    system("mkdir -p ./www/autoindex_off");
+// static void setupFixtures()
+// {
+//     system("mkdir -p ./www");
+//     system("mkdir -p ./www/uploads");
+//     system("mkdir -p ./www/autoindex_off");
 
-    // index.html for GET existing file test
-    {
-        std::ofstream f("./www/index.html");
-        f << "<html><body>Hello Webserv</body></html>";
-    }
+//     // index.html for GET existing file test
+//     {
+//         std::ofstream f("./www/index.html");
+//         f << "<html><body>Hello Webserv</body></html>";
+//     }
 
-    // existing.txt for POST 409 test
-    {
-        std::ofstream f("./www/uploads/existing.txt");
-        f << "already here";
-    }
+//     // existing.txt for POST 409 test
+//     {
+//         std::ofstream f("./www/uploads/existing.txt");
+//         f << "already here";
+//     }
 
-    // delete_me.txt for DELETE existing file test
-    {
-        std::ofstream f("./www/uploads/delete_me.txt");
-        f << "to be deleted";
-    }
+//     // delete_me.txt for DELETE existing file test
+//     {
+//         std::ofstream f("./www/uploads/delete_me.txt");
+//         f << "to be deleted";
+//     }
 
-    // no_read.txt for GET permission denied test
-    {
-        std::ofstream f("./www/no_read.txt");
-        f << "secret";
-    }
-    system("chmod 000 ./www/no_read.txt");
+//     // no_read.txt for GET permission denied test
+//     {
+//         std::ofstream f("./www/no_read.txt");
+//         f << "secret";
+//     }
+//     system("chmod 000 ./www/no_read.txt");
 
-    // Make sure files that must NOT exist are cleaned up (repeatable runs)
-    system("rm -f ./www/uploads/newfile.txt");
-    system("rm -f ./www/doesnotexist.html");
-    system("rm -rf ./www/nonexistent_folder");
-    system("rm -f ./www/uploads/does_not_exist.txt");
-    system("rm -f ./www/uploads/badrequest.txt");
-}
+//     // Make sure files that must NOT exist are cleaned up (repeatable runs)
+//     system("rm -f ./www/uploads/newfile.txt");
+//     system("rm -f ./www/doesnotexist.html");
+//     system("rm -rf ./www/nonexistent_folder");
+//     system("rm -f ./www/uploads/does_not_exist.txt");
+//     system("rm -f ./www/uploads/badrequest.txt");
+// }
 
-// ----------------------------------------------------------------------
-// Server builders
-// ----------------------------------------------------------------------
-static Server_block makeServer(bool autoindexOn)
-{
-    Server_block server;
-    server.root = "./www";
-    server.index_files.push_back("index.html");
+// // ----------------------------------------------------------------------
+// // Server builders
+// // ----------------------------------------------------------------------
+// static Server_block makeServer(bool autoindexOn)
+// {
+//     Server_block server;
+//     server.root = "./www";
+//     server.index_files.push_back("index.html");
 
-    Location_Config location;
-    location.path = "/";
-    location.root = "./www";
-    location.has_autoindex = true;
-    location.autoindex = autoindexOn ? "on" : "off";
-    location.allowed_methods.push_back("GET");
-    location.allowed_methods.push_back("POST");
-    location.allowed_methods.push_back("DELETE");
+//     Location_Config location;
+//     location.path = "/";
+//     location.root = "./www";
+//     location.has_autoindex = true;
+//     location.autoindex = autoindexOn ? "on" : "off";
+//     location.allowed_methods.push_back("GET");
+//     location.allowed_methods.push_back("POST");
+//     location.allowed_methods.push_back("DELETE");
 
-    server.location.push_back(location);
-    return server;
-}
+//     server.location.push_back(location);
+//     return server;
+// }
 
-// ----------------------------------------------------------------------
-// Helper: run and print
-// ----------------------------------------------------------------------
-static void printHeader(const std::string &name)
-{
-    std::cout << "========== " << name << " ==========" << std::endl;
-}
+// // ----------------------------------------------------------------------
+// // Helper: run and print
+// // ----------------------------------------------------------------------
+// static void printHeader(const std::string &name)
+// {
+//     std::cout << "========== " << name << " ==========" << std::endl;
+// }
 
-static void runAndPrint(Client &client, Server_block &server)
-{
-    Dispatcher dispatcher;
-    Response response = dispatcher.dispatch(client, server);
-    std::cout << response.toString() << std::endl;
-    std::cout << std::endl;
-}
+// static void runAndPrint(Client &client, Server_block &server)
+// {
+//     Dispatcher dispatcher;
+//     Response response = dispatcher.dispatch(client, server);
+//     std::cout << response.toString() << std::endl;
+//     std::cout << std::endl;
+// }
 
-// ============================================================================
-// GET TESTS
-// ============================================================================
+// // ============================================================================
+// // GET TESTS
+// // ============================================================================
 
-void testGetExistingFile()
-{
-    printHeader("TEST GET EXISTING FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testGetExistingFile()
+// {
+//     printHeader("TEST GET EXISTING FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/index.html");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/index.html");
+//     client.parsed_request.setBody("");
 
-    // Expected: 200 OK
-    runAndPrint(client, server);
-}
+//     // Expected: 200 OK
+//     runAndPrint(client, server);
+// }
 
-void testGetMissingFile()
-{
-    printHeader("TEST GET MISSING FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testGetMissingFile()
+// {
+//     printHeader("TEST GET MISSING FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/doesnotexist.html");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/doesnotexist.html");
+//     client.parsed_request.setBody("");
 
-    // Expected: 404 Not Found
-    runAndPrint(client, server);
-}
+//     // Expected: 404 Not Found
+//     runAndPrint(client, server);
+// }
 
-void testGetDirectoryAutoIndex()
-{
-    printHeader("TEST GET DIRECTORY AUTOINDEX");
-    Server_block server = makeServer(true);
-    Client client;
+// void testGetDirectoryAutoIndex()
+// {
+//     printHeader("TEST GET DIRECTORY AUTOINDEX");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/uploads/");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/uploads/");
+//     client.parsed_request.setBody("");
 
-    // Expected: 200 OK (autoindex listing, no index.html in ./www/uploads)
-    runAndPrint(client, server);
-}
+//     // Expected: 200 OK (autoindex listing, no index.html in ./www/uploads)
+//     runAndPrint(client, server);
+// }
 
-void testGetDirectoryForbidden()
-{
-    printHeader("TEST GET DIRECTORY FORBIDDEN");
-    Server_block server = makeServer(false); // autoindex off
-    Client client;
+// void testGetDirectoryForbidden()
+// {
+//     printHeader("TEST GET DIRECTORY FORBIDDEN");
+//     Server_block server = makeServer(false); // autoindex off
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/uploads/");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/uploads/");
+//     client.parsed_request.setBody("");
 
-    // Expected: 403 Forbidden (autoindex off, no index.html present)
-    runAndPrint(client, server);
-}
+//     // Expected: 403 Forbidden (autoindex off, no index.html present)
+//     runAndPrint(client, server);
+// }
 
-void testGetBadRequest()
-{
-    printHeader("TEST GET BAD REQUEST");
-    Server_block server = makeServer(true);
-    Client client;
+// void testGetBadRequest()
+// {
+//     printHeader("TEST GET BAD REQUEST");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("index.html"); // missing leading slash
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("index.html"); // missing leading slash
+//     client.parsed_request.setBody("");
 
-    // Expected: 400 Bad Request
-    runAndPrint(client, server);
-}
+//     // Expected: 400 Bad Request
+//     runAndPrint(client, server);
+// }
 
-void testGetPermissionDenied()
-{
-    printHeader("TEST GET PERMISSION DENIED");
-    Server_block server = makeServer(true);
-    Client client;
+// void testGetPermissionDenied()
+// {
+//     printHeader("TEST GET PERMISSION DENIED");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("GET");
-    client.parsed_request.setRequestPath("/no_read.txt");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("GET");
+//     client.parsed_request.setRequestPath("/no_read.txt");
+//     client.parsed_request.setBody("");
 
-    // Expected: 403 Forbidden (file exists, chmod 000)
-    runAndPrint(client, server);
-}
+//     // Expected: 403 Forbidden (file exists, chmod 000)
+//     runAndPrint(client, server);
+// }
 
-// ============================================================================
-// POST TESTS
-// ============================================================================
+// // ============================================================================
+// // POST TESTS
+// // ============================================================================
 
-void testPostCreateFile()
-{
-    printHeader("TEST POST CREATE FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testPostCreateFile()
+// {
+//     printHeader("TEST POST CREATE FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("POST");
-    client.parsed_request.setRequestPath("/uploads/newfile.txt");
-    client.parsed_request.setBody("hello world");
+//     client.parsed_request.setMethod("POST");
+//     client.parsed_request.setRequestPath("/uploads/newfile.txt");
+//     client.parsed_request.setBody("hello world");
 
-    // Expected: 201 Created (file does not exist yet)
-    runAndPrint(client, server);
-}
+//     // Expected: 201 Created (file does not exist yet)
+//     runAndPrint(client, server);
+// }
 
-void testPostExistingFile()
-{
-    printHeader("TEST POST EXISTING FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testPostExistingFile()
+// {
+//     printHeader("TEST POST EXISTING FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("POST");
-    client.parsed_request.setRequestPath("/uploads/existing.txt");
-    client.parsed_request.setBody("overwrite attempt");
+//     client.parsed_request.setMethod("POST");
+//     client.parsed_request.setRequestPath("/uploads/existing.txt");
+//     client.parsed_request.setBody("overwrite attempt");
 
-    // Expected: 409 Conflict (file already exists)
-    runAndPrint(client, server);
-}
+//     // Expected: 409 Conflict (file already exists)
+//     runAndPrint(client, server);
+// }
 
-void testPostMissingFolder()
-{
-    printHeader("TEST POST MISSING FOLDER");
-    Server_block server = makeServer(true);
-    Client client;
+// void testPostMissingFolder()
+// {
+//     printHeader("TEST POST MISSING FOLDER");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("POST");
-    client.parsed_request.setRequestPath("/nonexistent_folder/file.txt");
-    client.parsed_request.setBody("data");
+//     client.parsed_request.setMethod("POST");
+//     client.parsed_request.setRequestPath("/nonexistent_folder/file.txt");
+//     client.parsed_request.setBody("data");
 
-    // Expected: 404 Not Found (parent folder does not exist)
-    runAndPrint(client, server);
-}
+//     // Expected: 404 Not Found (parent folder does not exist)
+//     runAndPrint(client, server);
+// }
 
-void testPostBadRequest()
-{
-    printHeader("TEST POST BAD REQUEST");
-    Server_block server = makeServer(true);
-    Client client;
+// void testPostBadRequest()
+// {
+//     printHeader("TEST POST BAD REQUEST");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("POST");
-    client.parsed_request.setRequestPath("uploads/badrequest.txt"); // missing leading slash
-    client.parsed_request.setBody("data");
+//     client.parsed_request.setMethod("POST");
+//     client.parsed_request.setRequestPath("uploads/badrequest.txt"); // missing leading slash
+//     client.parsed_request.setBody("data");
 
-    // Expected: 400 Bad Request
-    runAndPrint(client, server);
-}
+//     // Expected: 400 Bad Request
+//     runAndPrint(client, server);
+// }
 
-// ============================================================================
-// DELETE TESTS
-// ============================================================================
+// // ============================================================================
+// // DELETE TESTS
+// // ============================================================================
 
-void testDeleteExistingFile()
-{
-    printHeader("TEST DELETE EXISTING FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testDeleteExistingFile()
+// {
+//     printHeader("TEST DELETE EXISTING FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("DELETE");
-    client.parsed_request.setRequestPath("/uploads/delete_me.txt");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("DELETE");
+//     client.parsed_request.setRequestPath("/uploads/delete_me.txt");
+//     client.parsed_request.setBody("");
 
-    // Expected: 200 OK / 204 No Content
-    runAndPrint(client, server);
-}
+//     // Expected: 200 OK / 204 No Content
+//     runAndPrint(client, server);
+// }
 
-void testDeleteMissingFile()
-{
-    printHeader("TEST DELETE MISSING FILE");
-    Server_block server = makeServer(true);
-    Client client;
+// void testDeleteMissingFile()
+// {
+//     printHeader("TEST DELETE MISSING FILE");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("DELETE");
-    client.parsed_request.setRequestPath("/uploads/does_not_exist.txt");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("DELETE");
+//     client.parsed_request.setRequestPath("/uploads/does_not_exist.txt");
+//     client.parsed_request.setBody("");
 
-    // Expected: 404 Not Found
-    runAndPrint(client, server);
-}
+//     // Expected: 404 Not Found
+//     runAndPrint(client, server);
+// }
 
-void testDeleteDirectory()
-{
-    printHeader("TEST DELETE DIRECTORY");
-    Server_block server = makeServer(true);
-    Client client;
+// void testDeleteDirectory()
+// {
+//     printHeader("TEST DELETE DIRECTORY");
+//     Server_block server = makeServer(true);
+//     Client client;
 
-    client.parsed_request.setMethod("DELETE");
-    client.parsed_request.setRequestPath("/uploads/");
-    client.parsed_request.setBody("");
+//     client.parsed_request.setMethod("DELETE");
+//     client.parsed_request.setRequestPath("/uploads/");
+//     client.parsed_request.setBody("");
 
-    // Expected: 403 Forbidden (cannot DELETE a directory)
-    runAndPrint(client, server);
-}
+//     // Expected: 403 Forbidden (cannot DELETE a directory)
+//     runAndPrint(client, server);
+// }
 
-// ============================================================================
-// MAIN
-// ============================================================================
+// // ============================================================================
+// // MAIN
+// // ============================================================================
 
-int main()
-{
-    setupFixtures();
+// int main()
+// {
+//     setupFixtures();
 
-    // ---- GET ----
-    testGetExistingFile();
-    testGetMissingFile();
-    testGetDirectoryAutoIndex();
-    testGetDirectoryForbidden();
-    testGetBadRequest();
-    testGetPermissionDenied();
+//     // ---- GET ----
+//     testGetExistingFile();
+//     testGetMissingFile();
+//     testGetDirectoryAutoIndex();
+//     testGetDirectoryForbidden();
+//     testGetBadRequest();
+//     testGetPermissionDenied();
 
-    // ---- POST ----
-    testPostCreateFile();
-    testPostExistingFile();
-    testPostMissingFolder();
-    testPostBadRequest();
+//     // ---- POST ----
+//     testPostCreateFile();
+//     testPostExistingFile();
+//     testPostMissingFolder();
+//     testPostBadRequest();
 
-    // ---- DELETE ----
-    testDeleteExistingFile();
-    testDeleteMissingFile();
-    testDeleteDirectory();
+//     // ---- DELETE ----
+//     testDeleteExistingFile();
+//     testDeleteMissingFile();
+//     testDeleteDirectory();
 
-    return 0;
-}
+//     return 0;
+// }
 
 // // #include "multiplexing/header.hpp"
 // // #include "Error.hpp"
@@ -406,55 +406,55 @@ int main()
 // }
 
 
-// void open_file(std::string filename)
-// {
-//     std::ifstream file(filename.c_str());
-//     if (!file.is_open())
-//         throw Error::FileNotFound();
+void open_file(std::string filename)
+{
+    std::ifstream file(filename.c_str());
+    if (!file.is_open())
+        throw Error::FileNotFound();
 
-//     std::string content((std::istreambuf_iterator<char>(file)),
-//                          std::istreambuf_iterator<char>());
-//     file.close();
-//     size_t i = 0;
-//     // std::cout << content << "\n";
-//     // exit(1);
+    std::string content((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    file.close();
+    size_t i = 0;
+    // std::cout << content << "\n";
+    // exit(1);
 
-//     while (i < content.size())
-//     {
-//         if (isspace(content[i]))
-//         {
-//             i++;
-//             continue;
-//         }
-//         if (content[i] == '#')
-//         {
-//             while (i < content.size() && content[i] != '\n')
-//                 i++;
-//             continue;
-//         }
-//         if (content[i] == '{' || content[i] == '}' || content[i] == ';')
-//         {
-//             Conf_File::tokens.push_back(std::string(1, content[i]));
-//             i++;
-//             continue;
-//         }
-//         std::string word;
-//         while (i < content.size()
-//                 && !isspace(content[i])
-//                 && content[i] != '{'
-//                 && content[i] != '}'
-//                 && content[i] != ';'
-//                 && content[i] != '#')
-//         {
-//             word += content[i];
-//             i++;
-//         }
-//         Conf_File::tokens.push_back(word);
-//     }
+    while (i < content.size())
+    {
+        if (isspace(content[i]))
+        {
+            i++;
+            continue;
+        }
+        if (content[i] == '#')
+        {
+            while (i < content.size() && content[i] != '\n')
+                i++;
+            continue;
+        }
+        if (content[i] == '{' || content[i] == '}' || content[i] == ';')
+        {
+            Conf_File::tokens.push_back(std::string(1, content[i]));
+            i++;
+            continue;
+        }
+        std::string word;
+        while (i < content.size()
+                && !isspace(content[i])
+                && content[i] != '{'
+                && content[i] != '}'
+                && content[i] != ';'
+                && content[i] != '#')
+        {
+            word += content[i];
+            i++;
+        }
+        Conf_File::tokens.push_back(word);
+    }
 
-//     if (Conf_File::tokens.empty())
-//         throw Error::EmptyConfig();
-// }
+    if (Conf_File::tokens.empty())
+        throw Error::EmptyConfig();
+}
 
 
 // int main(int ac, char **av, char **envp)
@@ -773,46 +773,47 @@ int main()
 //     return 0;
 // }
 
-// int main(int ac , char **av, char **envp)  
-// {
-//     signal(SIGINT, handle_sigint);
-//     signal(SIGQUIT, handle_sigquit);
-//     signal(SIGTSTP, handle_sigstp);
-//     try
-//     {
-//         if (ac != 2)
-//             throw Error::Argc();
-//         if (!av || av[1][0] == '\0')
-//             throw Error::Argv();
-//         open_file(av[1]);
-//         validate_file();
-//         parse_config_file();
-//         // std::cout << Conf_File::Servers[0].error_pages[404];
-//         // exit(1);
-//         // print();
-//         // exit(1);
-//         // Print();
-//         // // Print();
-//         // exit(1);
-//         size_t i = 0;
-//         Multiplexer Mux;
-//         while(i < Conf_File::Servers.size())
-//         {
-//             Socket *s = new Socket();
-//             Mux.env = envp;
-//             s->setup(Conf_File::Servers[i].listen_port, Conf_File::Servers[i].host);
-//             Mux.addServer(s);
-//             i++;
-//         }
-//         Mux.run();
-//         // std::cout << "after run\n";
-//     }
-//     catch(const std::exception& e)
-//     {
-//         std::cerr << e.what() << '\n';
-//     }
-//     return 0;
-// }
+int main(int ac , char **av, char **envp)  
+{
+    signal(SIGINT, handle_sigint);
+    signal(SIGQUIT, handle_sigquit);
+    signal(SIGTSTP, handle_sigstp);
+    try
+    {
+        if (ac != 2)
+            throw Error::Argc();
+        if (!av || av[1][0] == '\0')
+            throw Error::Argv();
+        open_file(av[1]);
+        validate_file();
+        parse_config_file();
+        // std::cout << Conf_File::Servers[0].error_pages[404];
+        // exit(1);
+        // print();
+        // exit(1);
+        // Print();
+        // // Print();
+        // exit(1);
+        // // client_uniq_id = 0;
+        size_t i = 0;
+        Multiplexer Mux;
+        while(i < Conf_File::Servers.size())
+        {
+            Socket *s = new Socket();
+            Mux.env = envp;
+            s->setup(Conf_File::Servers[i].listen_port, Conf_File::Servers[i].host);
+            Mux.addServer(s);
+            i++;
+        }
+        Mux.run();
+        std::cout << "after run\n";
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    return 0;
+}
 // int main(int ac, char **v)
 // {
 //        int fd_sock = socket(AF_INET, SOCK_STREAM, 0);

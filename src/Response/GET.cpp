@@ -94,9 +94,17 @@ Response GET::serveFile(Client& client, const std::string& path) const
 
 std::vector<std::string> GET::resolveIndexFiles(const Server_block& server, const Location_Config* location) const
 {
+    // std::string target;
+    // for (int i = 0; i < server.index_files.size(); i++)
+    // {
+    //     if (server.index_files[i] == "index.html")
+    //         return target = server.index_files[i];
+    // }
+    // server.index_files
     if (location != NULL && location->has_index && !location->index_files.empty())
         return location->index_files;
 
+    // std::cout<<server.index_files[0]<<std::endl;
     return server.index_files;
 }
 
@@ -115,7 +123,7 @@ Response GET::handleDirectory(Client& client, const std::string& path, const Ser
     for (size_t i = 0; i < indexFiles.size(); i++)
     {
         std::string candidatePath = path;
-
+        // std::cout<<"path = "<<path<<std::endl;
         if (!candidatePath.empty() && candidatePath[candidatePath.length() - 1] != '/')
             candidatePath += "/";
 

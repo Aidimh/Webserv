@@ -64,10 +64,7 @@ bool Router::isCGIRequest(const ClientRequest& request,const Location_Config& lo
     for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
     {
         if (location.cgi_extensions[i] == extension)
-        {
-            request.
             return true;
-        }
     }
     return false;
 }

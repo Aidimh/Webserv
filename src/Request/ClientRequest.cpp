@@ -434,7 +434,7 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 			return;
 		}
 
-		if (ChunkSize == 0);
+		if (ChunkSize == 0)
 		{
 			if (TmpFileFd != -1)
 			{

@@ -80,15 +80,16 @@ void parse_index(size_t &index)
     size_t i = 0;
     if (index + 2 >= Conf_File::tokens.size())
         throw Error::Index();
-    while (i < Conf_File::tokens.size() && !isKnownDirective(Conf_File::tokens[index]) && Conf_File::tokens[index] != ";")
+    index++;
+    while (i < Conf_File::tokens.size() && Conf_File::tokens[index] != ";")
     {
-        Conf_File::Servers[server_index].index_files[i] = Conf_File::tokens[index];
+        Conf_File::Servers[server_index].index_files.push_back(Conf_File::tokens[index]);
         i++;
         index++;
     }
     if (index >= Conf_File::tokens.size())
         throw Error::UnexpectedEndOfFile();
-    index += 3;
+    index += 1;
     Conf_File::Servers[server_index].index_found = true;
 }
 
@@ -141,27 +142,29 @@ void parse_max_body_size(size_t &index)
         throw Error::MaxUploads();
     if (Conf_File::tokens[index + 2] != ";")
         throw Error::MaxUploads();
-    char *id = NULL;
+    char *unit = NULL;
     if (Conf_File::tokens[index + 2] == ";")
     {
-        Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &id, 10);
+        Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
         if (max_uploads_is_unit(size, index))
         {
-            if (*id == 'M')
+            if (*unit == 'M')
             {
                 Conf_File::Servers[server_index].body_size_is_MB = true;
                 if (Conf_File::Servers[server_index].max_body_size > MAX_MB)
                     throw Error::MaxUploads();
+                Conf_File::Servers[server_index].max_body_size *= 1000000;
             }
-            if (*id == 'G')
+            if (*unit == 'G')
                 throw Error::MaxUploads();
-            if (*id == 'K')
+            if (*unit == 'K')
             {
                 if (Conf_File::Servers[server_index].max_body_size > MAX_KB)
                     throw Error::MaxUploads();
+                Conf_File::Servers[server_index].max_body_size *= 1000;
                 Conf_File::Servers[server_index].body_size_is_KB = true;
             }
-            else if (id == NULL)
+            else if (unit == NULL)
             {
                 if (Conf_File::Servers[server_index].max_body_size > MAX_BY)
                     throw Error::MaxUploads();

@@ -62,7 +62,7 @@ PathType POST::validateParentDirectory(const std::string& target) const
 
 Response POST::handleRegularRequest(const Client& client, const std::string& target)
 {
-    // std::cout << "==========================" << std::endl;
+    std::cout << "==========================" << std::endl;
     // std::cout << "RequestPath = " << client.parsed_request.getRequestPath() << std::endl;
     // std::cout << "Target      = " << target << std::endl;
     // std::cout << "Parent      = " << getParentDirectory(target) << std::endl;
@@ -121,17 +121,18 @@ bool POST::isRequestValid(const Client& client) const
 
 Response POST::execute(Client& client, const Server_block& server)
 {
-
+    std::cout<<"HEREEEE1\n";
     if (!isRequestValid(client))
         return buildErrorResponse(400, "Bad Request");
 
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
+    std::cout<<"HEREEEE2\n";
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
     if (isMultipartRequest(client))
         return handleMultipartRequest(client, target);
-
+    
     return handleRegularRequest(client, target);
 }

@@ -27,7 +27,7 @@
 #include <sys/wait.h>
 #include <limits>
 #include <map>
-#include "Error.hpp"
+#include "../../includes/Errors/Error.hpp"
 #include <sstream>
 #include "../Request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
@@ -47,7 +47,7 @@
 // --------------------------------------- Config File Header Part ------------------------------------- //
 
 // class ClientRequest;
-
+// int client_uniq_id;
 
 
 enum HttpStatus
@@ -181,6 +181,8 @@ struct Client
     ssize_t stream_buffer_size;
     ssize_t stream_buffer_offset;
     bool cgi_started;
+    // int client_id;
+    std::string session_id;
     // std::string body;
     // size_t end_of_header;
     ClientRequest parsed_request;
@@ -212,7 +214,7 @@ class Socket : public AFd
     private:
         int         _port;
         std::string _host;
-
+ 
     public:
         Socket();
         ~Socket();
@@ -233,17 +235,19 @@ class Multiplexer
         std::map<int , int>             _cgi_pipes;
         std::map<int, pid_t>            _cgi_pids;
         std::map<int, time_t>           cgi_timeouts;
+        std::map<int, std::string>      client_ids;
 
         void                            _acceptNewClient(Socket *server);
         void                            _readClient(int fd);
         void                            _writeClient(int fd);
         void                            _removeClient(int fd);
-        std::string&                    _fill_cgi_response(int fd);
+        // std::string&                    _fill_cgi_response(int fd);
         void                            prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
         void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn requst jdida.
-        void                            readCGI(int fd); // Read l CGI output, w sfto l client.
+        // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
+        // std::string                     _generateClientID(int fd);
     public:
         char** env;
         Multiplexer();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

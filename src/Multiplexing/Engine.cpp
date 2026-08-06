@@ -149,6 +149,7 @@ void    Multiplexer::_writeClient(int fd)
         sendStreaming(fd, client);
         return;
     }
+	client.reset();
     client.response_prepared = false;
     disableWrite(fd);
 }

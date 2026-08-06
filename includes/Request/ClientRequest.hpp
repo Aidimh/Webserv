@@ -49,7 +49,7 @@ class ClientRequest
 		void										HandleTransferEncoding(Client& client);
 		void										HandleContentLength(Client& client);
 
-
+		void										reset();
 
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;

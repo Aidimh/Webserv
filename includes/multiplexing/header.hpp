@@ -187,6 +187,23 @@ struct Client
     // size_t end_of_header;
     ClientRequest parsed_request;
     
+	void reset()
+    {
+        request.clear();
+        response.clear();
+        response_prepared = false;
+        cgi_started = false;
+        if (stream_file_fd != -1)
+        {
+            close(stream_file_fd);
+            stream_file_fd = -1;
+        }
+        stream_bytes_remaining = 0;
+        stream_buffer_size = 0;
+        stream_buffer_offset = 0;
+        parsed_request.reset();
+    }
+
     Client()
     : fd(-1),
     port(0),

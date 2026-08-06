@@ -59,6 +59,30 @@ void ClientRequest::setBodySize(size_t size) {BodySize = size;}
 void ClientRequest::setTmpFileFd(int newFd) {this->TmpFileFd = newFd;}
 void ClientRequest::setStatusCode(short StatusCode) {this->status_code = StatusCode; }
 
+
+void ClientRequest::reset()
+{
+    state = HEADERS;
+    method.clear();
+    request_path.clear();
+    cgi_extension.clear();
+    version.clear();
+    headers.clear();
+    cgi.clear();
+    body.clear();
+    status_code = 200;
+    if (TmpFileFd != -1)
+    {
+        close(TmpFileFd);
+        TmpFileFd = -1;
+    }
+    BodySize = 0;
+    ContentLength = 0;
+    HasContentLength = false;
+    HasTransferEncoding = false;
+}
+
+
 void ClientRequest::CleanUri()
 {
     std::string cleanUri = "/";

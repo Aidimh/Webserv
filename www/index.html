@@ -64,7 +64,6 @@
         }
 
         /* Header */
-        /* Header */
         .header {
             position: relative;
             overflow: hidden;
@@ -89,7 +88,6 @@
             pointer-events: none;
         }
 
-        /* Styling the individual photos */
         /* Styling the individual photos */
         .team-background img {
             height: 80%;
@@ -705,7 +703,6 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <!-- Header -->
         <div class="header">
             <!-- Background Photos Layer -->
             <div class="team-background">
@@ -770,12 +767,11 @@
                 <div class="action-card">
                     <div class="action-title">[ DELETE FILE ]</div>
                     <div class="action-desc">Enter the filename to delete from the server</div>
-                    <form action="/delete" method="DELETE">
-                        <input type="text" name="filename" class="text-input" placeholder="ENTER FILENAME..." required>
-                        <button type="submit" class="neon-button delete">
-                            ✕ DELETE FILE
-                        </button>
-                    </form>
+                    <input type="text" id="delete-filename" name="filename" class="text-input" placeholder="ENTER FILENAME..." required>
+                    <button type="button" class="neon-button delete" onclick="deleteFile(this)">
+                        ✕ DELETE FILE
+                    </button>
+                    <div class="result-display" id="delete-result" style="border-color: rgba(255, 51, 102, 0.3); color: #ff3366;"></div>
                 </div>
             </div>
         </div>
@@ -1033,6 +1029,47 @@
                     '<span class="success">[LOCAL]</span> But cookies cleared locally';
             } finally {
                 button.innerHTML = '✕ CLEAR SESSION';
+                button.disabled = false;
+            }
+        }
+
+        // ========== DELETE TESTER ==========
+        async function deleteFile(button) {
+            const input = document.getElementById('delete-filename');
+            const result = document.getElementById('delete-result');
+            const filename = input.value.trim();
+
+            if (!filename) {
+                result.classList.add('active');
+                result.innerHTML = '<span class="error">[ERROR]</span> PLEASE ENTER A FILENAME';
+                return;
+            }
+
+            button.innerHTML = '<span class="spinner"></span>DELETING...';
+            button.disabled = true;
+            result.classList.add('active');
+
+            try {
+                // Send a direct path instead of a query parameter
+                const response = await fetch('/upload/' + encodeURIComponent(filename), {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    result.innerHTML = 
+                        '<span class="success">[SUCCESS]</span> File deleted successfully\n' +
+                        '<span class="info">[STATUS]</span> ' + response.status + ' ' + response.statusText;
+                } else {
+                    result.innerHTML = 
+                        '<span class="error">[ERROR]</span> Failed to delete file\n' +
+                        '<span class="info">[STATUS]</span> ' + response.status + ' ' + response.statusText;
+                }
+            } catch (error) {
+                result.innerHTML = 
+                    '<span class="error">[ERROR]</span> Server request failed\n' +
+                    '<span class="error">[REASON]</span> ' + error.message;
+            } finally {
+                button.innerHTML = '✕ DELETE FILE';
                 button.disabled = false;
             }
         }

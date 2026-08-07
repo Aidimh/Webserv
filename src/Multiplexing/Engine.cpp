@@ -486,6 +486,12 @@ void Multiplexer::_readClient(int fd)
         }
         else if (bytesRead > 0)
         {
+            // --- DEBUG: Print the exact chunk received from the browser ---
+            // std::cout << "\n========== NEW RAW CHUNK RECEIVED (FD: " << fd << " | Bytes: " << bytesRead << ") ==========\n";
+            // // Constructing a string with bytesRead ensures we don't print garbage memory, 
+            // // and handles binary body content safely without crashing on null terminators.
+            // std::cout << std::string(buffer, bytesRead);
+            // std::cout << "\n======================================================================\n";
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
 

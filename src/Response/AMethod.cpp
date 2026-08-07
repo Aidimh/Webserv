@@ -5,6 +5,37 @@ AMethod::~AMethod()
 {
 }
 
+std::string AMethod::urlDecode(const std::string& url) const
+{
+    std::string result;
+
+    for (size_t i = 0; i < url.length(); ++i)
+    {
+        if (url[i] == '%' && i + 2 < url.length())
+        {
+            char hex[3];
+            hex[0] = url[i + 1];
+            hex[1] = url[i + 2];
+            hex[2] = '\0';
+
+            char decoded = static_cast<char>(strtol(hex, NULL, 16));
+
+            result += decoded;
+            i += 2;
+        }
+        else if (url[i] == '+')
+        {
+            result += ' ';
+        }
+        else
+        {
+            result += url[i];
+        }
+    }
+
+    return result;
+}
+
 Response AMethod::buildErrorResponse(short statusCode, const std::string& message)
 {
     Response response;
@@ -89,7 +120,8 @@ std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) c
 
 std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
 {
-    const std::string& requestPath = client.parsed_request.getRequestPath();
+    std::string requestPath = urlDecode(client.parsed_request.getRequestPath());
+    // const std::string& requestPath = client.parsed_request.getRequestPath();
 
     // path = "/"
 

@@ -63,6 +63,7 @@ class ClientRequest
 		bool										usesTmpFile() const; // added
 		size_t										getBodySize() const;
 		size_t										getServerMaxBodySize(Client& client);
+		std::string									readBody() const;
 
 
 		void										setTmpFileFd(int newFd);

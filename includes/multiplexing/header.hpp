@@ -36,7 +36,7 @@
 #define MAX_KB 20000
 #define MAX_MB 20
 #define MAX_HEADER_SIZE 8192
-#define MAX_RAM_BUFFER 819200
+#define MAX_RAM_BUFFER 8
 #define MAX_BY 22000000
 #define CGI_TIMEOUT 5
 

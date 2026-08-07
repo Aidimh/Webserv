@@ -1,10 +1,10 @@
 #include "MultipartUploadStrategy.hpp"
 
 #include <sys/stat.h>
+#include <iostream>
 
-bool MultipartUploadStrategy::isMultipartUpload(const ClientRequest& request) const
+bool MultipartUploadStrategy::isMultipartUpload(const std::map<std::string, std::string>& headers) const
 {
-    const std::map<std::string, std::string>& headers = request.getHeaders();
     std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
 
     if (it == headers.end())
@@ -15,12 +15,12 @@ bool MultipartUploadStrategy::isMultipartUpload(const ClientRequest& request) co
     return contentType.find("multipart/form-data") != std::string::npos;
 }
 
-bool MultipartUploadStrategy::validateRequest(const ClientRequest& request, std::string& boundary) const
+bool MultipartUploadStrategy::validateRequest(const std::map<std::string, std::string>& headers, std::string& boundary) const
 {
-    if (!isMultipartUpload(request))
+    if (!isMultipartUpload(headers))
         return false;
 
-    boundary = extractBoundary(request);
+    boundary = extractBoundary(headers);
 
     if (boundary.empty())
         return false;
@@ -42,22 +42,22 @@ Response MultipartUploadStrategy::buildErrorResponse(int statusCode, const std::
 
 bool MultipartUploadStrategy::parseNextPart(MultipartParsingContext& ctx,PartHeaders& headers,std::string& body) const
 {
-    size_t delimiterPosition = ctx.request.getBody().find(ctx.delimiter, ctx.nextSearchPosition);
+    size_t delimiterPosition = ctx.body.find(ctx.delimiter, ctx.nextSearchPosition);
 
     if (delimiterPosition == std::string::npos)
         return false;
 
-    if (isClosingDelimiter(ctx.request, delimiterPosition, ctx.delimiter))
+    if (isClosingDelimiter(ctx.body, delimiterPosition, ctx.delimiter))
         return false;
 
     size_t headerEnd = std::string::npos;
-    headers = readPartHeaders(ctx.request, delimiterPosition, ctx.delimiter, &headerEnd);
+    headers = readPartHeaders(ctx.body, delimiterPosition, ctx.delimiter, &headerEnd);
 
     if (headerEnd == std::string::npos)
         return false;
 
     size_t nextPartPosition = std::string::npos;
-    body = extractPartBody(ctx.request, headerEnd, ctx.delimiter, nextPartPosition);
+    body = extractPartBody(ctx.body, headerEnd, ctx.delimiter, nextPartPosition);
 
     if (nextPartPosition == std::string::npos)
         return false;
@@ -67,20 +67,20 @@ bool MultipartUploadStrategy::parseNextPart(MultipartParsingContext& ctx,PartHea
     return true;
 }
 
-void MultipartUploadStrategy::parseMultipart(const ClientRequest& request, const std::string& delimiter, const std::string& target, size_t& partCount, size_t& savedFileCount) const
+void MultipartUploadStrategy::parseMultipart(const std::string& body, const std::string& delimiter, const std::string& target, size_t& partCount, size_t& savedFileCount) const
 {
-    MultipartParsingContext ctx(request, delimiter, 0);
+    MultipartParsingContext ctx(body, delimiter, 0);
     PartHeaders headers;
-    std::string body;
+    std::string partBody;
 
     partCount = 0;
     savedFileCount = 0;
 
-    while (parseNextPart(ctx, headers, body))
+    while (parseNextPart(ctx, headers, partBody))
     {
         partCount++;
 
-        if (!headers.filename.empty() && saveUploadedFile(target, headers.filename, body))
+        if (!headers.filename.empty() && saveUploadedFile(target, headers.filename, partBody))
             savedFileCount++;
     }
 }
@@ -103,18 +103,19 @@ Response MultipartUploadStrategy::buildSummaryResponse(size_t partCount, size_t 
     return response;
 }
 
-Response MultipartUploadStrategy::handleMultipartUpload(const ClientRequest& request, const std::string& target) const
+Response MultipartUploadStrategy::handleMultipartUpload(const std::string& body, const std::map<std::string, std::string>& headers, const std::string& target)
 {
     std::string boundary;
 
-    if (!validateRequest(request, boundary))
+    if (!validateRequest(headers, boundary))
         return buildErrorResponse(400, "Bad Request", "Not a valid multipart request");
 
     std::string delimiter = "--" + boundary;
     size_t partCount = 0;
     size_t savedFileCount = 0;
 
-    parseMultipart(request, delimiter, target, partCount, savedFileCount);
+    // std::cout << "Body size = " << body.size() << std::endl;
+    parseMultipart(body, delimiter, target, partCount, savedFileCount);
 
     return buildSummaryResponse(partCount, savedFileCount);
 }
@@ -215,9 +216,8 @@ std::string MultipartUploadStrategy::trimSpaces(const std::string& value, char c
     return value.substr(begin, end - begin);
 }
 
-std::string MultipartUploadStrategy::extractBoundary(const ClientRequest& request) const
+std::string MultipartUploadStrategy::extractBoundary(const std::map<std::string, std::string>& headers) const
 {
-    const std::map<std::string, std::string>& headers = request.getHeaders();
     std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
 
     if (it == headers.end())
@@ -253,15 +253,14 @@ std::string MultipartUploadStrategy::extractBoundary(const ClientRequest& reques
     return boundary;
 }
 
-size_t MultipartUploadStrategy::findHeaderBlockEnd(const ClientRequest& request, size_t headerStart) const
+size_t MultipartUploadStrategy::findHeaderBlockEnd(const std::string& body, size_t headerStart) const
 {
-    return request.getBody().find("\r\n\r\n", headerStart);
+    return body.find("\r\n\r\n", headerStart);
 }
 
-bool MultipartUploadStrategy::isClosingDelimiter(const ClientRequest& request,size_t delimiterPosition,const std::string& delimiter) const
+bool MultipartUploadStrategy::isClosingDelimiter(const std::string& body,size_t delimiterPosition,const std::string& delimiter) const
 {
     size_t markerPosition = delimiterPosition + delimiter.length();
-    const std::string& body = request.getBody();
 
     if (markerPosition + 2 > body.length())
         return false;
@@ -269,12 +268,12 @@ bool MultipartUploadStrategy::isClosingDelimiter(const ClientRequest& request,si
     return body.compare(markerPosition, 2, "--") == 0;
 }
 
-PartHeaders MultipartUploadStrategy::readPartHeaders(const ClientRequest& request,size_t delimiterPosition,const std::string& delimiter,size_t* headerEndPosition) const
+PartHeaders MultipartUploadStrategy::readPartHeaders(const std::string& body,size_t delimiterPosition,const std::string& delimiter,size_t* headerEndPosition) const
 {
     PartHeaders headers;
 
     size_t headerStart = delimiterPosition + delimiter.length() + 2;
-    size_t headerEnd = findHeaderBlockEnd(request, headerStart);
+    size_t headerEnd = findHeaderBlockEnd(body, headerStart);
 
     if (headerEndPosition != NULL)
         *headerEndPosition = headerEnd;
@@ -283,18 +282,17 @@ PartHeaders MultipartUploadStrategy::readPartHeaders(const ClientRequest& reques
         return headers;
 
     size_t headerLength = headerEnd - headerStart;
-    std::string headerBlock = request.getBody().substr(headerStart, headerLength);
+    std::string headerBlock = body.substr(headerStart, headerLength);
 
     headers = parseHeaderBlock(headerBlock);
 
     return headers;
 }
 
-std::string MultipartUploadStrategy::extractPartBody(const ClientRequest& request,size_t headerEnd,const std::string& delimiter,size_t& nextPartPosition) const
+std::string MultipartUploadStrategy::extractPartBody(const std::string& body,size_t headerEnd,const std::string& delimiter,size_t& nextPartPosition) const
 {
     size_t bodyStart = headerEnd + 4;
     std::string boundaryMarker = "\r\n" + delimiter;
-    const std::string& body = request.getBody();
 
     size_t bodyEnd = body.find(boundaryMarker, bodyStart);
 

@@ -10,6 +10,19 @@ ClientRequest::ClientRequest(const ClientRequest& other)
     *this = other;
 }
 
+std::string ClientRequest::readBody() const
+{
+    if (!usesTmpFile())
+        return body;
+
+    std::ifstream file(TmpFilePath.c_str(), std::ios::binary);
+
+    std::ostringstream out;
+    out << file.rdbuf();
+
+    return out.str();
+}
+
 const std::string& ClientRequest::getTmpFilePath() const
 {
     return TmpFilePath;

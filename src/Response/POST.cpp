@@ -81,9 +81,11 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
 
     const ClientRequest& request = client.parsed_request;
 
+    std::cout<<"Test\n";
     // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
     if (request.usesTmpFile())
     {
+        std::cout<<"Test\n";
         if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
             return buildErrorResponse(500, "Internal Server Error");
         return buildCreatedResponse(201, "Created");
@@ -153,13 +155,14 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
 
 Response POST::handleMultipartRequest(const Client& client, const std::string& target)
 {
-    if (getPathType(target) != DIRECTORY_PATH)
+if (getPathType(target) != DIRECTORY_PATH)
         return buildErrorResponse(400, "Upload target must be a directory");
 
     if (!canWrite(target))
         return buildErrorResponse(403, "Forbidden");
 
-    return multiPart.handleMultipartUpload(client.parsed_request, target);
+    std::string body = client.parsed_request.readBody();
+    return multiPart.handleMultipartUpload(body, client.parsed_request.getHeaders(), target);
 }
 
 bool POST::isMultipartRequest(const Client& client) const
@@ -180,18 +183,20 @@ bool POST::isRequestValid(const Client& client) const
     return !client.parsed_request.getRequestPath().empty();
 }
 
+
 Response POST::execute(Client& client, const Server_block& server)
 {
     if (!isRequestValid(client))
         return buildErrorResponse(400, "Bad Request");
-
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
+
+    const ClientRequest& request = client.parsed_request;
+    std::string body = request.ClientRequest::readBody();
     if (isMultipartRequest(client))
-        return handleMultipartRequest(client, target);
-    
+        return multiPart.handleMultipartUpload(body,request.getHeaders(),target);
     return handleRegularRequest(client, target);
 }

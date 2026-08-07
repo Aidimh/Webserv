@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 
+
 class AMethod
 {
     public:
@@ -19,6 +20,7 @@ class AMethod
         virtual Response execute(Client& client, const Server_block& server) = 0;
         static Response buildErrorResponse(short status,const std::string& message);
     protected:
+        std::string urlDecode(const std::string& url) const;
         std::string normalizePath(const std::string& path, bool& outOfBounds)const;
         const Location_Config* resolveLocation(const Client& client, const Server_block& server) const;
         std::string resolveTarget(const Client& client, const Server_block& server, const Location_Config* location) const;

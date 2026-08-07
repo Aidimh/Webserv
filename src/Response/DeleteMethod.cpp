@@ -28,9 +28,11 @@ Response DeleteMethod::execute(Client& client, const Server_block& server)
 {
     if (client.parsed_request.getRequestPath().empty())
         return buildErrorResponse(400, "Bad Request");
+
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
-    // std::cout << "[DEBUG DELETE TARGET]: " << target << std::endl;
+
+    std::cout << "[DEBUG DELETE TARGET]: " << target << std::endl;
     if (!fileExists(target))
         return buildErrorResponse(404, "Not Found");
     if (isDirectory(target))

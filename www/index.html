@@ -64,10 +64,40 @@
         }
 
         /* Header */
+        /* Header */
         .header {
+            position: relative;
+            overflow: hidden;
             text-align: center;
             margin-bottom: 80px;
             padding: 40px 0;
+        }
+
+        /* The container for the 3 photos */
+        .team-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            z-index: 1;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* Styling the individual photos */
+        /* Styling the individual photos */
+        .team-background img {
+            height: 80%;
+            width: 30%; /* Forces them to be equal size */
+            object-fit: cover; /* Crops them nicely to fit the box */
+            border-radius: 12px;
+            filter: grayscale(100%) brightness(0.6) sepia(1) hue-rotate(75deg) saturate(4);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.3);
         }
 
         .title {
@@ -277,6 +307,34 @@
                 inset 0 0 30px rgba(0, 255, 136, 0.1);
         }
 
+        /* CGI Card - Cyan theme */
+        .action-card.cgi {
+            border-color: #00ffff;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.05);
+        }
+
+        .action-card.cgi:hover {
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.6),
+                inset 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        /* Session Card - Purple theme */
+        .action-card.session {
+            border-color: #cc66ff;
+            box-shadow: 
+                0 0 30px rgba(204, 102, 255, 0.3),
+                inset 0 0 20px rgba(204, 102, 255, 0.05);
+        }
+
+        .action-card.session:hover {
+            box-shadow: 
+                0 0 50px rgba(204, 102, 255, 0.6),
+                inset 0 0 30px rgba(204, 102, 255, 0.1);
+        }
+
         .action-title {
             font-size: 18px;
             letter-spacing: 4px;
@@ -285,6 +343,16 @@
             margin-bottom: 25px;
             text-shadow: 0 0 8px #00ff88;
             text-align: center;
+        }
+
+        .action-card.cgi .action-title {
+            color: #00ffff;
+            text-shadow: 0 0 8px #00ffff;
+        }
+
+        .action-card.session .action-title {
+            color: #cc66ff;
+            text-shadow: 0 0 8px #cc66ff;
         }
 
         .action-desc {
@@ -357,6 +425,32 @@
             color: #005522;
         }
 
+        .text-input.cyan {
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+
+        .text-input.cyan:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        .text-input.cyan::placeholder {
+            color: #005555;
+        }
+
+        .text-input.purple {
+            border-color: #cc66ff;
+            color: #cc66ff;
+        }
+
+        .text-input.purple:focus {
+            box-shadow: 0 0 20px rgba(204, 102, 255, 0.4);
+        }
+
+        .text-input.purple::placeholder {
+            color: #552255;
+        }
+
         /* Neon Button Styling */
         .neon-button {
             width: 100%;
@@ -413,6 +507,105 @@
             box-shadow: 
                 0 0 20px rgba(255, 51, 102, 0.4),
                 inset 0 0 20px rgba(255, 51, 102, 0.15);
+        }
+
+        .neon-button.cyan {
+            border-color: #00ffff;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .neon-button.cyan:hover {
+            background: rgba(0, 255, 255, 0.15);
+            box-shadow: 
+                0 0 40px rgba(0, 255, 255, 0.6),
+                inset 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .neon-button.purple {
+            border-color: #cc66ff;
+            color: #cc66ff;
+            text-shadow: 0 0 10px #cc66ff;
+            box-shadow: 
+                0 0 20px rgba(204, 102, 255, 0.3),
+                inset 0 0 20px rgba(204, 102, 255, 0.1);
+        }
+
+        .neon-button.purple:hover {
+            background: rgba(204, 102, 255, 0.15);
+            box-shadow: 
+                0 0 40px rgba(204, 102, 255, 0.6),
+                inset 0 0 30px rgba(204, 102, 255, 0.2);
+        }
+
+        /* Result Display */
+        .result-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            color: #00aa55;
+            min-height: 60px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+
+        .result-display.active {
+            display: block;
+        }
+
+        .result-display.cyan {
+            border-color: rgba(0, 255, 255, 0.3);
+            color: #00aaaa;
+        }
+
+        .result-display.purple {
+            border-color: rgba(204, 102, 255, 0.3);
+            color: #aa66cc;
+        }
+
+        .result-display .success {
+            color: #00ff88;
+        }
+
+        .result-display .error {
+            color: #ff3366;
+        }
+
+        .result-display .info {
+            color: #00ffff;
+        }
+
+        .result-display .session-info {
+            color: #cc66ff;
+        }
+
+        /* Session counter display */
+        .session-counter {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #cc66ff;
+            text-shadow: 0 0 20px #cc66ff;
+            margin: 20px 0;
+            min-height: 60px;
+        }
+
+        .session-label {
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: #aa66cc;
+            margin-bottom: 10px;
+            text-transform: uppercase;
         }
 
         /* Features list */
@@ -477,6 +670,23 @@
             100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
 
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .title {
@@ -495,7 +705,16 @@
 <body>
     <div class="container">
         <!-- Header -->
+        <!-- Header -->
         <div class="header">
+            <!-- Background Photos Layer -->
+            <div class="team-background">
+                <img src="/photos/imgi_1_moel-aid.jpg" alt="Team Member 1">
+                <img src="/photos/imgi_25_mzanana.jpg" alt="Team Member 2">
+                <img src="/photos/imgi_28_salhali.jpg" alt="Team Member 3">
+            </div>
+            
+            <!-- Text Layer (Sits on top of photos) -->
             <h1 class="title">WEBSERV</h1>
             <p class="subtitle">// HTTP SERVER ONLINE //</p>
             <p class="version">[ VERSION 1.0 // PROTOCOL HTTP/1.1 ]</p>
@@ -557,6 +776,38 @@
                             ✕ DELETE FILE
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Section -->
+        <div class="actions-section">
+            <h2 class="section-title">// DIAGNOSTIC TESTS //</h2>
+            <div class="actions-grid">
+                <!-- CGI Tester -->
+                <div class="action-card cgi">
+                    <div class="action-title">[ CGI TESTER ]</div>
+                    <div class="action-desc">Execute a CGI script and display the response</div>
+                    <input type="text" id="cgi-input" class="text-input cyan" placeholder="ENTER CGI PATH (e.g., /cgi-bin/test.py)">
+                    <button type="button" class="neon-button cyan" onclick="testCgi()">
+                        ▶ EXECUTE CGI
+                    </button>
+                    <div class="result-display cyan" id="cgi-result"></div>
+                </div>
+
+                <!-- Session Tester -->
+                <div class="action-card session">
+                    <div class="action-title">[ SESSION TESTER ]</div>
+                    <div class="action-desc">Test cookie-based session management</div>
+                    <div class="session-label">VISIT COUNTER</div>
+                    <div class="session-counter" id="session-counter">0</div>
+                    <button type="button" class="neon-button purple" onclick="testSession()">
+                        ⟳ INCREMENT SESSION
+                    </button>
+                    <button type="button" class="neon-button purple" style="margin-top: 10px;" onclick="clearSession()">
+                        ✕ CLEAR SESSION
+                    </button>
+                    <div class="result-display purple" id="session-result"></div>
                 </div>
             </div>
         </div>
@@ -630,6 +881,161 @@
             const fileName = e.target.files[0] ? e.target.files[0].name : 'NO FILE SELECTED';
             document.getElementById('file-name-display').textContent = fileName;
         });
+
+        // ========== CGI TESTER ==========
+        async function testCgi() {
+            const input = document.getElementById('cgi-input');
+            const result = document.getElementById('cgi-result');
+            const button = event.target;
+            const path = input.value.trim() || '/cgi-bin/test.py';
+            
+            // Show loading state
+            button.innerHTML = '<span class="spinner"></span>EXECUTING...';
+            button.disabled = true;
+            result.classList.add('active');
+            result.innerHTML = '<span class="info">[INFO]</span> Sending request to: ' + path + '\n';
+            
+            try {
+                const startTime = performance.now();
+                const response = await fetch(path, {
+                    method: 'GET',
+                    headers: {
+                        'X-Test-Header': 'cgi-test-' + Date.now()
+                    }
+                });
+                const endTime = performance.now();
+                const duration = (endTime - startTime).toFixed(2);
+                
+                const contentType = response.headers.get('content-type') || 'unknown';
+                const status = response.status;
+                const statusText = response.statusText;
+                
+                let body = '';
+                try {
+                    body = await response.text();
+                } catch (e) {
+                    body = '[Could not read body]';
+                }
+                
+                result.innerHTML = 
+                    '<span class="success">[SUCCESS]</span> CGI executed in ' + duration + 'ms\n' +
+                    '<span class="info">[STATUS]</span> ' + status + ' ' + statusText + '\n' +
+                    '<span class="info">[CONTENT-TYPE]</span> ' + contentType + '\n' +
+                    '<span class="info">[RESPONSE LENGTH]</span> ' + body.length + ' bytes\n' +
+                    '─────────────────────────────\n' +
+                    body.substring(0, 500) + (body.length > 500 ? '\n... [truncated]' : '');
+                    
+            } catch (error) {
+                result.innerHTML = 
+                    '<span class="error">[ERROR]</span> CGI execution failed\n' +
+                    '<span class="error">[REASON]</span> ' + error.message + '\n' +
+                    '<span class="info">[HINT]</span> Make sure the CGI script exists and is executable';
+            } finally {
+                button.innerHTML = '▶ EXECUTE CGI';
+                button.disabled = false;
+            }
+        }
+
+        // ========== SESSION TESTER ==========
+        let visitCount = 0;
+
+        async function testSession() {
+            const result = document.getElementById('session-result');
+            const counter = document.getElementById('session-counter');
+            const button = event.target;
+            
+            button.innerHTML = '<span class="spinner"></span>PROCESSING...';
+            button.disabled = true;
+            result.classList.add('active');
+            
+            try {
+                // Make a request that should set/increment a session cookie
+                const response = await fetch('/session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    credentials: 'include'  // Important: include cookies
+                });
+                
+                // Read cookies from document
+                const cookies = document.cookie;
+                visitCount++;
+                
+                // Parse session info from cookies
+                let sessionId = 'none';
+                let cookieCount = 0;
+                if (cookies) {
+                    cookieCount = cookies.split(';').length;
+                    const match = cookies.match(/session_id=([^;]+)/);
+                    if (match) sessionId = match[1];
+                }
+                
+                counter.textContent = visitCount;
+                
+                result.innerHTML = 
+                    '<span class="session-info">[SESSION]</span> Visit #' + visitCount + '\n' +
+                    '<span class="session-info">[SESSION_ID]</span> ' + sessionId + '\n' +
+                    '<span class="session-info">[COOKIE_COUNT]</span> ' + cookieCount + ' cookie(s)\n' +
+                    '<span class="session-info">[ALL_COOKIES]</span> ' + (cookies || 'none') + '\n' +
+                    '<span class="session-info">[STATUS]</span> ' + response.status + ' ' + response.statusText;
+                    
+            } catch (error) {
+                result.innerHTML = 
+                    '<span class="error">[ERROR]</span> Session test failed\n' +
+                    '<span class="error">[REASON]</span> ' + error.message + '\n' +
+                    '<span class="info">[HINT]</span> Make sure /session endpoint exists';
+            } finally {
+                button.innerHTML = '⟳ INCREMENT SESSION';
+                button.disabled = false;
+            }
+        }
+
+        async function clearSession() {
+            const result = document.getElementById('session-result');
+            const counter = document.getElementById('session-counter');
+            const button = event.target;
+            
+            button.innerHTML = '<span class="spinner"></span>CLEARING...';
+            button.disabled = true;
+            
+            try {
+                await fetch('/session/clear', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                // Clear all cookies by expiring them
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                
+                visitCount = 0;
+                counter.textContent = '0';
+                
+                result.classList.add('active');
+                result.innerHTML = 
+                    '<span class="success">[SUCCESS]</span> Session cleared\n' +
+                    '<span class="info">[COOKIES]</span> All cookies deleted\n' +
+                    '<span class="info">[COUNTER]</span> Reset to 0';
+                    
+            } catch (error) {
+                // Still clear cookies even if request fails
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                visitCount = 0;
+                counter.textContent = '0';
+                
+                result.classList.add('active');
+                result.innerHTML = 
+                    '<span class="error">[WARNING]</span> Server request failed: ' + error.message + '\n' +
+                    '<span class="success">[LOCAL]</span> But cookies cleared locally';
+            } finally {
+                button.innerHTML = '✕ CLEAR SESSION';
+                button.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>

@@ -62,11 +62,6 @@ PathType POST::validateParentDirectory(const std::string& target) const
 
 Response POST::handleRegularRequest(const Client& client, const std::string& target)
 {
-    // std::cout << "==========================" << std::endl;
-    // std::cout << "RequestPath = " << client.parsed_request.getRequestPath() << std::endl;
-    // std::cout << "Target      = " << target << std::endl;
-    // std::cout << "Parent      = " << getParentDirectory(target) << std::endl;
-    // std::cout << "==========================" << std::endl;
     PathType type = validateParentDirectory(target);
 
     if (type == NOT_FOUND)
@@ -84,11 +79,77 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
     if (fileExists(target))
         return buildErrorResponse(409, "Conflict");
 
-    if (!saveBody(target, client.parsed_request.getBody()))
+    const ClientRequest& request = client.parsed_request;
+
+    // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
+    if (request.usesTmpFile())
+    {
+        if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
+            return buildErrorResponse(500, "Internal Server Error");
+        return buildCreatedResponse(201, "Created");
+    }
+
+    // Case 2: body sghir, f RAM → save 3adi
+    if (!saveBody(target, request.getBody()))
         return buildErrorResponse(500, "Internal Server Error");
 
     return buildCreatedResponse(201, "Created");
 }
+
+// Response POST::handleRegularRequest(const Client& client, const std::string& target)
+// {
+//     // std::cout << "==========================" << std::endl;
+//     // std::cout << "RequestPath = " << client.parsed_request.getRequestPath() << std::endl;
+//     // std::cout << "Target      = " << target << std::endl;
+//     // std::cout << "Parent      = " << getParentDirectory(target) << std::endl;
+//     // std::cout << "==========================" << std::endl;
+//     PathType type = validateParentDirectory(target);
+
+//     if (type == NOT_FOUND)
+//         return buildErrorResponse(404, "Not Found");
+
+//     if (type == PERMISSION_DENIED)
+//         return buildErrorResponse(403, "Forbidden");
+
+//     if (type != DIRECTORY_PATH)
+//         return buildErrorResponse(400, "Bad Request");
+
+//     if (!canWrite(target))
+//         return buildErrorResponse(403, "Forbidden");
+
+//     if (fileExists(target))
+//         return buildErrorResponse(409, "Conflict");
+
+//     // Adapt the body before 
+//     std::string adaptedBody = adaptBodyrequest(client, target);
+
+//     if (!saveBody(target, adaptedBody))
+//         return buildErrorResponse(500, "Internal Server Error");
+
+//     return buildCreatedResponse(201, "Created");
+// }
+
+// std::string POST::adaptBodyrequest(const Client& client, const std::string& target)
+// {
+//     const ClientRequest& request = client.parsed_request;
+
+//     if(request.getBodySize() == 0)
+//         return("");
+
+//     if(request.getBody().empty())
+//         return(client.parsed_request.getBody());
+//     else
+//     {
+//         std::string body = request.getBody();
+//         std::string tmpFilePath = "/tmp/webserv_tmp_file_" + std::intToString(client.fd);
+
+//         if (!saveBody(tmpFilePath, body))
+//             return("");
+
+//         return(body);
+//     }
+// }
+
 
 Response POST::handleMultipartRequest(const Client& client, const std::string& target)
 {
@@ -121,14 +182,12 @@ bool POST::isRequestValid(const Client& client) const
 
 Response POST::execute(Client& client, const Server_block& server)
 {
-    // std::cout<<"HEREEEE1\n";
     if (!isRequestValid(client))
         return buildErrorResponse(400, "Bad Request");
 
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
-    // std::cout<<"HEREEEE2\n";
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
     if (isMultipartRequest(client))

@@ -48,7 +48,6 @@ class ClientRequest
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
 		void										HandleContentLength(Client& client);
-
 		void										reset();
 
 		const std::string&							getMethod() const;
@@ -60,6 +59,8 @@ class ClientRequest
     	const std::map<std::string, std::string>&	getHeaders() const;
 		short 										getStatusCode() const;
 		int											getTmpFileFd() const;
+		const std::string&							getTmpFilePath() const; //added
+		bool										usesTmpFile() const; // added
 		size_t										getBodySize() const;
 		size_t										getServerMaxBodySize(Client& client);
 
@@ -69,6 +70,8 @@ class ClientRequest
 		void										setBodySize(size_t size);
 
 	private:
+
+		std::string									TmpFilePath;   // add
 		std::string									method;
 		std::string									request_path;
 		std::string									cgi_extension;

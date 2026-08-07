@@ -10,6 +10,16 @@ ClientRequest::ClientRequest(const ClientRequest& other)
     *this = other;
 }
 
+const std::string& ClientRequest::getTmpFilePath() const
+{
+    return TmpFilePath;
+}
+
+bool ClientRequest::usesTmpFile() const
+{
+    return !TmpFilePath.empty();
+}
+
 ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 {
     if (this != &other)
@@ -76,6 +86,7 @@ void ClientRequest::reset()
         close(TmpFileFd);
         TmpFileFd = -1;
     }
+	TmpFilePath.clear();   // <-- zidha hna
     BodySize = 0;
     ContentLength = 0;
     HasContentLength = false;
@@ -406,25 +417,31 @@ void ClientRequest::BodyRequest(Client& client)
 	return;
 }
 
+std::string intToString(int n)
+{
+    std::ostringstream oss;
+    oss << n;
+    return oss.str();
+}
+
 bool ClientRequest::openTempFile(int ClientFd)
 {
 	struct stat meta;
 
 	if (stat("www", &meta) != 0)
-		mkdir ("www", 0755);
+		mkdir("www", 0755);
 	if (stat("www/upload", &meta) != 0)
-		mkdir ("www/upload", 0755);
-	
-	std::stringstream	stream;
-	stream << ClientFd;
+		mkdir("www/upload", 0755);
 
-	std::string			FilePath = "www/upload/storage_" + stream.str();
+	std::string FilePath = "www/upload/storage_" + intToString(ClientFd);
+	TmpFilePath = FilePath;
 
-	int	fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	int fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (fd == -1)
 	{
 		status_code = 500;
-		state		= ERROR_STATE;
+		state       = ERROR_STATE;
+		TmpFilePath.clear();
 		return false;
 	}
 
@@ -437,6 +454,7 @@ bool ClientRequest::openTempFile(int ClientFd)
 
 	return true;
 }
+
 
 void	ClientRequest::HandleTransferEncoding(Client& client)
 {

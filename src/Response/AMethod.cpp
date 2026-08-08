@@ -120,6 +120,14 @@ std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) c
 
 std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
 {
+    std::cout << "===== GET DEBUG =====\n";
+    std::cout << "Request path: [" << client.parsed_request.getRequestPath() << "]\n";
+    if (location)
+    {
+        std::cout << "Location path: [" << location->path << "]\n";
+        std::cout << "Location root: [" << location->root << "]\n";
+    }
+    std::cout << "Server root: [" << server.root << "]\n";
     std::string requestPath = urlDecode(client.parsed_request.getRequestPath());
     // const std::string& requestPath = client.parsed_request.getRequestPath();
 

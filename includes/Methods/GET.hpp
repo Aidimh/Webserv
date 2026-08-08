@@ -38,6 +38,9 @@ class GET : public AMethod
         Response buildStreamingFileResponse(off_t fileSize, const std::string& contentType) const;
         std::vector<std::string> resolveIndexFiles(const Server_block& server, const Location_Config* location) const;
         bool isAutoindexEnabled(const Server_block& server, const Location_Config* location) const;
+        Response    buildRedirectResponse(const std::string& requestPath) const;
+        bool    needsDirectoryRedirect(const std::string& requestPath,const std::string& target) const;
+
 
 
     public:

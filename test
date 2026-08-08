@@ -1,0 +1,33 @@
+www/
+├── index.html
+│
+├── hello.txt
+│
+├── upload/
+│
+├── get_only/
+│   └── index.html
+│
+├── post_only/
+│
+├── delete_only/
+│   └── delete_me.txt
+│
+├── directory/
+│   ├── file1.txt
+│   ├── file2.txt
+│   └── subdir/
+│
+├── directory_get/
+│   └── get.txt
+│
+├── directory_post/
+│
+├── no_autoindex/
+│
+├── cgi-bin/
+│   └── hello.py
+│
+└── error_pages/
+    ├── 404.html
+    └── 500.html

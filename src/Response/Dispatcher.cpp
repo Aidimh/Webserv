@@ -34,6 +34,8 @@ static std::string statusMessage(short code)
 {
     switch (code)
     {
+        // case HTTP_301_MOVED_PERMANENTLY
+        //     return "Moved Premanently";
         case HTTP_400_BAD_REQUEST:
             return "Bad Request";
 
@@ -125,11 +127,11 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         client.cgi_started = true;
         return response;
     }
-
+    
     // 3. Had method khas-ha tkoun mssmou7a f location li lqinah.
     if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location))
     {
-        Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
+        Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED,"Method Not Allowed");
         setErrorPageBody(response);
         return response;
     }

@@ -192,34 +192,51 @@ Response GET::buildStreamingFileResponse(off_t fileSize, const std::string& cont
     return response;
 }
 
+Response GET::buildRedirectResponse(const std::string& requestPath) const
+{
+    Response response;
+
+    response.setStatusCode(301);
+    response.setReasonPhrase("Moved Permanently");
+    response.addHeader("Location", requestPath + "/");
+    response.setBody("");
+
+    return response;
+}
+
+bool GET::needsDirectoryRedirect(const std::string& requestPath,const std::string& target) const
+{
+    if (!isDirectory(target))
+        return false;
+
+    if (requestPath.empty())
+        return false;
+
+    return requestPath[requestPath.size() - 1] != '/';
+}
+
 Response GET::execute(Client& client, const Server_block& server)
 {
-    
     const Location_Config* location = resolveLocation(client, server);
 
     std::string target = resolveTarget(client, server, location);
-    
-    // std::cout << "Request Path : " << client.parsed_request.getRequestPath() << std::endl;
-    // std::cout << "Server Root  : " << server.root << std::endl;
-    // if (location)
-    //     std::cout << "Location Root: " << location->root << std::endl;
-    // std::cout << "Resolved Target : " << target << std::endl;
+    const std::string& requestPath = client.parsed_request.getRequestPath();
+
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
+
     switch (getPathType(target))
     {
         case PERMISSION_DENIED:
             return buildErrorResponse(403, "Forbidden");
-
         case NOT_FOUND:
             return buildErrorResponse(404, "Not Found");
-
         case FILE_PATH:
             return serveFile(client, target);
-
         case DIRECTORY_PATH:
+            if (needsDirectoryRedirect(requestPath, target))
+                return buildRedirectResponse(requestPath);
             return handleDirectory(client, target, server, location);
-
         default:
             return buildErrorResponse(500, "Internal Server Error");
     }

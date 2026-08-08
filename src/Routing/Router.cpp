@@ -11,8 +11,7 @@ bool Router::matchesLocation(const std::string& uri,const std::string& locationP
     if (uri.compare(0, locationPath.size(), locationPath) != 0)
         return false;
 
-    return uri.size() == locationPath.size()
-        || uri[locationPath.size()] == '/';
+    return uri.size() == locationPath.size() || uri[locationPath.size()] == '/';
 }
 
 const Location_Config* Router::resolveLocation(const std::string& uri,const Server_block& server)
@@ -46,6 +45,8 @@ bool Router::isMethodAllowed(const std::string& method,const Location_Config& lo
         if (location.allowed_methods[i] == method)
             return true;
     }
+
+
     return false;
 }
 

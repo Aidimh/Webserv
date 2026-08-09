@@ -773,7 +773,7 @@ void open_file(std::string filename)
 //     return 0;
 // }
 
-int main(int ac , char **av, char **envp)  
+int main(int ac , char **av, char **envp)
 {
     signal(SIGINT, handle_sigint);
     signal(SIGQUIT, handle_sigquit);
@@ -787,26 +787,29 @@ int main(int ac , char **av, char **envp)
         open_file(av[1]);
         validate_file();
         parse_config_file();
-        // std::cout << Conf_File::Servers[0].error_pages[404];
-        // exit(1);
-        // print();
-        // exit(1);
-        // Print();
-        // // Print();
-        // exit(1);
-        // // client_uniq_id = 0;
+        int error_nb = every_server_has_listen_port();
+        if (error_nb)
+        {
+            std::cout << "Error\n" << "Missing listen port at Server block " << error_nb << "\n";
+            std::cout << "Hint : A server cannot be reached or operate without a listen port\n";
+            return ERROR;
+        }
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())
         {
-            Socket *s = new Socket();
-            Mux.env = envp;
-            s->setup(Conf_File::Servers[i].listen_port, Conf_File::Servers[i].host);
-            Mux.addServer(s);
+            size_t j = 0;
+            while (j < Conf_File::Servers[i].ports_count)
+            {
+                Socket *s = new Socket();
+                Mux.env = envp;
+                s->setup(Conf_File::Servers[i].listen_port[j], Conf_File::Servers[i].host);
+                Mux.addServer(s);
+                j++;
+            }
             i++;
         }
         Mux.run();
-        std::cout << "after run\n";
     }
     catch(const std::exception& e)
     {

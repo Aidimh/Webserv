@@ -65,9 +65,14 @@ const char* Error::Open::what() const throw()
     return "Error\nFailed to open config file!";
 }
 
-const char* Error::Non_Nemeric_value::what() const throw()
+const char* Error::Non_Numeric_value::what() const throw()
 {
     return "Error\nNon Numeric value near!.";
+}
+
+const char* Error::Missing_listen::what() const throw()
+{
+    return "Error\nMissing listen port at server";
 }
 
 const char* Error::SyntaxError::what() const throw()

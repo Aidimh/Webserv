@@ -5,20 +5,8 @@ extern int server_index;
 
 
 
-// void parse_cgi_path(size_t &index)
-// {
-//     // size_t i = 0;
-//     if (index + 2 >= Conf_File::tokens.size())
-//         throw Error::Root();
-//     if (Conf_File::tokens[index + 2] != ";")
-//         throw Error::Root();
-// }
-
-
-
 void parse_root(size_t &index)
 {
-    // size_t i = 0;
     if (index + 2 >= Conf_File::tokens.size())
         throw Error::Root();
     if (Conf_File::tokens[index + 2] != ";")
@@ -34,7 +22,6 @@ void parse_host(size_t &index)
 {
     size_t i = 0;
     size_t dot_count = 0;
-
     if (index + 1 >= Conf_File::tokens.size() || index + 2 >= Conf_File::tokens.size())
         throw Error::Host_ip();
     if (Conf_File::tokens[index + 2] != ";")
@@ -122,21 +109,8 @@ void parse_server_name(size_t &index)
     Conf_File::Servers[server_index].server_name_found = true;
 }
 
-// void parse_location(size_t &index)
-// {
-//     while (index < Conf_File::tokens.size() && Conf_File::tokens[index] != "{")
-//         index++;
-//     index++;
-//     while (Conf_File::tokens[index] != "}")
-//     {
-
-//     }
-// }
-
-
 void parse_max_body_size(size_t &index)
 {
-    // size_t i = 0;
     size_t size = Conf_File::tokens[index + 1].size();
     if (index + 1 >= Conf_File::tokens.size() || index + 2 >= Conf_File::tokens.size())
         throw Error::MaxUploads();
@@ -180,33 +154,25 @@ void parse_max_body_size(size_t &index)
 
 void parse_listen(size_t &index)
 {
-    // size_t i = 0;
     if (index + 2 >= Conf_File::tokens.size())
         throw Error::Listen_port();
     if (Conf_File::tokens[index + 2] != ";")
         throw Error::Listen_port();
     char* endptr;
-    Conf_File::Servers[server_index].listen_port_str = Conf_File::tokens[index + 1];
-    // std::cout << Conf_File::tokens[index + 1] << "\n";
-    // exit(1);
+    Conf_File::Servers[server_index].listen_port_str.push_back(Conf_File::tokens[index + 1]);
     long port = strtol(next_token(Conf_File::tokens, index).c_str(), &endptr, 10);
-    // std::cout << index << std::endl;
-    // exit(1);
     index += 2;
-    // std::cout << index << std::endl;
-    // exit(1);   
     if (*endptr != '\0')
         throw Error::Listen_port();
     if (port < 1 || port > 65535)
         throw Error::Listen_port();
-    // std::cout << port << std::endl;
     
-    Conf_File::Servers[server_index].listen_port = port;
+    Conf_File::Servers[server_index].listen_port.push_back(port);
     Conf_File::Servers[server_index].listen_found = true;
+    Conf_File::Servers[server_index].ports_count++;
 }
 void parse_error_pages(size_t &index)
 {
-    // std::cout << Conf_File::tokens[index] << std::endl;
     size_t i = 0;
     int code = 0;
     if (index + 2 >= Conf_File::tokens.size())
@@ -223,7 +189,6 @@ void parse_error_pages(size_t &index)
     if (Conf_File::tokens[tmp] == ";")
         buffer = Conf_File::tokens[tmp - 1];
     i = 0;
-    // std::cout << "heres the first token after directive : " << Conf_File::tokens[index] << std::endl;
     while (i < Conf_File::tokens.size() && isdigit(Conf_File::tokens[index][0]) && index < tmp)
     {
         code = strtol(Conf_File::tokens[index].c_str(), &endptr, 0);
@@ -237,9 +202,6 @@ void parse_error_pages(size_t &index)
     }
     if (Conf_File::tokens[index][0] != '/')
         throw Error::Error_page();
-    // else
-        // Conf_File::Servers[server_index].error_pages[]
-    // std::cout << "here is the recent error token : " << Conf_File::tokens[index] << std::endl;
     if (index >= Conf_File::tokens.size())
         throw Error::UnexpectedEndOfFile();
     index += 2;
@@ -261,14 +223,10 @@ void parse_directives(std::string& token, size_t &i)
         parse_listen(i);
     else if (token == "error_page")
         parse_error_pages(i);
-    // else if (token == "cgi_path")
-    //     parse_cgi_path(i);
     else if (token == "return")
         parse_return(i);
     else if (token == "location" || token == "{" || token == "}" || token == "server")
         return;
-    // else if (token == "server")
-    //     return;
     else
         throw Error::Unknown_Directive();
 }
@@ -284,8 +242,6 @@ void parse_location_directives(std::string& token, size_t &i)
         parse_location_index(i);
     else if (token == "autoindex")
         parse_autoindex(i);
-    // else if (token == "error_page")
-    //     parse_error_pages(i);
     else if (token == "return")
         parse_return(i);
     else if (token == "allowed_methods")
@@ -314,8 +270,6 @@ void parse_config_file()
             Server_block new_server;
             Conf_File::Servers.push_back(new_server);
             Conf_File::Servers[server_index].location_count = -1;
-            // server_index = (Conf_File::Servers.size() -1);
-            // std::cout << "reached 2 \n";
             if (depth > 0)
                 throw std::runtime_error("Error\n'server' block cannot be nested inside another block!.");
             if (i + 1 >= Conf_File::tokens.size() || Conf_File::tokens[i + 1] != "{")
@@ -339,13 +293,10 @@ void parse_config_file()
                 throw std::runtime_error("Error\nExpected '{' after 'location <path>'!.");
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].path = next_token(Conf_File::tokens, i);
             i += 2;
-            // std::cout << "here's the location path : " << Conf_File::tokens[i] << std::endl;
             while (i < Conf_File::tokens.size() && Conf_File::tokens[i] != "}")
             {
-                // std::cout << Conf_File::tokens[i] << std::endl;
                 parse_location_directives(Conf_File::tokens[i], i);
             }
-            // depth++;
             i++;
         }
         else if (token == "{")
@@ -367,28 +318,25 @@ void parse_config_file()
                     throw std::runtime_error("Error\nDirective '" + token + "' found outside 'server' block!.");
             }
         }
-        // usleep(110000);
-        // token = Conf_File::tokens[i];
         parse_directives(token, i);
-
-        // std::cout << "reached\n";
-        // std::cout << token << std::endl;
-        // std::cout << i << std::endl;
     }
     if (depth != 0)
         throw std::runtime_error("Error\nUnclosed block at the end of the file!.");
 }
 
 
-// void parse_file()
-// {
-//     size_t i = 0;
-//     while (i < Conf_File::rawLines.size())
-//     {
-//         size_t pos = Conf_File::rawLines[i].find("server");
-//         if (pos != std::string::npos)
-//         {
-            
-//         }
-//     }
-// }
+int every_server_has_listen_port()
+{
+    size_t i = 0;
+    int error_nb = 1;
+    while (i < Conf_File::Servers.size())
+    {
+        if (!Conf_File::Servers[i].listen_found)
+        {
+            return error_nb;
+        }
+        i++;
+        error_nb++;
+    }
+    return 0;
+}

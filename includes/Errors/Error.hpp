@@ -59,6 +59,12 @@ class Error
             public:
                 const char* what() const throw();
         };
+        class Missing_listen : public std::exception
+        {
+            public:
+                int server_in;
+                const char* what() const throw();
+        };
         class Bind : public std::exception
         {
             public:
@@ -99,7 +105,7 @@ class Error
             public:
                 const char* what() const throw();
         };
-        class Non_Nemeric_value : public std::exception
+        class Non_Numeric_value : public std::exception
         {
             public:
                 const char* what() const throw();

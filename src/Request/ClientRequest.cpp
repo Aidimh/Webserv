@@ -126,7 +126,7 @@ size_t  ClientRequest::getServerMaxBodySize(Client& client)
     size_t i = 0;
     for (i = 0; i < Conf_File::Servers.size(); i++)
     {
-        if (Conf_File::Servers[i].listen_port == client.port)
+        if (Conf_File::Servers[i].listen_port[0] == client.port)
             break;
     }
     if (i == Conf_File::Servers.size() || !Conf_File::Servers[i].client_max_body_found)

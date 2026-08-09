@@ -117,8 +117,9 @@ class Server_block
         bool error_page_found;
         bool client_max_body_found;
         bool uploadLimits;
-        int listen_port;
-        std::string listen_port_str;
+        size_t ports_count;
+        std::vector<int> listen_port;
+        std::vector<std::string> listen_port_str;
         std::string host;
         std::string server_name;
         std::string root;
@@ -145,6 +146,7 @@ class Server_block
             index_found = false;
             error_page_found = false;
             client_max_body_found = false;
+            ports_count = 0;
         }
 };
 
@@ -321,6 +323,7 @@ void expected_token(std::vector<std::string>& vector, size_t &i, std::string& ex
 std::string next_token(std::vector<std::string>& vector , size_t &i);
 void parse_config_file();
 bool isKnownDirective(const std::string& token);
+int every_server_has_listen_port();
 std::string next_token(std::vector<std::string>& tokens , size_t &i);
 void expected_token(std::vector<std::string>& tokens, size_t &i, std::string& expected);
 bool isKnownDirective(const std::string& token);

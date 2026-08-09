@@ -43,8 +43,13 @@ Server_block& which_server(int port)
     size_t i = 0;
     while (i < Conf_File::Servers.size())
     {
-        if (Conf_File::Servers[i].listen_port == port)
-            return Conf_File::Servers[i];
+        size_t j = 0;
+        while(j < Conf_File::Servers[i].ports_count)
+        {
+            if (Conf_File::Servers[i].listen_port[j] == port)
+                return Conf_File::Servers[i];
+            j++;
+        }
         i++;
     }
     return Conf_File::Servers[0];
@@ -132,10 +137,9 @@ void Socket::setup(int port, const std::string& host)
 {
     _port = port;
     _host = host;
-
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
-        throw Error::Socket();
+    throw Error::Socket();
     int opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -147,9 +151,9 @@ void Socket::setup(int port, const std::string& host)
     addr.sin_addr.s_addr = inet_addr(host.c_str());
 
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-        throw Error::Bind();
+    throw Error::Bind();
     if (listen(fd, SOMAXCONN) == -1)
-        throw Error::Listen();
+    throw Error::Listen();
 }
 
 int Socket::get_listen_port()
@@ -224,13 +228,12 @@ int Multiplexer::handleClient(int fd)
     size_t server_index = 0;
     for (size_t i = 0; i < Conf_File::Servers.size(); i++)
     {
-        if (get_listen_value(get_header_value(_clients[fd].parsed_request.getHeaders(), "host")) == Conf_File::Servers[i].listen_port_str)
+        if (get_listen_value(get_header_value(_clients[fd].parsed_request.getHeaders(), "host")) == Conf_File::Servers[i].listen_port_str[0])
         {
             server_index = i;
             break;
         }
     }
-
     size_t location_index = 0;
     size_t longest_match = 0;
     for (size_t i = 0; i < Conf_File::Servers[server_index].location.size(); i++)

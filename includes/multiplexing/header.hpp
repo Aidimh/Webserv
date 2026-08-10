@@ -146,7 +146,7 @@ class Server_block
             server_name_found = false;
             listen_found = false;
             index_found = false;
-            server_auto_index = false;
+            server_has_autoindex = false;
             error_page_found = false;
             client_max_body_found = false;
             ports_count = 0;

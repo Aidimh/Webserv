@@ -19,25 +19,27 @@
 class GET : public AMethod
 {
     private:
-        bool _streaming;
-        int _streamFd;
-        off_t _remaining;
-        std::string readFile(const std::string& path, bool& success) const;
-        std::string getContentType(const std::string& path) const;
-        Response serveFile(Client& client,const std::string& path) const;
-        Response handleDirectory(Client& client,const std::string& path,const Server_block& server,const Location_Config* location) const;
-        std::string generateAutoIndex(const std::string& path) const;
-        void    buildAutoIndexHeader(std::ostringstream& html,const std::string& path) const;
-        void    buildAutoIndexFooter(std::ostringstream& html) const;
-        void    handleDirectoryEntries(DIR* dir,const std::string& currentPath,std::ostringstream& html) const;
-        bool    isHiddenEntry(const std::string& name) const;
-        bool    isDirectoryEntry(const std::string& currentPath,const std::string& name) const;
-        void    appendDirectoryLink(std::ostringstream& html,const std::string& name) const;
-        void    appendFileLink(std::ostringstream& html,const std::string& name) const;
-        Response buildFileResponse(const std::string& body,const std::string& contentType) const;
-        Response buildStreamingFileResponse(off_t fileSize, const std::string& contentType) const;
-        std::vector<std::string> resolveIndexFiles(const Server_block& server, const Location_Config* location) const;
-        bool isAutoindexEnabled(const Server_block& server, const Location_Config* location) const;
+        bool                        _streaming;
+        int                         _streamFd;
+        off_t                       _remaining;
+        std::string                 readFile(const std::string& path, bool& success) const;
+        std::string                 getContentType(const std::string& path) const;
+        Response                    serveFile(Client& client,const std::string& path) const;
+        Response                    handleDirectory(Client& client,const std::string& path,const Server_block& server,const Location_Config* location) const;
+        std::string                 generateAutoIndex(const std::string& path) const;
+        void                        buildAutoIndexHeader(std::ostringstream& html,const std::string& path) const;
+        void                        buildAutoIndexFooter(std::ostringstream& html) const;
+        void                        handleDirectoryEntries(DIR* dir,const std::string& currentPath,std::ostringstream& html) const;
+        bool                        isHiddenEntry(const std::string& name) const;
+        bool                        isDirectoryEntry(const std::string& currentPath,const std::string& name) const;
+        void                        appendDirectoryLink(std::ostringstream& html,const std::string& name) const;
+        void                        appendFileLink(std::ostringstream& html,const std::string& name) const;
+        Response                    buildFileResponse(const std::string& body,const std::string& contentType) const;
+        Response                    buildStreamingFileResponse(off_t fileSize, const std::string& contentType) const;
+        std::vector<std::string>    resolveIndexFiles(const Server_block& server, const Location_Config* location) const;
+        bool                        isAutoindexEnabled(const Server_block& server, const Location_Config* location) const;
+        bool                        needsDirectoryRedirect(const std::string& requestPath,const std::string& target) const;
+        Response                    buildRedirectResponse(const std::string& requestPath) const;
 
 
     public:

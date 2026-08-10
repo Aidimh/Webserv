@@ -38,6 +38,7 @@ Multiplexer::~Multiplexer()
     }
 }
 
+
 bool Multiplexer::is_cgi(const std::string& path)
 {
     size_t pos = path.find(".");
@@ -45,7 +46,6 @@ bool Multiplexer::is_cgi(const std::string& path)
         return true;
     return false;
 }
-
 
 Server_block& which_server(int port)
 {

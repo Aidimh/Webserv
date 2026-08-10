@@ -94,27 +94,27 @@ Response GET::serveFile(Client& client, const std::string& path) const
 
 std::vector<std::string> GET::resolveIndexFiles(const Server_block& server, const Location_Config* location) const
 {
-    // std::string target;
-    // for (int i = 0; i < server.index_files.size(); i++)
-    // {
-    //     if (server.index_files[i] == "index.html")
-    //         return target = server.index_files[i];
-    // }
-    // server.index_files
     if (location != NULL && location->has_index && !location->index_files.empty())
         return location->index_files;
 
-    // std::cout<<server.index_files[0]<<std::endl;
     return server.index_files;
 }
 
-bool GET::isAutoindexEnabled(const Server_block& server, const Location_Config* location) const
+
+bool GET::isAutoindexEnabled(const Server_block& server,const Location_Config* location) const
 {
+    // location override
     if (location != NULL && location->has_autoindex)
         return location->autoindex == "on";
 
-    return server.autoindex == "on";
+    // fallback to server-level
+    if (server.server_has_autoindex)
+        return server.server_auto_index == "on";
+
+    // default
+    return false;
 }
+
 
 Response GET::handleDirectory(Client& client, const std::string& path, const Server_block& server, const Location_Config* location) const
 {
@@ -128,11 +128,9 @@ Response GET::handleDirectory(Client& client, const std::string& path, const Ser
             candidatePath += "/";
 
         candidatePath += indexFiles[i];
-
         if (fileExists(candidatePath) && !isDirectory(candidatePath))
             return serveFile(client, candidatePath);
     }
-
     if (isAutoindexEnabled(server, location))
     {
         std::string html = generateAutoIndex(path);
@@ -192,35 +190,69 @@ Response GET::buildStreamingFileResponse(off_t fileSize, const std::string& cont
     return response;
 }
 
+Response    GET::buildRedirectResponse(const std::string& requestPath) const
+{
+    Response response;
+
+    response.setStatusCode(301);
+    response.setReasonPhrase("Moved Permanently");
+    response.addHeader("Location", requestPath + "/");
+    response.setBody("");
+
+    return response;
+}
+
+bool    GET::needsDirectoryRedirect(const std::string& requestPath,const std::string& target) const
+{
+    if (!isDirectory(target))
+        return false;
+
+    if (requestPath.empty())
+        return false;
+
+    return requestPath[requestPath.size() - 1] != '/';
+}
+
+
 Response GET::execute(Client& client, const Server_block& server)
 {
-    
     const Location_Config* location = resolveLocation(client, server);
-
     std::string target = resolveTarget(client, server, location);
-    
-    // std::cout << "Request Path : " << client.parsed_request.getRequestPath() << std::endl;
-    // std::cout << "Server Root  : " << server.root << std::endl;
-    // if (location)
-    //     std::cout << "Location Root: " << location->root << std::endl;
-    // std::cout << "Resolved Target : " << target << std::endl;
+    const std::string& requestPath = client.parsed_request.getRequestPath();
+
     if (target.empty())
         return buildErrorResponse(403, "Forbidden");
-    switch (getPathType(target))
+    PathType type = getPathType(target);
+
+
+    // std::cout << "===== PATH TYPE DEBUG =====\n";
+    // std::cout << "target = [" << target << "]\n";
+    // if (type == NOT_FOUND)
+    //     std::cout << "type = NOT_FOUND\n";
+    // else if (type == DIRECTORY_PATH)
+    //     std::cout << "type = DIRECTORY_PATH\n";
+    // else if (type == FILE_PATH)
+    //     std::cout << "type = FILE_PATH\n";
+    // else if (type == PERMISSION_DENIED)
+    //     std::cout << "type = PERMISSION_DENIED\n";
+
+    
+    // std::cout << "===========================\n";
+
+    switch (type)
     {
         case PERMISSION_DENIED:
             return buildErrorResponse(403, "Forbidden");
-
         case NOT_FOUND:
             return buildErrorResponse(404, "Not Found");
-
         case FILE_PATH:
             return serveFile(client, target);
-
         case DIRECTORY_PATH:
+            if (needsDirectoryRedirect(requestPath, target))
+                return buildRedirectResponse(requestPath);
             return handleDirectory(client, target, server, location);
-
         default:
             return buildErrorResponse(500, "Internal Server Error");
     }
 }
+

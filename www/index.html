@@ -780,14 +780,18 @@
         <div class="actions-section">
             <h2 class="section-title">// DIAGNOSTIC TESTS //</h2>
             <div class="actions-grid">
-                <!-- CGI Tester -->
+                 <!-- CGI Tester -->
                 <div class="action-card cgi">
                     <div class="action-title">[ CGI TESTER ]</div>
                     <div class="action-desc">Execute a CGI script and display the response</div>
-                    <input type="text" id="cgi-input" class="text-input cyan" placeholder="ENTER CGI PATH (e.g., /cgi-bin/test.py)">
-                    <button type="button" class="neon-button cyan" onclick="testCgi()">
-                        ▶ EXECUTE CGI
-                    </button>
+                    
+                    <form onsubmit="event.preventDefault(); testCgi();">
+                        <input type="text" id="cgi-input" class="text-input cyan" placeholder="ENTER CGI PATH (e.g., /cgi-bin/test.py)" required>
+                        <button type="submit" class="neon-button cyan">
+                            ▶ EXECUTE CGI
+                        </button>
+                    </form>
+                    
                     <div class="result-display cyan" id="cgi-result"></div>
                 </div>
 

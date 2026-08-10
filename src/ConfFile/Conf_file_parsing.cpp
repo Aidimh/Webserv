@@ -85,15 +85,17 @@ void parse_location_index(size_t &index)
     size_t i = 0;
     if (index + 2 >= Conf_File::tokens.size())
         throw Error::Index();
-    while (i < Conf_File::tokens.size() && !isKnownDirective(Conf_File::tokens[index]) && Conf_File::tokens[index] != ";")
+    index++;
+    while (i < Conf_File::tokens.size() && Conf_File::tokens[index] != ";")
     {
-        Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].index_files[i] = Conf_File::tokens[index];
+        Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].index_files.push_back(Conf_File::tokens[index]);
         i++;
         index++;
     }
     if (index >= Conf_File::tokens.size())
         throw Error::UnexpectedEndOfFile();
-    index += 3;
+    index++;
+    Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_index = true;
     Conf_File::Servers[server_index].location_found = true;
 }
 
@@ -207,6 +209,19 @@ void parse_error_pages(size_t &index)
     index += 2;
 }
 
+void parse_server_autoindex(size_t &index)
+{
+    if (index + 2 >= Conf_File::tokens.size())
+        throw Error::Root();
+    if (Conf_File::tokens[index + 2] !=  ";")
+        throw Error::SemiColon();
+    if (!is_autoindex_id(Conf_File::tokens[index + 1]))
+        throw Error::Unkonwn_Directive_value();
+    Conf_File::Servers[server_index].server_auto_index = next_token(Conf_File::tokens, index);
+    Conf_File::Servers[server_index].server_has_autoindex = true;
+    index += 2;
+}
+
 void parse_directives(std::string& token, size_t &i)
 {
     if (token == "host")
@@ -217,6 +232,8 @@ void parse_directives(std::string& token, size_t &i)
         parse_root(i);
     else if (token == "client_max_body_size")
         parse_max_body_size(i);
+    else if (token == "autoindex")
+        parse_server_autoindex(i);
     else if (token == "server_name")
         parse_server_name(i);
     else if (token == "listen")
@@ -232,10 +249,10 @@ void parse_directives(std::string& token, size_t &i)
 }
 
 
-
-
 void parse_location_directives(std::string& token, size_t &i)
 {
+    if (token == "root")
+        parse_location_index(i);
     if (token == "root")
         parse_root_path(i);
     else if (token == "index")

@@ -79,6 +79,7 @@ class ClientRequest
 		std::string									version;
 		std::map<std::string, std::string>			headers;
 		std::string									cgi;
+		bool										is_cgi;
 		std::string									body;
 		short										status_code;
 		int											TmpFileFd;

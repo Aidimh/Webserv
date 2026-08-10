@@ -8,7 +8,7 @@ void parse_root_path(size_t &index)
         throw Error::Root();
     if (Conf_File::tokens[index + 2] !=  ";")
         throw Error::SemiColon();
-    if (path_file_exists(Conf_File::tokens[index + 1]))
+    if (!path_file_exists(Conf_File::tokens[index + 1]))
         throw std::runtime_error(Conf_File::tokens[index + 1] + " : No such File or Directory!.");
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
     index += 2;

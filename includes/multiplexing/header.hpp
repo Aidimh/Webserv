@@ -117,12 +117,14 @@ class Server_block
         bool error_page_found;
         bool client_max_body_found;
         bool uploadLimits;
+        bool server_has_autoindex;
         size_t ports_count;
         std::vector<int> listen_port;
         std::vector<std::string> listen_port_str;
         std::string host;
         std::string server_name;
         std::string root;
+        std::string server_auto_index;
         std::vector<std::string> index_files;
         size_t index_count;
         long max_body_size;
@@ -144,6 +146,7 @@ class Server_block
             server_name_found = false;
             listen_found = false;
             index_found = false;
+            server_auto_index = false;
             error_page_found = false;
             client_max_body_found = false;
             ports_count = 0;
@@ -264,7 +267,8 @@ class Multiplexer
         void                            prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
-        void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn requst jdida.
+        void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
+        bool                            is_cgi(const std::string& path); // this func checks weather a path is cgi_path
         // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
         // std::string                     _generateClientID(int fd);
     public:

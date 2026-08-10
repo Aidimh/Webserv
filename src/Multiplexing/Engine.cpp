@@ -38,6 +38,15 @@ Multiplexer::~Multiplexer()
     }
 }
 
+bool Multiplexer::is_cgi(const std::string& path)
+{
+    size_t pos = path.find(".");
+    if (pos != std::string::npos)
+        return true;
+    return false;
+}
+
+
 Server_block& which_server(int port)
 {
     size_t i = 0;
@@ -427,6 +436,7 @@ void Multiplexer::_removeClient(int fd)
     }
 }
 
+
 void Multiplexer::_readClient(int fd)
 {
     char buffer[4096];
@@ -443,9 +453,13 @@ void Multiplexer::_readClient(int fd)
         {
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
-
+            if (is_cgi(iter->second.parsed_request.getRequestPath()))
+            {
+                handleClient(fd);
+            }
             if (iter->second.parsed_request.state == ClientRequest::BODY)
                 iter->second.parsed_request.BodyRequest(iter->second);
+
         }
         else if (bytesRead == 0)
         {

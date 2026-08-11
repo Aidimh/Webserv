@@ -119,10 +119,7 @@ std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) c
     return result;
 }
 
-std::string AMethod::resolveTarget(
-    const Client& client,
-    const Server_block& server,
-    const Location_Config* location) const
+std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
 {
     std::string requestPath =
         urlDecode(client.parsed_request.getRequestPath());
@@ -144,68 +141,11 @@ std::string AMethod::resolveTarget(
 
     std::string normalizedPath =
         normalizePath(pathToAppend, outOfBounds);
-
     if (outOfBounds)
         return "";
-
     return root + normalizedPath;
 }
 
-
-// std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
-// {
-    
-//     std::string requestPath =urlDecode(client.parsed_request.getRequestPath());
-//     std::string root = server.root;
-//     std::string pathToAppend;
-//     bool hasOwnRoot = false;
-
-//     if (location)
-//     {
-//         if (location->has_root && !location->root.empty())
-//         {
-//             root = location->root;
-//             hasOwnRoot = true;
-//         }
-//     }
-
-//     // Remove trailing '/' from root
-//     if (root.size() > 1 && root[root.size() - 1] == '/')
-//         root.erase(root.size() - 1);
-
-//     if (hasOwnRoot)
-//     {
-//         // location root:
-//         // /directory/Yeah + root /EngineX
-//         // => /EngineX + /not_happy.bad_extension
-
-//         if (requestPath.size() < location->path.size())
-//             return "";
-
-//         pathToAppend =
-//             requestPath.substr(location->path.size());
-//     }
-//     else
-//     {
-//         // server root:
-//         // /www-subject-tester + /directory/nop/
-//         pathToAppend = requestPath;
-//     }
-//     bool outOfBounds = false;
-//     std::string normalizedPath =
-//         normalizePath("/" + pathToAppend, outOfBounds);
-
-//     if (outOfBounds)
-//         return "";
-//     std::string target = root + normalizedPath;
-//     std::cout << "===== YEAH TARGET =====\n";
-//     std::cout << "requestPath = [" << requestPath << "]\n";
-//     std::cout << "location   = [" << (location ? location->path : "NULL") << "]\n";
-//     std::cout << "root       = [" << root << "]\n";
-//     std::cout << "target     = [" << root + normalizedPath << "]\n";
-//     std::cout << "=======================\n";
-//     return target;
-// }
 
 PathType AMethod::getPathType(const std::string& path) const
 {
@@ -238,4 +178,3 @@ bool AMethod::isDirectory(const std::string& path) const
 
     return S_ISDIR(info.st_mode);
 }
-

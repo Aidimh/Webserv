@@ -6,12 +6,12 @@ bool Router::matchesLocation(const std::string& uri,const std::string& locationP
         return false;
 
     if (locationPath == "/")
-        return !uri.empty() && uri[0] == '/';
+        return !uri.empty() && uri[0] == '/'; // uri.compare(0, 1, "/") == 0 ((0). || (1)/)
 
     if (uri.compare(0, locationPath.size(), locationPath) != 0)
         return false;
 
-    // Ila location katsali b '/', prefix match بوحدو كافي
+    //Ila location katsali b '/', prefix match  
     if (locationPath[locationPath.size() - 1] == '/')
         return true;
 
@@ -42,7 +42,6 @@ const Location_Config* Router::resolveLocation( const std::string& uri,const Ser
 bool Router::isMethodAllowed(const std::string& method,const Location_Config& location)
 {
     // Ila directive "allowed_methods" ma kaynach, nkhalli behavior lqdim:
-    // l-handler howa li kay3alj method.
     if (location.allowed_methods.empty())
         return true;
 
@@ -56,8 +55,9 @@ bool Router::isMethodAllowed(const std::string& method,const Location_Config& lo
 
 bool Router::isCGIRequest(const ClientRequest& request,const Location_Config& location)
 {
-    size_t pos = request.getRequestPath().find('.');
-    // PATH = www/folder/foledr/script.py
+    size_t pos = request.getRequestPath().rfind('.'); // this rfind return the first dot in last requset 
+    //Searches right to left
+    // PATH = www/.folder/.foledr/script.py
     //PATH = www/folder/script.c
     // PATH = .www/folder/script.js
     

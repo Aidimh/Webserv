@@ -38,10 +38,13 @@ Multiplexer::~Multiplexer()
     }
 }
 
+<<<<<<< HEAD
 bool Multiplexer::is_in_cgi_list(std::string& ext)
 {
     return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php");
 }
+=======
+>>>>>>> a9e613575515e27469a2c044c5fcf3380e6cd631
 
 bool Multiplexer::is_cgi(const std::string& path)
 {
@@ -54,7 +57,6 @@ bool Multiplexer::is_cgi(const std::string& path)
     }
     return false;
 }
-
 
 Server_block& which_server(int port)
 {

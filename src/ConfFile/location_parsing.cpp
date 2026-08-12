@@ -2,17 +2,34 @@
 
 extern int server_index;
 
+// void parse_root_path(size_t &index)
+// {
+//     if (index + 2 >= Conf_File::tokens.size())
+//         throw Error::Root();
+//     if (Conf_File::tokens[index + 2] !=  ";")
+//         throw Error::SemiColon();
+//     if (!path_file_exists(Conf_File::tokens[index + 1]))
+//         throw std::runtime_error(Conf_File::tokens[index + 1] + " : No such File or Directory!.");
+//     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
+//     index += 2;
+// } 
+
+
 void parse_root_path(size_t &index)
 {
     if (index + 2 >= Conf_File::tokens.size())
         throw Error::Root();
-    if (Conf_File::tokens[index + 2] !=  ";")
+
+    if (Conf_File::tokens[index + 2] != ";")
         throw Error::SemiColon();
+
     if (!path_file_exists(Conf_File::tokens[index + 1]))
         throw std::runtime_error(Conf_File::tokens[index + 1] + " : No such File or Directory!.");
-    Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
+    size_t count = Conf_File::Servers[server_index].location_count;
+    Conf_File::Servers[server_index].location[count].root = next_token(Conf_File::tokens, index);
+    Conf_File::Servers[server_index].location[count].has_root = true;
     index += 2;
-} 
+}
 
 void parse_autoindex(size_t &index)
 {
@@ -26,7 +43,6 @@ void parse_autoindex(size_t &index)
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_autoindex = true;
     index += 2;
 }
-
 
 void parse_upload_store(size_t &index)
 {

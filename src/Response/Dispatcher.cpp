@@ -94,22 +94,24 @@ static std::string statusMessage(short code)
 Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
     // Temporary validation (for testing only)
-    if (client.parsed_request.getRequestPath().empty() || client.parsed_request.getRequestPath()[0] != '/')
-    {
-        Response response = AMethod::buildErrorResponse(HTTP_400_BAD_REQUEST, "Bad Request");
-        setErrorPageBody(response);
-        return response;
-    }
+    // if (client.parsed_request.getRequestPath().empty() || client.parsed_request.getRequestPath()[0] != '/') //  || client.parsed_request.state = ERROR_STATE
+    // {
+    //     Response response = AMethod::buildErrorResponse(HTTP_400_BAD_REQUEST, "Bad Request");
+    //     setErrorPageBody(response);
+    //     return response;
+    // }
 
-    // 1. Parser already found an error
+    // checck this line TEST path != ["/"] return 400errorState
+
     if (client.parsed_request.state == ClientRequest::ERROR_STATE)
     {
+        std::cout<<"SPAAAAM\n";
         Response response = AMethod::buildErrorResponse(client.parsed_request.getStatusCode(), statusMessage(client.parsed_request.getStatusCode()));
         setErrorPageBody(response);
         return response;
     }
 
-    // 2. Routing: lqa location qbel ma n-executiw chi method.
+    // this part 
     const Location_Config* location = Router::resolveLocation(client.parsed_request.getRequestPath(), server);
     if (!location)
     {
@@ -117,27 +119,21 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(response);
         return response;
     }
-
-    if (Router::isCGIRequest(client.parsed_request,*location) == true)
-    {
+    if (Router::isCGIRequest(client.parsed_request,*location) == true) {
         Response response;
         response.setResponseMode(Response::CGI_RESPONSE);
         client.cgi_started = true;
         return response;
     }
-
-    // 3. Had method khas-ha tkoun mssmou7a f location li lqinah.
-    if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location))
-    {
+    // this method khasha tkon inside this object (location)
+    if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location)) {
         Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
         setErrorPageBody(response);
         return response;
     }
 
-    //. Normal request
     AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());
-    if (!method)
-    {
+    if (!method){
         Response res;
         res.setStatusCode(501);
         res.setReasonPhrase("Not Implemented");

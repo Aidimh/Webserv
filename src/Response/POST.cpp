@@ -81,11 +81,11 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
 
     const ClientRequest& request = client.parsed_request;
 
-    std::cout<<"Test\n";
+    // std::cout<<"Test\n";
     // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
     if (request.usesTmpFile())
     {
-        std::cout<<"Test\n";
+        // std::cout<<"Test\n";
         if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
             return buildErrorResponse(500, "Internal Server Error");
         return buildCreatedResponse(201, "Created");

@@ -252,9 +252,13 @@ void parse_directives(std::string& token, size_t &i)
 void parse_location_directives(std::string& token, size_t &i)
 {
     if (token == "root")
-        parse_location_index(i);
-    if (token == "root")
         parse_root_path(i);
+    else if (token == "index")
+        parse_location_index(i);
+    // if (token == "root")
+    //     parse_location_index(i);
+    // if (token == "root")
+    //     parse_root_path(i);
     else if (token == "index")
         parse_location_index(i);
     else if (token == "autoindex")

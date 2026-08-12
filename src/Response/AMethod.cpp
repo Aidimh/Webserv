@@ -62,9 +62,10 @@ Response AMethod::buildErrorResponse(short statusCode, const std::string& messag
     return response;
 }
 
-const Location_Config* AMethod::resolveLocation(const Client& client, const Server_block& server) const
+const Location_Config* AMethod::resolveLocation(const Client& client,const Server_block& server) const
 {
-    return Router::resolveLocation(client.parsed_request.getRequestPath(), server);
+    std::string requestPath = client.parsed_request.getRequestPath();
+    return Router::resolveLocation(requestPath, server);
 }
 
 std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) const
@@ -120,38 +121,29 @@ std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) c
 
 std::string AMethod::resolveTarget(const Client& client,const Server_block& server,const Location_Config* location) const
 {
-    std::string requestPath = urlDecode(client.parsed_request.getRequestPath());
-    // const std::string& requestPath = client.parsed_request.getRequestPath();
-
-    // path = "/"
+    std::string requestPath =
+        urlDecode(client.parsed_request.getRequestPath());
 
     std::string root = server.root;
-    std::string locationPath;
 
-    if (location)
-    {
-        if (!location->root.empty())
-            root = location->root;
-        locationPath = location->path;
-    }
+    if (location && location->has_root && !location->root.empty())
+        root = location->root;
 
-    // Defensive programming
-    if (requestPath.size() < locationPath.size())
-        return "";
-
-    // Remove trailing '/' from root (except "/")
     if (root.size() > 1 && root[root.size() - 1] == '/')
         root.erase(root.size() - 1);
 
-    std::string relativePath = requestPath.substr(locationPath.size());
+    // IMPORTANT:
+    // root-style behavior:
+    // root + FULL request URI
+    std::string pathToAppend = requestPath;
 
     bool outOfBounds = false;
-    std::string normalizedRelative = normalizePath("/" + relativePath, outOfBounds);
 
+    std::string normalizedPath =
+        normalizePath(pathToAppend, outOfBounds);
     if (outOfBounds)
         return "";
-
-    return root + normalizedRelative;
+    return root + normalizedPath;
 }
 
 
@@ -186,4 +178,3 @@ bool AMethod::isDirectory(const std::string& path) const
 
     return S_ISDIR(info.st_mode);
 }
-

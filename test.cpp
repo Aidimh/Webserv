@@ -1,5 +1,3 @@
-#include "header.hpp"
-
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {
     std::map<std::string, std::string>::const_iterator it = headers.find(key);
@@ -24,17 +22,6 @@ void CGI::build_env_vars(Client& client)
     for (size_t i = 0; i < env_vars.size() ; i++)
         request_vars[i] = strdup(env_vars[i].c_str());
     request_vars[env_vars.size()] = NULL;
-}
-
-
-std::string CGI::get_interpreter() const
-{
-    return interpreter;
-}
-
-std::string CGI::get_script() const
-{
-    return script;
 }
 
 CGI::CGI(Client& client, const Location_Config& conf) : request_path(client.parsed_request.getRequestPath()) ,body(client.parsed_request.getBody())
@@ -66,6 +53,7 @@ void CGI::writeToChild()
 
 int CGI::execute(std::map<int, pid_t>& map)
 {
+    std::cout << "reached exec\n";
     char *argv[3];
 
     argv[0] = (char *)interpreter.c_str();
@@ -78,10 +66,8 @@ int CGI::execute(std::map<int, pid_t>& map)
         return ERROR;
     if (pid == 0)
     {
-        if (dup2(stdin_pipe[0],STDIN_FILENO) == -1)
-            perror("stdin\n");
-        if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
-            perror("stdout\n");
+        dup2(stdin_pipe[0],STDIN_FILENO);
+        dup2(stdout_pipe[1],STDOUT_FILENO);
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         close(stdout_pipe[0]);
@@ -98,31 +84,19 @@ int CGI::execute(std::map<int, pid_t>& map)
     return (stdout_pipe[0]);
 }
 
-
-void remove_char_at(std::string& str, size_t pos)
-{
-    if (pos < str.length())
-    {
-        str.erase(pos, 1);
-    }
-}
-
 int CGI::_find_interpreter(const Location_Config& conf)
 {
     size_t i = 0;
     size_t pos = request_path.rfind('.');
     if (pos == std::string::npos)
         return 1;
-    // we remove the first / here cause execv can't relate to a file path that starts with /
-    if (request_path.c_str() && request_path[0] == '/')
-        remove_char_at(request_path, 0);
-    // here we extract the extension .ext
-    std::string extension = request_path.substr(pos - 1);
+
+    std::string extension = request_path.substr(pos);
     while (i < conf.cgi_extensions.size())
     {
         if (conf.cgi_extensions[i] == extension)
         {
-            this->interpreter = conf.cgi_paths[i];
+            interpreter = conf.cgi_paths[i];
             extension_found = true;
             break;
         }
@@ -130,6 +104,58 @@ int CGI::_find_interpreter(const Location_Config& conf)
     }
     if (!extension_found)
         return ERROR;
-    this->script = conf.root + request_path;
+
+    script = conf.root + request_path;
     return SUCESS;
+}
+
+int Multiplexer::handleClient(int fd)
+{
+    size_t server_index = 0;
+    for (size_t i = 0; i < Conf_File::Servers.size(); i++)
+    {
+        if (get_listen_value(get_header_value(_clients[fd].parsed_request.getHeaders(), "host")) == Conf_File::Servers[i].listen_port_str[0])
+        {
+            server_index = i;
+            break;
+        }
+    }
+    size_t location_index = 0;
+    size_t longest_match = 0;
+    for (size_t i = 0; i < Conf_File::Servers[server_index].location.size(); i++)
+    {
+        std::string loc_path = Conf_File::Servers[server_index].location[i].path;
+        if (_clients[fd].parsed_request.getRequestPath().find(loc_path) == 0 && loc_path.size() > longest_match)
+        {
+            longest_match = loc_path.size();
+            location_index = i;
+        }
+    }
+    Location_Config& loc = Conf_File::Servers[server_index].location[location_index];
+    std::string req_path = _clients[fd].parsed_request.getRequestPath();
+    size_t dot_pos = req_path.rfind('.');
+    if (dot_pos == std::string::npos)
+        return 0;
+
+    std::string extension = req_path.substr(dot_pos);
+    for (size_t i = 0; i < loc.cgi_extensions.size(); i++)
+    {
+        if (loc.cgi_extensions[i] == extension)
+        {
+            CGI cgi(_clients[fd], loc);
+            int pipe_fd = cgi.execute(_cgi_pids);
+            cgi_timeouts[pipe_fd] = time(NULL);
+            if (pipe_fd == -1)
+                return ERROR;
+            cgi.writeToChild();
+            _cgi_pipes[pipe_fd] = fd;
+            struct pollfd pfd;
+            pfd.fd = pipe_fd;
+            pfd.events = POLLIN;
+            pfd.revents = 0;
+            _pollfds.push_back(pfd);
+            return 1;
+        }
+    }
+    return 0;
 }

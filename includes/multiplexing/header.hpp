@@ -269,6 +269,7 @@ class Multiplexer
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
         void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
         bool                            is_cgi(const std::string& path); // this func checks weather a path is cgi_path
+        bool                            is_in_cgi_list(std::string& ext);
         // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
         // std::string                     _generateClientID(int fd);
     public:
@@ -303,6 +304,8 @@ class CGI
         CGI(Client& client, const Location_Config& conf);
         ~CGI();
         void build_env_vars(Client& client);
+        std::string get_interpreter() const;
+        std::string get_script() const;
         void writeToChild();
         // void readFromChild(int fd);
         int execute(std::map<int, pid_t>& map);

@@ -38,11 +38,20 @@ Multiplexer::~Multiplexer()
     }
 }
 
+bool Multiplexer::is_in_cgi_list(std::string& ext)
+{
+    return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php");
+}
+
 bool Multiplexer::is_cgi(const std::string& path)
 {
     size_t pos = path.find(".");
     if (pos != std::string::npos)
-        return true;
+    {
+        std::string ext = path.substr(pos);
+        if(is_in_cgi_list(ext))
+            return true;
+    }
     return false;
 }
 
@@ -127,6 +136,13 @@ void    Multiplexer::_writeClient(int fd)
     std::map<int, Client>::iterator it = _clients.find(fd);
     if (it == _clients.end())
         return;
+    if (is_cgi(it->second.parsed_request.getRequestPath()))
+    {
+        handleClient(fd);
+        disableWrite(fd);
+        _removeClient(fd);
+        return;
+    }
     Client &client = it->second;
     prepareResponse(client);
     if (!sendResponse(fd, client))
@@ -232,6 +248,34 @@ static std::string get_header_value(const std::map<std::string, std::string>& he
     return it->second;
 }
 
+void read_and_print_fd(int fd)
+{
+    char buffer[1024];
+    ssize_t bytes_read;
+
+    if (fd < 0)
+        return;
+    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+    {
+        if (bytes_read == 0)
+            std::cout << "error in fd empty\n";
+        ssize_t bytes_written = 0;
+        while (bytes_written < bytes_read)
+        {
+            ssize_t ret = write(STDOUT_FILENO, buffer + bytes_written, bytes_read - bytes_written);
+            if (ret <= 0)
+            {
+                std::cerr << "Error writing to stdout" << std::endl;
+                return;
+            }
+            bytes_written += ret;
+        }
+    }
+
+    if (bytes_read < 0)
+        std::cerr << "Error reading from file descriptor" << std::endl;
+}
+
 int Multiplexer::handleClient(int fd)
 {
     size_t server_index = 0;
@@ -271,6 +315,8 @@ int Multiplexer::handleClient(int fd)
             if (pipe_fd == -1)
                 return ERROR;
             cgi.writeToChild();
+            // std::cout << "heres whats inside the pipe filled by cgi\n";
+            // read_and_print_fd(pipe_fd);
             _cgi_pipes[pipe_fd] = fd;
             struct pollfd pfd;
             pfd.fd = pipe_fd;
@@ -453,10 +499,6 @@ void Multiplexer::_readClient(int fd)
         {
             iter->second.request.append(buffer, bytesRead);
             iter->second.parsed_request.parse(iter->second);
-            if (is_cgi(iter->second.parsed_request.getRequestPath()))
-            {
-                handleClient(fd);
-            }
             if (iter->second.parsed_request.state == ClientRequest::BODY)
                 iter->second.parsed_request.BodyRequest(iter->second);
 

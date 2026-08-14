@@ -14,7 +14,7 @@ class POST : public AMethod
 {
     private:
         MultipartUploadStrategy multiPart;
-        Response buildCreatedResponse(int statusCode,const std::string& reasonPhrase) const;
+        // Response buildCreatedResponse(int statusCode,const std::string& reasonPhrase) const;
         std::string getParentDirectory(const std::string& target) const;
         bool canWrite(const std::string& path) const;
         PathType validateParentDirectory(const std::string& target) const;
@@ -25,7 +25,7 @@ class POST : public AMethod
         POST();
         virtual ~POST();
         Response handleMultipartRequest(const Client& client, const std::string& target);
-        Response handleRegularRequest(const Client& client, const std::string& target);
+        Response handleRegularRequest(Client& client, const std::string& target);
         virtual Response execute(Client& client, const Server_block& server);
 };
 

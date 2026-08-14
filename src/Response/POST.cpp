@@ -25,18 +25,18 @@ bool POST::canWrite(const std::string& target) const
     return (access(parent.c_str(), W_OK) == 0);
 }
 
-Response POST::buildCreatedResponse(int statusCode, const std::string& reasonPhrase) const
-{
-    Response response;
+// Response POST::buildCreatedResponse(int statusCode, const std::string& reasonPhrase) const
+// {
+//     Response response;
 
-    response.setStatusCode(statusCode);
-    response.setReasonPhrase(reasonPhrase);
+//     response.setStatusCode(statusCode);
+//     response.setReasonPhrase(reasonPhrase);
 
-    response.setBody("");
-    response.addHeader("content-type", "text/plain");
+//     response.setBody("");
+//     response.addHeader("content-type", "text/plain");
 
-    return response;
-}
+//     return response;
+// }
 
 bool POST::saveBody(const std::string& path, const std::string& body) const
 {
@@ -60,7 +60,7 @@ PathType POST::validateParentDirectory(const std::string& target) const
     return getPathType(parent);
 }
 
-Response POST::handleRegularRequest(const Client& client, const std::string& target)
+Response POST::handleRegularRequest(Client& client, const std::string& target)
 {
     PathType type = validateParentDirectory(target);
 
@@ -76,35 +76,55 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
     if (!canWrite(target))
         return buildErrorResponse(403, "Forbidden");
 
-    if (fileExists(target))
-        return buildErrorResponse(409, "Conflict");
-
     const ClientRequest& request = client.parsed_request;
 
     // std::cout<<"Test\n";
     // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
     if (request.usesTmpFile())
     {
-        // std::cout<<"Test\n";
+        // Read content size before moving file
+        struct stat st;
+        if (stat(request.getTmpFilePath().c_str(), &st) != 0)
+            return buildErrorResponse(500, "Internal Server Error");
+        off_t filesize = st.st_size;
+
         if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
             return buildErrorResponse(500, "Internal Server Error");
-        return buildCreatedResponse(201, "Created");
+
+        // Open target for streaming in the client object
+        int fd = open(target.c_str(), O_RDONLY);
+        if (fd == -1)
+            return buildErrorResponse(500, "Internal Server Error");
+        client.stream_file_fd = fd;
+        client.stream_bytes_remaining = filesize;
+
+        Response response;
+        response.setStatusCode(201);
+        response.setReasonPhrase("Created");
+        // No body in the response string; streaming will send file contents
+        std::ostringstream oss;
+        oss << filesize;
+        response.addHeader("Content-Length", oss.str());
+        response.addHeader("content-type", "text/plain");
+        response.setResponseMode(Response::STREAMING_RESPONSE);
+        return response;
     }
 
-    // Case 2: body sghir, f RAM → save 3adi
+    // Case 2: small body in RAM -> save and return content
     if (!saveBody(target, request.getBody()))
         return buildErrorResponse(500, "Internal Server Error");
 
-    return buildCreatedResponse(201, "Created");
+    Response response;
+    response.setStatusCode(201);
+    response.setReasonPhrase("Created");
+    response.setBody(request.getBody());
+    response.addHeader("content-type", "text/plain");
+    return response;
 }
+
 
 // Response POST::handleRegularRequest(const Client& client, const std::string& target)
 // {
-//     // std::cout << "==========================" << std::endl;
-//     // std::cout << "RequestPath = " << client.parsed_request.getRequestPath() << std::endl;
-//     // std::cout << "Target      = " << target << std::endl;
-//     // std::cout << "Parent      = " << getParentDirectory(target) << std::endl;
-//     // std::cout << "==========================" << std::endl;
 //     PathType type = validateParentDirectory(target);
 
 //     if (type == NOT_FOUND)
@@ -119,37 +139,23 @@ Response POST::handleRegularRequest(const Client& client, const std::string& tar
 //     if (!canWrite(target))
 //         return buildErrorResponse(403, "Forbidden");
 
-//     if (fileExists(target))
-//         return buildErrorResponse(409, "Conflict");
+//     const ClientRequest& request = client.parsed_request;
 
-//     // Adapt the body before 
-//     std::string adaptedBody = adaptBodyrequest(client, target);
+//     // std::cout<<"Test\n";
+//     // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
+//     if (request.usesTmpFile())
+//     {
+//         std::cout<<"Test\n";
+//         if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
+//             return buildErrorResponse(500, "Internal Server Error");
+//         return buildCreatedResponse(201, "Created");
+//     }
 
-//     if (!saveBody(target, adaptedBody))
+//     // Case 2: body sghir, f RAM → save 3adi
+//     if (!saveBody(target, request.getBody()))
 //         return buildErrorResponse(500, "Internal Server Error");
 
 //     return buildCreatedResponse(201, "Created");
-// }
-
-// std::string POST::adaptBodyrequest(const Client& client, const std::string& target)
-// {
-//     const ClientRequest& request = client.parsed_request;
-
-//     if(request.getBodySize() == 0)
-//         return("");
-
-//     if(request.getBody().empty())
-//         return(client.parsed_request.getBody());
-//     else
-//     {
-//         std::string body = request.getBody();
-//         std::string tmpFilePath = "/tmp/webserv_tmp_file_" + std::intToString(client.fd);
-
-//         if (!saveBody(tmpFilePath, body))
-//             return("");
-
-//         return(body);
-//     }
 // }
 
 

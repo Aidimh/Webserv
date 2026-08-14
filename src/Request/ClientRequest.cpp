@@ -37,16 +37,39 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 {
     if (this != &other)
     {
-        state           =   other.state;
-        method          =   other.method;
-        request_path    =   other.request_path;
-        cgi_extension   =   other.cgi_extension;
-        version         =   other.version;
-        headers         =   other.headers;
-        cgi             =   other.cgi;
-        body            =   other.body;
-        status_code     =   other.status_code;
-        TmpFileFd       =   other.TmpFileFd;
+		state           =   other.state;
+		method          =   other.method;
+		request_path    =   other.request_path;
+		cgi_extension   =   other.cgi_extension;
+		version         =   other.version;
+		headers         =   other.headers;
+		cgi             =   other.cgi;
+		is_cgi          =   other.is_cgi;
+		body            =   other.body;
+		status_code     =   other.status_code;
+		BodySize        =   other.BodySize;
+		ContentLength   =   other.ContentLength;
+		HasContentLength=   other.HasContentLength;
+		HasTransferEncoding = other.HasTransferEncoding;
+		TmpFilePath     =   other.TmpFilePath;
+
+		/* duplicate file descriptor if present. Close existing fd first */
+		if (TmpFileFd != -1)
+		{
+			close(TmpFileFd);
+			TmpFileFd = -1;
+		}
+		if (other.TmpFileFd != -1)
+		{
+			int dupfd = dup(other.TmpFileFd);
+			if (dupfd == -1)
+			{
+				/* on failure keep fd -1; caller may detect error via status_code if desired */
+				TmpFileFd = -1;
+			}
+			else
+				TmpFileFd = dupfd;
+		}
     }
     return *this;
 }

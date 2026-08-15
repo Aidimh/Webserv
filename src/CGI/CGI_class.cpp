@@ -62,8 +62,6 @@ void CGI::writeToChild()
 
 // }
 
-
-
 int CGI::execute(std::map<int, pid_t>& map)
 {
     char *argv[3];

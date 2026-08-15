@@ -319,12 +319,15 @@ int Multiplexer::handleClient(int fd)
         {
             CGI cgi(_clients[fd], loc);
             int pipe_fd = cgi.execute(_cgi_pids);
+            read_and_print_fd(pipe_fd);
+            std::cout << cgi.get_interpreter() << std::endl;
+            std::cout << cgi.get_script() << std::endl;
+            exit(1);
             cgi_timeouts[pipe_fd] = time(NULL);
             if (pipe_fd == -1)
                 return ERROR;
             cgi.writeToChild();
             // std::cout << "heres whats inside the pipe filled by cgi\n";
-            // read_and_print_fd(pipe_fd);
             _cgi_pipes[pipe_fd] = fd;
             struct pollfd pfd;
             pfd.fd = pipe_fd;

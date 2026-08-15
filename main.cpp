@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include "src/Logging/Logging.hpp"
+
+using namespace std;
 
 int server_index = 0;
 
@@ -773,6 +776,60 @@ void open_file(std::string filename)
 //     return 0;
 // }
 
+void initDebug(string &className)
+{
+	if (className.empty())
+	{
+		INFO() << "Global Debug (-d) enabled.";
+		Logging::EnableDebug("");
+	}
+	else
+	{
+		INFO() << "Debug (-d) enabled for class: " << className;
+		Logging::EnableDebug(className);
+	}
+}
+
+void initDetailedDebug(string &className)
+{
+	if (className.empty())
+	{
+		INFO() << "Global Detailed Debug (-D) enabled";
+		Logging::EnableDetailDebug("");
+	}
+	else
+	{
+		INFO() << "Detailed Debug (-D) enabled for class: " << className;
+		Logging::EnableDetailDebug(className);
+	}
+}
+
+int ParseLoggingArgs(int argc, char *argv[])
+{
+	int fileNameIdx = 1;
+	for (int i = 1; i < argc; ++i)
+	{
+		std::string arg = argv[i];
+		if (arg.length() >= 2 && arg[0] == '-')
+		{
+			std::string className = arg.substr(2);
+
+			if (arg[1] == 'd')
+			{
+				initDebug(className);
+			}
+			else if (arg[1] == 'D')
+			{
+				initDetailedDebug(className);
+			}
+			fileNameIdx++;
+		}
+		else
+			break;
+	}
+	return fileNameIdx;
+}
+
 int main(int ac , char **av, char **envp)
 {
     signal(SIGINT, handle_sigint);
@@ -780,11 +837,14 @@ int main(int ac , char **av, char **envp)
     signal(SIGTSTP, handle_sigstp);
     try
     {
-        if (ac != 2)
-            throw Error::Argc();
-        if (!av || av[1][0] == '\0')
-            throw Error::Argv();
-        open_file(av[1]);
+		Logging logger("webserv.log");
+		int fileNameIdx = ParseLoggingArgs(ac, av);
+		// if (ac != 2)
+        //     throw Error::Argc();
+        // if (!av || av[1][0] == '\0')
+        //     throw Error::Argv();
+        open_file(av[fileNameIdx]);
+		INFO() << "Opening file: " << av[fileNameIdx];
         validate_file();
         parse_config_file();
         int error_nb = every_server_has_listen_port();

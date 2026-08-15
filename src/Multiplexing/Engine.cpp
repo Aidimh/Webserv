@@ -2,6 +2,7 @@
 #include "../../includes/Request/ClientRequest.hpp"
 // #include "../../includes/Request/RequestHelpers.hpp"
 #include "../../includes/Response/Dispatcher.hpp"
+#include "../Logging/Logging.hpp"
 
 volatile sig_atomic_t loop_is_true = 1;
 
@@ -41,7 +42,7 @@ Multiplexer::~Multiplexer()
 
 bool Multiplexer::is_in_cgi_list(std::string& ext)
 {
-    return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php");
+    return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php" || ext == ".bla");
 }
 
 
@@ -334,10 +335,12 @@ void Multiplexer::run()
 {
     while (loop_is_true)  
     {
+		INFO() << "Multiplexer running, waiting for events...";
         std::map<int , time_t>::iterator iter = cgi_timeouts.begin();
         time_t current = time(NULL);
         while (iter != cgi_timeouts.end())
         {
+			DEBUG("Multiplexer") << "Checking CGI timeout for pipe fd: " << iter->first << ", elapsed time: " << (current - iter->second) << " seconds";
             if ((current - iter->second) > 5)
             {
                 int pipe_fd = iter->first;
@@ -362,6 +365,7 @@ void Multiplexer::run()
                 _clients[client_fd].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
                 enableWrite(client_fd);
 
+                DEBUG("Multiplexer") << "CGI timeout occurred for pipe fd: " << pipe_fd;
                 close(pipe_fd);
                 _cgi_pipes.erase(pipe_fd);
                 _cgi_pids.erase(pipe_fd);
@@ -382,6 +386,7 @@ void Multiplexer::run()
         int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
         if (poll_ret < 0)
         {
+            DEBUG("Multiplexer") << "Error occurred while polling for events";
             if (errno == EINTR)
                 break;
             throw Error::Poll();
@@ -390,6 +395,7 @@ void Multiplexer::run()
         {
             try
             {
+				DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
                 bool is_server = false;
                 if (_pollfds[i].revents == 0)
                     continue;
@@ -439,9 +445,11 @@ void Multiplexer::run()
             }
             catch(const std::exception& e)
             {
+				DEBUG("Multiplexer") << "Exception occurred while processing event for fd: " << _pollfds[i].fd << ", error: " << e.what();
                 std::cerr << e.what() << '\n';
             }
         }
+		INFO() << "Multiplexer finished processing events, waiting for next poll...\n";
     }
 }
 

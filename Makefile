@@ -10,7 +10,8 @@ INCLUDES = \
 	-Iincludes/Request \
 	-Iincludes/Response \
 	-Iincludes/Routing \
-	-Iincludes/multiplexing
+	-Iincludes/multiplexing \
+	-Isrc/Logging
 
 SRCS = \
 	main.cpp \
@@ -34,7 +35,8 @@ SRCS = \
 	src/Response/MultipartUploadStrategy.cpp \
 	src/Response/POST.cpp \
 	src/Response/Response.cpp \
-	src/Signals/signal_handling.cpp
+	src/Signals/signal_handling.cpp \
+	src/Logging/Logging.cpp 
 
 OBJS = $(SRCS:.cpp=.o)
 

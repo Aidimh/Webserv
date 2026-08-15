@@ -255,10 +255,7 @@ void parse_location_directives(std::string& token, size_t &i)
         parse_root_path(i);
     else if (token == "index")
         parse_location_index(i);
-    // if (token == "root")
-    //     parse_location_index(i);
-    // if (token == "root")
-    //     parse_root_path(i);
+	//todo : Adding the client max body size inside the location blocks
     else if (token == "index")
         parse_location_index(i);
     else if (token == "autoindex")

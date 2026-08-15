@@ -42,6 +42,7 @@ Multiplexer::~Multiplexer()
 
 bool Multiplexer::is_in_cgi_list(std::string& ext)
 {
+	//todo : remove this method because it should come from the config file directly
     return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php" || ext == ".bla");
 }
 
@@ -104,6 +105,7 @@ void    Multiplexer::sendStreaming(int fd, Client &client)
         client.stream_buffer_offset = 0;
         if (client.stream_buffer_size <= 0)
         {
+			DEBUG("Multiplexer") << "sendStreaming: Finished streaming file for client fd: " << fd;
             close(client.stream_file_fd);
             client.stream_file_fd = -1;
             client.stream_bytes_remaining = 0;
@@ -113,6 +115,7 @@ void    Multiplexer::sendStreaming(int fd, Client &client)
     ssize_t sent = send(fd,client.stream_buffer + client.stream_buffer_offset,client.stream_buffer_size - client.stream_buffer_offset,MSG_NOSIGNAL);
     if (sent <= 0)
     {
+		DEBUG("Multiplexer") << "sendStreaming: Error sending streaming data to client fd: " << fd << ". Closing connection.";
         close(client.stream_file_fd);
         _removeClient(fd);
         return;
@@ -156,6 +159,7 @@ void    Multiplexer::_writeClient(int fd)
     }
 	client.reset();
     client.response_prepared = false;
+	_removeClient(fd);
     disableWrite(fd);
 }
 
@@ -191,6 +195,7 @@ int Socket::get_listen_port()
 
 Socket::~Socket()
 {
+	DEBUG("Socket") << "Socket destructor called for fd: " << fd;
     close(fd);
 }
 
@@ -216,6 +221,7 @@ void Multiplexer::_acceptNewClient(Socket *s)
     struct sockaddr_in client_id;
     socklen_t len = sizeof(client_id);
     int client_fd = accept(s->get_fd(), (struct sockaddr *)&client_id, &len);
+	DEBUG("Multiplexer") << "_acceptNewClient: Accepted new client with fd: " << client_fd;
     fcntl(client_fd, F_SETFL, O_NONBLOCK);
 
     Client client;
@@ -343,11 +349,13 @@ void Multiplexer::run()
 			DEBUG("Multiplexer") << "Checking CGI timeout for pipe fd: " << iter->first << ", elapsed time: " << (current - iter->second) << " seconds";
             if ((current - iter->second) > 5)
             {
+				DEBUG("Multiplexer") << "CGI timeout occurred for pipe fd: " << iter->first << ", killing CGI process and sending 504 response to client";
                 int pipe_fd = iter->first;
                 int client_fd = _cgi_pipes[pipe_fd];
 
                 kill(_cgi_pids[pipe_fd], SIGKILL);
                 waitpid(_cgi_pids[pipe_fd], NULL, 0);
+				DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[pipe_fd] << " for pipe fd: " << pipe_fd;
                 close(pipe_fd);
                 _cgi_pipes.erase(pipe_fd);
                 _cgi_pids.erase(pipe_fd);
@@ -357,6 +365,7 @@ void Multiplexer::run()
                 {
                     if (_pollfds[i].fd == pipe_fd)
                     {
+						DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
                         _pollfds.erase(_pollfds.begin() + i);
                         break;
                     }
@@ -365,45 +374,52 @@ void Multiplexer::run()
                 _clients[client_fd].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
                 enableWrite(client_fd);
 
-                DEBUG("Multiplexer") << "CGI timeout occurred for pipe fd: " << pipe_fd;
-                close(pipe_fd);
-                _cgi_pipes.erase(pipe_fd);
-                _cgi_pids.erase(pipe_fd);
-                cgi_timeouts.erase(iter++);
+                // close(pipe_fd);
+                // _cgi_pipes.erase(pipe_fd);
+                // _cgi_pids.erase(pipe_fd);
+                // cgi_timeouts.erase(iter++);
 
-                for (size_t i = 0; i < _pollfds.size(); i++)
-                {
-                    if (_pollfds[i].fd == pipe_fd)
-                    {
-                        _pollfds.erase(_pollfds.begin() + i);
-                        break;
-                    }
-                }
+                // for (size_t i = 0; i < _pollfds.size(); i++)
+                // {
+                //     if (_pollfds[i].fd == pipe_fd)
+                //     {
+				// 		DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
+                //         _pollfds.erase(_pollfds.begin() + i);
+                //         break;
+                //     }
+                // }
             }
             else 
                 iter++;
         }
+		DEBUG("Multiplexer") << "Finished checking CGI timeouts, proceeding to poll for events";
         int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
         if (poll_ret < 0)
         {
-            DEBUG("Multiplexer") << "Error occurred while polling for events";
+            ERR() << "Error occurred while polling for events";
             if (errno == EINTR)
                 break;
             throw Error::Poll();
         }
+		DEBUG("Multiplexer") << "Poll returned with " << poll_ret << " events, processing events...";
         for (size_t i = 0; i < _pollfds.size(); i++)
         {
+			DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
             try
             {
 				DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
                 bool is_server = false;
-                if (_pollfds[i].revents == 0)
+                if (_pollfds[i].revents == 0) {
+					DEBUG("Multiplexer") << "No events for fd: " << _pollfds[i].fd << ", continuing to next fd";
                     continue;
+				}
                 else
                 {
+					DEBUG("Multiplexer") << "Event detected for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
                     size_t j = 0;
                     while (j < _servers.size())
                     {
+						DEBUG("Multiplexer") << "Checking if fd: " << _pollfds[i].fd << " is a server socket (server index: " << j << ")";
                         if (_servers[j]->get_fd() == _pollfds[i].fd && _pollfds[i].revents & POLLIN)
                         {
                             _acceptNewClient(_servers[j]);
@@ -412,10 +428,13 @@ void Multiplexer::run()
                         }
                         j++;
                     }
-                    if (is_server)
+                    if (is_server) {
+						DEBUG("Multiplexer") << "Accepted new client on server socket fd: " << _pollfds[i].fd << ", continuing to next fd";
                         continue;
+					}
                     if (_cgi_pipes.find(_pollfds[i].fd) != _cgi_pipes.end())
                     {
+						DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
                         if (_pollfds[i].revents & POLLIN)
                         {
                             char buffer[4096];
@@ -425,8 +444,10 @@ void Multiplexer::run()
                             if (n == 0 || n == -1)
                             {
                                 int client_fd = _cgi_pipes[_pollfds[i].fd];
+                                DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
                                 enableWrite(client_fd);
                                 waitpid(_cgi_pids[_pollfds[i].fd], NULL, 0);
+                                DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[_pollfds[i].fd] << " for pipe fd: " << _pollfds[i].fd;
                                 close(_pollfds[i].fd);
                                 _pollfds.erase(_pollfds.begin() + i);
                                 _cgi_pids.erase(_pollfds[i].fd);
@@ -435,12 +456,22 @@ void Multiplexer::run()
                             }
                         }
                     }
-                    if (_pollfds[i].revents & POLLIN)
+                    if (_pollfds[i].revents & POLLIN) 
+					{
+						DEBUG("Multiplexer") << "run Reading from client fd: " << _pollfds[i].fd;
                         _readClient(_pollfds[i].fd);
+					}
                     if (_pollfds[i].revents & POLLOUT)
+					{
+                        DEBUG("Multiplexer") << "run Writing to client fd: " << _pollfds[i].fd;
                         _writeClient(_pollfds[i].fd);
+					}
                     if (_pollfds[i].revents & (POLLHUP | POLLERR))
+					{
+                        DEBUG("Multiplexer") << "run Handling POLLHUP or POLLERR for fd: " << _pollfds[i].fd;
                         _removeClient(_pollfds[i].fd);
+					}
+					DEBUG("Multiplexer") << "run Finished processing event for fd: " << _pollfds[i].fd << ", moving to next fd";
                 }
             }
             catch(const std::exception& e)
@@ -463,11 +494,12 @@ bool Response::isCGI() const
 void Multiplexer::enableWrite(int fd)
 {
     size_t i = 0;
+	DEBUG("Multiplexer") << "Enabling write for fd: " << fd;
     while (i < _pollfds.size())
     {
         if (_pollfds[i].fd == fd)
         {
-            _pollfds[i].events |= POLLOUT;
+            _pollfds[i].events = POLLOUT;
             break;
         }
         i++;
@@ -477,8 +509,10 @@ void Multiplexer::enableWrite(int fd)
 void Multiplexer::_removeClient(int fd)
 {
     std::map<int, Client>::iterator iter = _clients.find(fd);
-    if (iter == _clients.end())
+    if (iter == _clients.end()){
         return;
+	}
+	DEBUG("Multiplexer") << "_removeClient: Removing client with fd: " << fd;
     close(fd);
     _clients.erase(iter);
     for (size_t i = 0; i < _pollfds.size(); i++)
@@ -496,9 +530,11 @@ void Multiplexer::_readClient(int fd)
 {
     char buffer[4096];
     std::map<int, Client>::iterator iter = _clients.find(fd);
+	DEBUG("Multiplexer") << "_readClient: Reading from client fd: " << fd;
     if (iter != _clients.end())
     {
         int bytesRead = recv(fd, buffer, sizeof(buffer), 0);
+		DEBUG("Multiplexer") << "_readClient: Read " << bytesRead << " bytes from client fd: " << fd;
         if (bytesRead == -1)
         {
             _removeClient(fd);
@@ -507,9 +543,13 @@ void Multiplexer::_readClient(int fd)
         else if (bytesRead > 0)
         {
             iter->second.request.append(buffer, bytesRead);
+            DEBUG("Multiplexer") << "_readClient: Appended " << bytesRead << " bytes to request for fd: " << fd;
             iter->second.parsed_request.parse(iter->second);
             if (iter->second.parsed_request.state == ClientRequest::BODY)
+			{
+				DEBUG("Multiplexer") << "_readClient: Request state is BODY for fd: " << fd << ", calling BodyRequest";
                 iter->second.parsed_request.BodyRequest(iter->second);
+			}
 
         }
         else if (bytesRead == 0)

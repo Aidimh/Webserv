@@ -1,5 +1,5 @@
 #include "header.hpp"
-
+#include "../Logging/Logging.hpp"
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {
     std::map<std::string, std::string>::const_iterator it = headers.find(key);
@@ -67,7 +67,7 @@ void CGI::writeToChild()
 int CGI::execute(std::map<int, pid_t>& map)
 {
     char *argv[3];
-
+	DEBUG("CGI") << "Preparing to execute CGI script: " << script << " with interpreter: " << interpreter;
     argv[0] = (char *)interpreter.c_str();
     argv[1] = (char *)script.c_str();
     argv[2] = NULL;
@@ -82,18 +82,24 @@ int CGI::execute(std::map<int, pid_t>& map)
             perror("stdin\n");
         if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
             perror("stdout\n");
+		DEBUG("CGI") << "Executing CGI script: " << script << " with interpreter: " << interpreter;
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         close(stdout_pipe[0]);
         close(stdout_pipe[1]);
+		DEBUG("CGI") << "Closed stdin pipe" << stdin_pipe[0] << " and stdout pipe " 
+		<< stdout_pipe[1] << " in child process";
         execve(interpreter.c_str(), argv, request_vars);
         exit(1);
     }
     else
     {
+		DEBUG("CGI") << "Forked CGI process with pid: " << pid << " for script: " << script;
         close(stdin_pipe[0]); 
         close(stdout_pipe[1]);
-    }
+		DEBUG("CGI") << "Closed stdin pipe" << stdin_pipe[0] << " and stdout pipe " 
+		<< stdout_pipe[1] << " in parent process";
+	}
     map[stdout_pipe[0]] = pid;
     return (stdout_pipe[0]);
 }

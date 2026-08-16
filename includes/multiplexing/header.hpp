@@ -186,6 +186,8 @@ struct Client
     ssize_t stream_buffer_size;
     ssize_t stream_buffer_offset;
     bool cgi_started;
+    bool cgi_response_ready;
+    bool pending_close;
     // int client_id;
     std::string session_id;
     // std::string body;
@@ -205,19 +207,22 @@ struct Client
         }
         stream_bytes_remaining = 0;
         stream_buffer_size = 0;
+        cgi_response_ready = false;
+        pending_close = false;
         stream_buffer_offset = 0;
         parsed_request.reset();
     }
 
     Client()
     : fd(-1),
-    port(0),
+    port(-1), //used to be 0
     stream_file_fd(-1),
     stream_bytes_remaining(0),
     response_prepared(false),
     stream_buffer_size(0),
     stream_buffer_offset(0),
-    cgi_started(false)
+    cgi_started(false),
+    cgi_response_ready(false)
     {}
 };
 

@@ -65,7 +65,6 @@ void CGI::writeToChild()
 int CGI::execute(std::map<int, pid_t>& map)
 {
     char *argv[3];
-	DEBUG("CGI") << "Preparing to execute CGI script: " << script << " with interpreter: " << interpreter;
     argv[0] = (char *)interpreter.c_str();
     argv[1] = (char *)script.c_str();
     argv[2] = NULL;
@@ -74,29 +73,34 @@ int CGI::execute(std::map<int, pid_t>& map)
     pid = fork();
     if (pid == -1)
         return ERROR;
+    // if (pid == 0)
+    // {
+    //     if (dup2(stdin_pipe[0],STDIN_FILENO) == -1)
+    //         perror("stdin\n");
+    //     if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
+    //         perror("stdout\n");
+    //     close(stdin_pipe[0]);
+    //     close(stdin_pipe[1]);
+    //     close(stdout_pipe[0]);
+    //     close(stdout_pipe[1]);
+
+    //     execve(interpreter.c_str(), argv, request_vars);
+    //     exit(1);
+    // }
     if (pid == 0)
     {
-        if (dup2(stdin_pipe[0],STDIN_FILENO) == -1)
-            perror("stdin\n");
-        if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
-            perror("stdout\n");
-		DEBUG("CGI") << "Executing CGI script: " << script << " with interpreter: " << interpreter;
-        close(stdin_pipe[0]);
-        close(stdin_pipe[1]);
-        close(stdout_pipe[0]);
-        close(stdout_pipe[1]);
-		DEBUG("CGI") << "Closed stdin pipe" << stdin_pipe[0] << " and stdout pipe " 
-		<< stdout_pipe[1] << " in child process";
+        dup2(stdin_pipe[0], STDIN_FILENO);
+        dup2(stdout_pipe[1], STDOUT_FILENO);
+        // close everything except 0, 1, 2
+        for (int i = 3; i < 1024; i++)
+            close(i);
         execve(interpreter.c_str(), argv, request_vars);
         exit(1);
     }
     else
     {
-		DEBUG("CGI") << "Forked CGI process with pid: " << pid << " for script: " << script;
         close(stdin_pipe[0]); 
         close(stdout_pipe[1]);
-		DEBUG("CGI") << "Closed stdin pipe" << stdin_pipe[0] << " and stdout pipe " 
-		<< stdout_pipe[1] << " in parent process";
 	}
     map[stdout_pipe[0]] = pid;
     return (stdout_pipe[0]);
@@ -134,6 +138,10 @@ int CGI::_find_interpreter(const Location_Config& conf)
     }
     if (!extension_found)
         return ERROR;
-    this->script = conf.root + request_path;
+    if (!conf.root.empty() && conf.root[conf.root.size() - 1] != '/')
+        this->script = conf.root + "/" + request_path;
+    else
+        this->script = conf.root + request_path;
+        
     return SUCESS;
 }

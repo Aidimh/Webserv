@@ -220,7 +220,7 @@ int Socket::get_listen_port()
 Socket::~Socket()
 {
 	DEBUG("Socket") << "~Socket: closed listening socket fd=" << fd;
-    close(fd);
+    // close(fd);
 }
 
 

@@ -137,7 +137,7 @@ void parse_max_body_size(size_t &index)
     if (Conf_File::tokens[index + 2] == ";")
     {
         Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
-        if (unit != NULL)
+        if (unit != NULL && *unit != '\0')
         {
             if (unit[0] == 'K' && unit[1] == '\0')
             {

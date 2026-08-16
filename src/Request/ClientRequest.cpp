@@ -6,7 +6,7 @@
 
 ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0), ContentLength(0), HasContentLength(false), HasTransferEncoding(false){}
 
-ClientRequest::ClientRequest(const ClientRequest& other)
+ClientRequest::ClientRequest(const ClientRequest& other): TmpFileFd(-1)
 {
     *this = other;
 }

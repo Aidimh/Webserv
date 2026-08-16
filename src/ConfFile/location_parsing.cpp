@@ -57,7 +57,7 @@ void parse_upload_store(size_t &index)
         throw Error::Root();
     if (Conf_File::tokens[index + 2] !=  ";")
         throw Error::SemiColon();
-    if (path_file_exists(Conf_File::tokens[index + 1]))
+    if (!path_file_exists(Conf_File::tokens[index + 1]))
     {
         DEBUG("ConfFile") << "parse_upload_store: mkdir " << Conf_File::tokens[index + 1];
         if (mkdir(Conf_File::tokens[index + 1].c_str(), 777) != 0)
@@ -143,8 +143,9 @@ void parse_return(size_t &index)
 {
     // size_t i = 0;
     if (index + 2 >= Conf_File::tokens.size())
-        throw Error::Root();
+        throw Error::Unknown_Directive();
     if (Conf_File::tokens[index + 2] != ";")
-        throw Error::Root();
+        throw Error::Unknown_Directive();
+    //todo: you should store the return value and the status code in the location config, and go to the next token
     WARN() << "parse_return: 'return' directive is validated but not stored, it will have no effect";
 }

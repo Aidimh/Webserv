@@ -14,12 +14,14 @@ std::vector<Server_block> Conf_File::Servers;
 std::vector<std::string> Conf_File::tokens;
 
 
-
 void open_file(std::string filename)
 {
     std::ifstream file(filename.c_str());
     if (!file.is_open())
+    {
+        ERR() << "open_file: open config file failed path=" << filename << ": " << strerror(errno);
         throw Error::FileNotFound();
+    }
 
     std::string content((std::istreambuf_iterator<char>(file)),
                          std::istreambuf_iterator<char>());
@@ -63,8 +65,9 @@ void open_file(std::string filename)
 
     if (Conf_File::tokens.empty())
         throw Error::EmptyConfig();
+    DEBUG("ConfFile") << "open_file: tokenized config path=" << filename
+                      << " into " << Conf_File::tokens.size() << " tokens";
 }
-
 
 void initDebug(string &className)
 {
@@ -134,15 +137,14 @@ int main(int ac , char **av, char **envp)
         // if (!av || av[1][0] == '\0')
         //     throw Error::Argv();
         open_file(av[fileNameIdx]);
+		INFO() << "Opening file: " << av[fileNameIdx];
         validate_file();
         parse_config_file();
-        std::cout << Conf_File::Servers[0].location[0].location_has_max_size << std::endl;
-        exit(1);
         int error_nb = every_server_has_listen_port();
         if (error_nb)
         {
-            std::cout << "Error\n" << "Missing listen port at Server block " << error_nb << "\n";
-            std::cout << "Hint : A server cannot be reached or operate without a listen port\n";
+            ERR() << "main: missing listen port at server block " << error_nb
+                  << ", a server cannot operate without a listen port";
             return ERROR;
         }
         size_t i = 0;
@@ -156,15 +158,18 @@ int main(int ac , char **av, char **envp)
                 Mux.env = envp;
                 s->setup(Conf_File::Servers[i].listen_port[j], Conf_File::Servers[i].host);
                 Mux.addServer(s);
+                INFO() << "main: listening on " << Conf_File::Servers[i].host
+                       << ":" << Conf_File::Servers[i].listen_port[j];
                 j++;
             }
             i++;
         }
         Mux.run();
+        INFO() << "main: server stopped";
     }
     catch(const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
+        ERR() << "main: " << e.what();
     }
     return 0;
 }

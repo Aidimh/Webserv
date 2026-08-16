@@ -1,4 +1,5 @@
 #include "header.hpp"
+#include "../Logging/Logging.hpp"
 
 // bool curly_brackets_even()
 
@@ -29,7 +30,9 @@ void skip_directive(std::string& line, size_t &i)
 bool path_file_exists(std::string& name)
 {
     struct stat buffer;
-    return (stat(name.c_str(), &buffer) == 0);
+    bool exists = (stat(name.c_str(), &buffer) == 0);
+    DDEBUG("ConfFile") << "path_file_exists: path=" << name << " exists=" << (exists ? "yes" : "no");
+    return exists;
 }
 
 std::string next_token(std::vector<std::string>& tokens , size_t &i)
@@ -53,13 +56,6 @@ bool isKnownDirective(const std::string& token)
             token == "error_page" || token == "allowed_methods" || token == "autoindex" ||
             token == "return" || token == "cgi_extension" || token == "cgi_path" ||
             token == "upload_store");
-}
-
-bool max_uploads_is_unit(size_t size, size_t index)
-{
-    return (Conf_File::tokens[index + 1][size - 1] == 'M' 
-            || Conf_File::tokens[index + 1][size - 1] == 'K' 
-            || Conf_File::tokens[index + 1][size - 1] == 'G');
 }
 
 bool is_http_method(std::string& method)

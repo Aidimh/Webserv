@@ -1,5 +1,6 @@
 #include "header.hpp"
 #include "Error.hpp"
+#include "../Logging/Logging.hpp"
 
 extern int server_index;
 
@@ -16,6 +17,8 @@ void parse_root(size_t &index)
         throw Error::Root();
     index += 2;
     Conf_File::Servers[server_index].root_found = true;
+    DEBUG("ConfFile") << "parse_root: parsed root=" << Conf_File::Servers[server_index].root
+                      << " server=" << server_index;
 }
 
 void parse_host(size_t &index)
@@ -60,6 +63,8 @@ void parse_host(size_t &index)
     Conf_File::Servers[server_index].host = Conf_File::tokens[index + 1];
     index += 3;
     Conf_File::Servers[server_index].host_found = true;
+    DEBUG("ConfFile") << "parse_host: parsed host=" << Conf_File::Servers[server_index].host
+                      << " server=" << server_index;
 }
 
 void parse_index(size_t &index)
@@ -78,6 +83,9 @@ void parse_index(size_t &index)
         throw Error::UnexpectedEndOfFile();
     index += 1;
     Conf_File::Servers[server_index].index_found = true;
+    DEBUG("ConfFile") << "parse_index: parsed index files count="
+                      << Conf_File::Servers[server_index].index_files.size()
+                      << " server=" << server_index;
 }
 
 void parse_location_index(size_t &index)
@@ -97,6 +105,10 @@ void parse_location_index(size_t &index)
     index++;
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_index = true;
     Conf_File::Servers[server_index].location_found = true;
+    DEBUG("ConfFile") << "parse_location_index: parsed index files count="
+                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].index_files.size()
+                      << " location=" << Conf_File::Servers[server_index].location_count
+                      << " server=" << server_index;
 }
 
 void parse_server_name(size_t &index)
@@ -109,6 +121,9 @@ void parse_server_name(size_t &index)
         Conf_File::Servers[server_index].server_name = next_token(Conf_File::tokens, index);
     index += 2;
     Conf_File::Servers[server_index].server_name_found = true;
+    DEBUG("ConfFile") << "parse_server_name: parsed server_name="
+                      << Conf_File::Servers[server_index].server_name
+                      << " server=" << server_index;
 }
 
 void parse_max_body_size(size_t &index)
@@ -122,36 +137,28 @@ void parse_max_body_size(size_t &index)
     if (Conf_File::tokens[index + 2] == ";")
     {
         Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
-        if (max_uploads_is_unit(size, index))
+        if (unit != NULL)
         {
-            if (*unit == 'M')
+            if (unit[0] == 'K' && unit[1] == '\0')
             {
-                Conf_File::Servers[server_index].body_size_is_MB = true;
-                if (Conf_File::Servers[server_index].max_body_size > MAX_MB)
-                    throw Error::MaxUploads();
-                Conf_File::Servers[server_index].max_body_size *= 1000000;
+                Conf_File::Servers[server_index].max_body_size *= 1024;
             }
-            if (*unit == 'G')
-                throw Error::MaxUploads();
-            if (*unit == 'K')
+            else if (unit[0] == 'M'&& unit[1] == '\0')
             {
-                if (Conf_File::Servers[server_index].max_body_size > MAX_KB)
-                    throw Error::MaxUploads();
-                Conf_File::Servers[server_index].max_body_size *= 1000;
-                Conf_File::Servers[server_index].body_size_is_KB = true;
+                Conf_File::Servers[server_index].max_body_size *= 1024 * 1024;
             }
-            else if (unit == NULL)
-            {
-                if (Conf_File::Servers[server_index].max_body_size > MAX_BY)
-                    throw Error::MaxUploads();
-                Conf_File::Servers[server_index].body_size_is_BT = true;
+            else if (unit[0] == 'G' && unit[1] == '\0') {
+                Conf_File::Servers[server_index].max_body_size *= 1024 * 1024 * 1024;
             }
-            else
+            else 
                 throw Error::MaxUploads();
         }
     }
     index += 2;
     Conf_File::Servers[server_index].client_max_body_found = true;
+    DEBUG("ConfFile") << "parse_max_body_size: parsed client_max_body_size="
+                      << Conf_File::Servers[server_index].max_body_size
+                      << " bytes server=" << server_index;
 }
 
 void parse_listen(size_t &index)
@@ -172,6 +179,9 @@ void parse_listen(size_t &index)
     Conf_File::Servers[server_index].listen_port.push_back(port);
     Conf_File::Servers[server_index].listen_found = true;
     Conf_File::Servers[server_index].ports_count++;
+    DEBUG("ConfFile") << "parse_listen: parsed listen port=" << port
+                      << " server=" << server_index
+                      << " ports_count=" << Conf_File::Servers[server_index].ports_count;
 }
 void parse_error_pages(size_t &index)
 {
@@ -199,6 +209,8 @@ void parse_error_pages(size_t &index)
         if (*endptr != '\0')
             throw Error::Error_page();
         Conf_File::Servers[server_index].error_pages[code] = buffer;
+        DEBUG("ConfFile") << "parse_error_pages: parsed error_page code=" << code
+                          << " path=" << buffer << " server=" << server_index;
         i++;
         index++;
     }
@@ -220,10 +232,14 @@ void parse_server_autoindex(size_t &index)
     Conf_File::Servers[server_index].server_auto_index = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].server_has_autoindex = true;
     index += 2;
+    DEBUG("ConfFile") << "parse_server_autoindex: parsed autoindex="
+                      << Conf_File::Servers[server_index].server_auto_index
+                      << " server=" << server_index;
 }
 
 void parse_directives(std::string& token, size_t &i)
 {
+    DDEBUG("ConfFile") << "parse_directives: dispatching token=" << token << " index=" << i;
     if (token == "host")
         parse_host(i);
     else if (token == "index")
@@ -251,13 +267,12 @@ void parse_directives(std::string& token, size_t &i)
 
 void parse_location_directives(std::string& token, size_t &i)
 {
+    DDEBUG("ConfFile") << "parse_location_directives: dispatching token=" << token << " index=" << i;
     if (token == "root")
         parse_root_path(i);
     else if (token == "index")
         parse_location_index(i);
 	//todo : Adding the client max body size inside the location blocks
-    else if (token == "client_max_body_size")
-        parse_location_max_size(i);
     else if (token == "index")
         parse_location_index(i);
     else if (token == "autoindex")
@@ -281,6 +296,7 @@ void parse_config_file()
     server_index = -1;
     bool in_server = false;
     int depth = 0;
+    DEBUG("ConfFile") << "parse_config_file: parsing " << Conf_File::tokens.size() << " tokens";
     while (i < Conf_File::tokens.size())
     {
         std::string token = Conf_File::tokens[i];
@@ -298,6 +314,7 @@ void parse_config_file()
             Conf_File::Servers[server_index].server_found = true;
             depth++;
             i += 2;
+            DEBUG("ConfFile") << "parse_config_file: entering server block index=" << server_index;
         }
         else if (token == "location")
         {
@@ -307,18 +324,24 @@ void parse_config_file()
             Conf_File::Servers[server_index].location.push_back(obj);
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extns_index = 0;
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index = 0;
-            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].location_has_max_size = false;
             if (!in_server)
                 throw std::runtime_error("Error\n'location' directive cannot be nested outside 'server'!.");
             if (i + 2 >= Conf_File::tokens.size() || Conf_File::tokens[i + 2] != "{")
                 throw std::runtime_error("Error\nExpected '{' after 'location <path>'!.");
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].path = next_token(Conf_File::tokens, i);
             i += 2;
+            DEBUG("ConfFile") << "parse_config_file: entering location block path="
+                              << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].path
+                              << " index=" << Conf_File::Servers[server_index].location_count
+                              << " server=" << server_index;
             while (i < Conf_File::tokens.size() && Conf_File::tokens[i] != "}")
             {
                 parse_location_directives(Conf_File::tokens[i], i);
             }
             i++;
+            DEBUG("ConfFile") << "parse_config_file: leaving location block index="
+                              << Conf_File::Servers[server_index].location_count
+                              << " server=" << server_index;
         }
         else if (token == "{")
             throw std::runtime_error("Error\nUnexpected '{'. only 'server' or 'location' can open a block!.");
@@ -343,6 +366,7 @@ void parse_config_file()
     }
     if (depth != 0)
         throw std::runtime_error("Error\nUnclosed block at the end of the file!.");
+    INFO() << "parse_config_file: loaded " << Conf_File::Servers.size() << " server block(s)";
 }
 
 
@@ -354,10 +378,14 @@ int every_server_has_listen_port()
     {
         if (!Conf_File::Servers[i].listen_found)
         {
+            ERR() << "every_server_has_listen_port: invalid config: server block "
+                  << error_nb << " has no listen port";
             return error_nb;
         }
         i++;
         error_nb++;
     }
+    DEBUG("ConfFile") << "every_server_has_listen_port: all " << Conf_File::Servers.size()
+                      << " server block(s) have a listen port";
     return 0;
 }

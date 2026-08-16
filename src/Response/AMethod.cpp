@@ -1,5 +1,6 @@
 #include "AMethod.hpp"
 #include "../multiplexing/header.hpp"
+#include "../Logging/Logging.hpp"
 
 AMethod::~AMethod()
 {
@@ -59,6 +60,7 @@ Response AMethod::buildErrorResponse(short statusCode, const std::string& messag
 
     response.setBody(body);
     response.addHeader("content-type", "text/html");
+    DEBUG("AMethod") << "buildErrorResponse: built status=" << statusCode << " " << message;
     return response;
 }
 
@@ -97,6 +99,7 @@ std::string AMethod::normalizePath(const std::string& path, bool& outOfBounds) c
         {
             if (stack.empty())
             {
+                WARN() << "AMethod::normalizePath: path traversal blocked, path=" << path;
                 outOfBounds = true;
                 return "";
             }
@@ -143,6 +146,8 @@ std::string AMethod::resolveTarget(const Client& client,const Server_block& serv
         normalizePath(pathToAppend, outOfBounds);
     if (outOfBounds)
         return "";
+    DEBUG("AMethod") << "resolveTarget: uri=" << client.parsed_request.getRequestPath()
+                     << " resolved to target=" << (root + normalizedPath);
     return root + normalizedPath;
 }
 
@@ -152,14 +157,27 @@ PathType AMethod::getPathType(const std::string& path) const
     if (fileExists(path))
     {
         if(access(path.c_str(), R_OK) != 0)
+        {
+            WARN() << "AMethod::getPathType: path is not readable, path=" << path
+                   << ": " << strerror(errno);
             return PERMISSION_DENIED;
+        }
         else if (isDirectory(path))
+        {
+            DDEBUG("AMethod") << "getPathType: path=" << path << " type=directory";
             return DIRECTORY_PATH;
+        }
         else
+        {
+            DDEBUG("AMethod") << "getPathType: path=" << path << " type=file";
             return FILE_PATH;
+        }
     }
     else
+    {
+        DDEBUG("AMethod") << "getPathType: path=" << path << " type=not found";
         return NOT_FOUND;
+    }
 }
 
 bool AMethod::fileExists(const std::string& path) const

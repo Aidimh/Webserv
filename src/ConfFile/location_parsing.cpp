@@ -1,4 +1,5 @@
 #include "../../includes/multiplexing/header.hpp"
+#include "../Logging/Logging.hpp"
 
 extern int server_index;
 
@@ -13,47 +14,6 @@ extern int server_index;
 //     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
 //     index += 2;
 // } 
-
-void parse_location_max_size(size_t &index)
-{
-    size_t size = Conf_File::tokens[index + 1].size();
-    if (index + 1 >= Conf_File::tokens.size() || index + 2 >= Conf_File::tokens.size())
-        throw Error::MaxUploads();
-    if (Conf_File::tokens[index + 2] != ";")
-        throw Error::MaxUploads();
-    char *unit = NULL;
-    if (Conf_File::tokens[index + 2] == ";")
-    {
-        size_t count = Conf_File::Servers[server_index].location_count;
-        Conf_File::Servers[server_index].location[count].location_max_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
-        if (max_uploads_is_unit(size, index))
-        {
-            if (*unit == 'M')
-            {
-                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_MB)
-                    throw Error::MaxUploads();
-                Conf_File::Servers[server_index].location[count].location_max_size *= 1000000;
-            }
-            if (*unit == 'G')
-                throw Error::MaxUploads();
-            if (*unit == 'K')
-            {
-                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_KB)
-                    throw Error::MaxUploads();
-                Conf_File::Servers[server_index].location[count].location_max_size *= 1000;
-            }
-            else if (unit == NULL)
-            {
-                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_BY)
-                    throw Error::MaxUploads();
-            }
-            else
-                throw Error::MaxUploads();
-        }
-        Conf_File::Servers[server_index].location[count].location_has_max_size = true;
-    }
-    index += 2;
-}
 
 
 void parse_root_path(size_t &index)
@@ -70,6 +30,8 @@ void parse_root_path(size_t &index)
     Conf_File::Servers[server_index].location[count].root = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].location[count].has_root = true;
     index += 2;
+    DEBUG("ConfFile") << "parse_root_path: parsed root=" << Conf_File::Servers[server_index].location[count].root
+                      << " location=" << count << " server=" << server_index;
 }
 
 void parse_autoindex(size_t &index)
@@ -83,6 +45,10 @@ void parse_autoindex(size_t &index)
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_autoindex = true;
     index += 2;
+    DEBUG("ConfFile") << "parse_autoindex: parsed autoindex="
+                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex
+                      << " location=" << Conf_File::Servers[server_index].location_count
+                      << " server=" << server_index;
 }
 
 void parse_upload_store(size_t &index)
@@ -93,11 +59,20 @@ void parse_upload_store(size_t &index)
         throw Error::SemiColon();
     if (path_file_exists(Conf_File::tokens[index + 1]))
     {
+        DEBUG("ConfFile") << "parse_upload_store: mkdir " << Conf_File::tokens[index + 1];
         if (mkdir(Conf_File::tokens[index + 1].c_str(), 777) != 0)
+        {
+            DEBUG("ConfFile") << "parse_upload_store: mkdir failed path=" << Conf_File::tokens[index + 1]
+                              << ": " << strerror(errno);
             throw std::runtime_error("Could not create the path : " + Conf_File::tokens[index + 1]);
+        }
     }
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].upload_path = next_token(Conf_File::tokens, index);
     index += 2;
+    DEBUG("ConfFile") << "parse_upload_store: parsed upload_store="
+                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].upload_path
+                      << " location=" << Conf_File::Servers[server_index].location_count
+                      << " server=" << server_index;
 }
 
 void parse_methods(size_t &index)
@@ -118,6 +93,10 @@ void parse_methods(size_t &index)
     if (index >= Conf_File::tokens.size())
         throw Error::UnexpectedEndOfFile();
     index++;
+    DEBUG("ConfFile") << "parse_methods: parsed allowed_methods count="
+                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].allowed_methods.size()
+                      << " location=" << Conf_File::Servers[server_index].location_count
+                      << " server=" << server_index;
 }
 
 void parse_cgi_extension(size_t &index)
@@ -141,6 +120,11 @@ void parse_cgi_extension(size_t &index)
     if (i != j)
         throw Error::CGI_Path();
     index += 2;
+    DEBUG("ConfFile") << "parse_cgi_extension: parsed cgi extension="
+                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extensions.back()
+                      << " path=" << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths.back()
+                      << " location=" << Conf_File::Servers[server_index].location_count
+                      << " server=" << server_index;
 }
 
 // void parse_cgi_path(size_t &index)
@@ -162,5 +146,5 @@ void parse_return(size_t &index)
         throw Error::Root();
     if (Conf_File::tokens[index + 2] != ";")
         throw Error::Root();
-    
+    WARN() << "parse_return: 'return' directive is validated but not stored, it will have no effect";
 }

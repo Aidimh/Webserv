@@ -1,4 +1,5 @@
 #include "header.hpp"
+#include "../Logging/Logging.hpp"
 
 extern volatile sig_atomic_t loop_is_true;
 
@@ -6,22 +7,19 @@ void handle_sigint(int sig)
 {
     (void)sig;
     loop_is_true = 0;
-    std::cout << "\n";
-    std::cout << "Ctrl+C detected . politely shuting down the server💯!.\n";
+    INFO() << "handle_sigint: SIGINT received, shutting down the server";
 }
 
 void handle_sigquit(int sig)
 {
     (void)sig;
     loop_is_true = 0;
-    std::cout << "\n";
-    std::cout << "Ctrl+\\ detected . politely shuting down the server💯!.\n";
+    INFO() << "handle_sigquit: SIGQUIT received, shutting down the server";
 }
 
 void handle_sigstp(int sig)
 {
     (void)sig;
     loop_is_true = 0;
-    std::cout << "\n";
-    std::cout << "Ctrl+z detected . politely shuting down the server💯!.\n";
+    INFO() << "handle_sigstp: SIGTSTP received, shutting down the server";
 }

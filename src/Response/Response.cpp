@@ -1,4 +1,5 @@
 #include "Response.hpp"
+#include "../Logging/Logging.hpp"
 
 Response::Response()
     : statusCode(0), reasonPhrase(""), body(""), _mode(NORMAL_RESPONSE)
@@ -47,6 +48,7 @@ void Response::setBody(const std::string& content)
     oss << body.size();
 
     headers["Content-Length"] = oss.str();
+    DDEBUG("Response") << "setBody: body_size=" << body.size() << " bytes";
 }
 
 const std::string& Response::getBody() const
@@ -92,6 +94,10 @@ std::string Response::toString() const
     out << "\r\n";
     out << body;
 
+    DEBUG("Response") << "toString: built response status=" << statusCode
+                      << " " << reasonPhrase
+                      << " headers=" << headers.size()
+                      << " body_size=" << body.size() << " bytes";
     return out.str();
 }
 

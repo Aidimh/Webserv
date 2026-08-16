@@ -101,6 +101,8 @@ typedef struct Location_Config
     bool has_autoindex;
     size_t cgi_paths_index;
     size_t cgi_extns_index;
+    bool has_max_body_size;
+    long max_body_size;
 
 } Location_Config;
 

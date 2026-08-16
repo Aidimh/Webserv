@@ -256,6 +256,8 @@ void parse_location_directives(std::string& token, size_t &i)
     else if (token == "index")
         parse_location_index(i);
 	//todo : Adding the client max body size inside the location blocks
+    else if (token == "client_max_body_size")
+        parse_location_max_size(i);
     else if (token == "index")
         parse_location_index(i);
     else if (token == "autoindex")
@@ -305,6 +307,7 @@ void parse_config_file()
             Conf_File::Servers[server_index].location.push_back(obj);
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extns_index = 0;
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index = 0;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].location_has_max_size = false;
             if (!in_server)
                 throw std::runtime_error("Error\n'location' directive cannot be nested outside 'server'!.");
             if (i + 2 >= Conf_File::tokens.size() || Conf_File::tokens[i + 2] != "{")

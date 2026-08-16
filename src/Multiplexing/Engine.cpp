@@ -90,9 +90,7 @@ bool    Multiplexer::sendResponse(int fd, Client &client)
 {
     if (client.response.empty())
         return true;
-    std::cout << "size of response is : " << client.response.size() << std::endl;
     ssize_t sent = send( fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
-    std::cout << "send sent " << sent << std::endl;
     if (sent <= 0)
         return false;
     else if (sent == 0)
@@ -177,7 +175,6 @@ void Multiplexer::_writeClient(int fd)
     if (it == _clients.end())
         return;
     Client &client = it->second;
-    std::cout << "heres the response : " << it->second.response << std::endl;
     if (client.cgi_response_ready)
     {
         if (!sendResponse(fd, client))
@@ -185,10 +182,7 @@ void Multiplexer::_writeClient(int fd)
         if (client.response.empty())
         {
             client.reset();
-            if (client.pending_close)
-                _removeClient(fd);
-            else
-                disableWrite(fd);
+            _removeClient(fd);
         }
         return;
     }
@@ -337,7 +331,6 @@ static std::string get_header_value(const std::map<std::string, std::string>& he
 
 int Multiplexer::handleClient(int fd)
 {
-    std::cout << "CGI started for client_fd: " << fd << std::endl;
     size_t server_index = 0;
     for (size_t i = 0; i < Conf_File::Servers.size(); i++)
     {
@@ -464,7 +457,6 @@ void Multiplexer::run()
                         {
                             char buffer[4096];
                             int n = read(_pollfds[i].fd, buffer, sizeof(buffer));
-                            std::cout << "read [" << i << "] returned: " << n << " errno: " << errno << std::endl;
                             if (n > 0)
                             {
                                 _clients[_cgi_pipes[_pollfds[i].fd]].response.append(buffer, n);

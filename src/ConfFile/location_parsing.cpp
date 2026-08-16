@@ -14,6 +14,47 @@ extern int server_index;
 //     index += 2;
 // } 
 
+void parse_location_max_size(size_t &index)
+{
+    size_t size = Conf_File::tokens[index + 1].size();
+    if (index + 1 >= Conf_File::tokens.size() || index + 2 >= Conf_File::tokens.size())
+        throw Error::MaxUploads();
+    if (Conf_File::tokens[index + 2] != ";")
+        throw Error::MaxUploads();
+    char *unit = NULL;
+    if (Conf_File::tokens[index + 2] == ";")
+    {
+        size_t count = Conf_File::Servers[server_index].location_count;
+        Conf_File::Servers[server_index].location[count].location_max_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
+        if (max_uploads_is_unit(size, index))
+        {
+            if (*unit == 'M')
+            {
+                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_MB)
+                    throw Error::MaxUploads();
+                Conf_File::Servers[server_index].location[count].location_max_size *= 1000000;
+            }
+            if (*unit == 'G')
+                throw Error::MaxUploads();
+            if (*unit == 'K')
+            {
+                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_KB)
+                    throw Error::MaxUploads();
+                Conf_File::Servers[server_index].location[count].location_max_size *= 1000;
+            }
+            else if (unit == NULL)
+            {
+                if (Conf_File::Servers[server_index].location[count].location_max_size > MAX_BY)
+                    throw Error::MaxUploads();
+            }
+            else
+                throw Error::MaxUploads();
+        }
+        Conf_File::Servers[server_index].location[count].location_has_max_size = true;
+    }
+    index += 2;
+}
+
 
 void parse_root_path(size_t &index)
 {

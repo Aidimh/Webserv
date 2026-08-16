@@ -136,6 +136,8 @@ int main(int ac , char **av, char **envp)
         open_file(av[fileNameIdx]);
         validate_file();
         parse_config_file();
+        std::cout << Conf_File::Servers[0].location[0].location_has_max_size << std::endl;
+        exit(1);
         int error_nb = every_server_has_listen_port();
         if (error_nb)
         {

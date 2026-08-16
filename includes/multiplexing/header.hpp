@@ -94,6 +94,8 @@ typedef struct Location_Config
     std::vector<std::string> cgi_extensions;
     std::vector<std::string> cgi_paths;
     std::map<int, std::string> error_pages;
+    size_t  location_max_size;
+    bool    location_has_max_size;
     std::string _return;
     std::string autoindex;
     bool has_index;
@@ -346,6 +348,7 @@ void parse_root_path(size_t &index);
 void parse_autoindex(size_t &index);
 void parse_upload_store(size_t &index);
 void parse_methods(size_t &index);
+void parse_location_max_size(size_t &index);
 void parse_cgi_extension(size_t &index);
 void parse_cgi_path(size_t &index);
 void parse_return(size_t &index);

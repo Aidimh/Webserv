@@ -1,5 +1,6 @@
 #include "header.hpp"
 #include "Error.hpp"
+#include "../Logging/Logging.hpp"
 
 
 
@@ -22,6 +23,7 @@ void validate_file()
     }
     if (depth != 0)
         throw Error::Right_Brace();
+    DEBUG("ConfFile") << "validate_file: braces balanced across " << Conf_File::tokens.size() << " tokens";
 }
     
 // void validate_file()

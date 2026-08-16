@@ -1,6 +1,7 @@
 #include "../../includes/Response/Dispatcher.hpp"
 #include "MethodFactory.hpp"
 #include "../../includes/multiplexing/header.hpp"
+#include "../Logging/Logging.hpp"
 
 #include <fstream>
 
@@ -20,13 +21,19 @@ static void setErrorPageBody(Response& response)
 
     std::ifstream file(path.str().c_str(), std::ios::binary);
     if (!file.is_open())
+    {
+        WARN() << "Dispatcher::setErrorPageBody: error page not found path=" << path.str()
+               << ", serving status=" << response.getStatusCode() << " with no body";
         return;
+    }
 
     std::ostringstream page;
     page << file.rdbuf();
 
     response.setBody(page.str());
     response.addHeader("content-type", "text/html");
+    DEBUG("Dispatcher") << "setErrorPageBody: loaded error page path=" << path.str()
+                        << " for status=" << response.getStatusCode();
 }
 
 
@@ -103,23 +110,31 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
 
     // checck this line TEST path != ["/"] return 400errorState
 
+    DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod()
+                        << " path=" << client.parsed_request.getRequestPath()
+                        << " fd=" << client.fd;
+
     if (client.parsed_request.state == ClientRequest::ERROR_STATE)
     {
-        std::cout<<"SPAAAAM\n";
+        DEBUG("Dispatcher") << "dispatch: request already in error state, status="
+                            << client.parsed_request.getStatusCode() << " fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(client.parsed_request.getStatusCode(), statusMessage(client.parsed_request.getStatusCode()));
         setErrorPageBody(response);
         return response;
     }
 
-    // this part 
+    // this part
     const Location_Config* location = Router::resolveLocation(client.parsed_request.getRequestPath(), server);
     if (!location)
     {
+        DEBUG("Dispatcher") << "dispatch: no location matched, responding status=404 fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(HTTP_404_NOT_FOUND, "Not Found");
         setErrorPageBody(response);
         return response;
     }
     if (Router::isCGIRequest(client.parsed_request,*location) == true) {
+        DEBUG("Dispatcher") << "dispatch: routing to CGI path="
+                            << client.parsed_request.getRequestPath() << " fd=" << client.fd;
         Response response;
         response.setResponseMode(Response::CGI_RESPONSE);
         client.cgi_started = true;
@@ -127,6 +142,9 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     }
     // this method khasha tkon inside this object (location)
     if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location)) {
+        DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod()
+                            << " not allowed on location=" << location->path
+                            << ", responding status=405 fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
         setErrorPageBody(response);
         return response;
@@ -134,6 +152,8 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
 
     AMethod* method = MethodFactory::createMethod(client.parsed_request.getMethod());
     if (!method){
+        DEBUG("Dispatcher") << "dispatch: no handler for method="
+                            << client.parsed_request.getMethod() << ", responding status=501 fd=" << client.fd;
         Response res;
         res.setStatusCode(501);
         res.setReasonPhrase("Not Implemented");
@@ -143,5 +163,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     Response response = method->execute(client, server);
     delete method;
     setErrorPageBody(response);
+    DEBUG("Dispatcher") << "dispatch: responding status=" << response.getStatusCode()
+                        << " fd=" << client.fd;
     return response;
 }

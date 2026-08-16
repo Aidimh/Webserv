@@ -53,7 +53,9 @@ CGI::~CGI()
 void CGI::writeToChild()
 {
     write(stdin_pipe[1], body.c_str(), body.size());
+    DEBUG("CGI") << "writeToChild: wrote " << body.size() << " bytes to stdin pipe fd=" << stdin_pipe[1];
     close(stdin_pipe[1]);
+    DEBUG("CGI") << "writeToChild: closed stdin pipe fd=" << stdin_pipe[1];
 }
 
 // void CGI::readFromChild(int fd)
@@ -62,47 +64,55 @@ void CGI::writeToChild()
 
 // }
 
+
+
 int CGI::execute(std::map<int, pid_t>& map)
 {
     char *argv[3];
+	DEBUG("CGI") << "execute: preparing script=" << script << " interpreter=" << interpreter;
     argv[0] = (char *)interpreter.c_str();
     argv[1] = (char *)script.c_str();
     argv[2] = NULL;
     if (pipe(stdin_pipe) == -1 || pipe(stdout_pipe) == -1)
+    {
+        ERR() << "CGI::execute: pipe failed: " << strerror(errno);
         return ERROR;
+    }
+	DEBUG("CGI") << "execute: opened stdin pipe fd=" << stdin_pipe[0] << "," << stdin_pipe[1]
+	             << " stdout pipe fd=" << stdout_pipe[0] << "," << stdout_pipe[1];
     pid = fork();
     if (pid == -1)
+    {
+        ERR() << "CGI::execute: fork failed: " << strerror(errno);
         return ERROR;
-    // if (pid == 0)
-    // {
-    //     if (dup2(stdin_pipe[0],STDIN_FILENO) == -1)
-    //         perror("stdin\n");
-    //     if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
-    //         perror("stdout\n");
-    //     close(stdin_pipe[0]);
-    //     close(stdin_pipe[1]);
-    //     close(stdout_pipe[0]);
-    //     close(stdout_pipe[1]);
-
-    //     execve(interpreter.c_str(), argv, request_vars);
-    //     exit(1);
-    // }
+    }
     if (pid == 0)
     {
-        dup2(stdin_pipe[0], STDIN_FILENO);
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        // close everything except 0, 1, 2
-        for (int i = 3; i < 1024; i++)
-            close(i);
+        if (dup2(stdin_pipe[0],STDIN_FILENO) == -1)
+            perror("stdin\n");
+        if (dup2(stdout_pipe[1],STDOUT_FILENO) == -1)
+            perror("stdout\n");
+		DEBUG("CGI") << "execute: child executing script=" << script << " interpreter=" << interpreter;
+        close(stdin_pipe[0]);
+        close(stdin_pipe[1]);
+        close(stdout_pipe[0]);
+        close(stdout_pipe[1]);
+		DEBUG("CGI") << "execute: child closed pipe fd=" << stdin_pipe[0] << "," << stdin_pipe[1]
+		             << "," << stdout_pipe[0] << "," << stdout_pipe[1];
         execve(interpreter.c_str(), argv, request_vars);
+        ERR() << "CGI::execute: execve failed interpreter=" << interpreter << ": " << strerror(errno);
         exit(1);
     }
     else
     {
-        close(stdin_pipe[0]); 
+		DEBUG("CGI") << "execute: forked pid=" << pid << " for script=" << script;
+        close(stdin_pipe[0]);
         close(stdout_pipe[1]);
+		DEBUG("CGI") << "execute: parent closed stdin pipe fd=" << stdin_pipe[0]
+		             << " and stdout pipe fd=" << stdout_pipe[1];
 	}
     map[stdout_pipe[0]] = pid;
+    DEBUG("CGI") << "execute: tracking cgi output pipe fd=" << stdout_pipe[0] << " pid=" << pid;
     return (stdout_pipe[0]);
 }
 
@@ -137,11 +147,12 @@ int CGI::_find_interpreter(const Location_Config& conf)
         i++;
     }
     if (!extension_found)
+    {
+        DEBUG("CGI") << "_find_interpreter: no interpreter configured for extension=" << extension;
         return ERROR;
-    if (!conf.root.empty() && conf.root[conf.root.size() - 1] != '/')
-        this->script = conf.root + "/" + request_path;
-    else
-        this->script = conf.root + request_path;
-        
+    }
+    this->script = conf.root + request_path;
+    DEBUG("CGI") << "_find_interpreter: extension=" << extension
+                 << " interpreter=" << interpreter << " script=" << script;
     return SUCESS;
 }

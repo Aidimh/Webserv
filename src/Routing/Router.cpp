@@ -1,7 +1,9 @@
 #include "Router.hpp"
+#include "../Logging/Logging.hpp"
 
 bool Router::matchesLocation(const std::string& uri,const std::string& locationPath)
 {
+    DDEBUG("Router") << "matchesLocation: uri=" << uri << " against location=" << locationPath;
     if (locationPath.empty())
         return false;
 
@@ -35,6 +37,10 @@ const Location_Config* Router::resolveLocation( const std::string& uri,const Ser
             longestMatch = location.path.size();
         }
     }
+    if (match)
+        DEBUG("Router") << "resolveLocation: uri=" << uri << " matched location=" << match->path;
+    else
+        WARN() << "Router::resolveLocation: uri=" << uri << " matched no location block";
     return match;
 }
 
@@ -43,13 +49,23 @@ bool Router::isMethodAllowed(const std::string& method,const Location_Config& lo
 {
     // Ila directive "allowed_methods" ma kaynach, nkhalli behavior lqdim:
     if (location.allowed_methods.empty())
+    {
+        DEBUG("Router") << "isMethodAllowed: method=" << method << " allowed=yes"
+                        << " location=" << location.path << " (no allowed_methods configured)";
         return true;
+    }
 
     for (size_t i = 0; i < location.allowed_methods.size(); ++i)
     {
         if (location.allowed_methods[i] == method)
+        {
+            DEBUG("Router") << "isMethodAllowed: method=" << method << " allowed=yes"
+                            << " location=" << location.path;
             return true;
+        }
     }
+    DEBUG("Router") << "isMethodAllowed: method=" << method << " allowed=no"
+                    << " location=" << location.path;
     return false;
 }
 
@@ -62,14 +78,23 @@ bool Router::isCGIRequest(const ClientRequest& request,const Location_Config& lo
     // PATH = .www/folder/script.js
     
     if (pos == std::string::npos)
+    {
+        DDEBUG("Router") << "isCGIRequest: path=" << request.getRequestPath() << " has no extension, cgi=no";
         return false;
+    }
 
     std::string extension = request.getRequestPath().substr(pos);
 
     for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
     {
         if (location.cgi_extensions[i] == extension)
+        {
+            DEBUG("Router") << "isCGIRequest: path=" << request.getRequestPath()
+                            << " extension=" << extension << " cgi=yes";
             return true;
+        }
     }
+    DDEBUG("Router") << "isCGIRequest: path=" << request.getRequestPath()
+                     << " extension=" << extension << " cgi=no";
     return false;
 }

@@ -94,8 +94,6 @@ typedef struct Location_Config
     std::vector<std::string> cgi_extensions;
     std::vector<std::string> cgi_paths;
     std::map<int, std::string> error_pages;
-    size_t  location_max_size;
-    bool    location_has_max_size;
     std::string _return;
     std::string autoindex;
     bool has_index;
@@ -139,7 +137,7 @@ class Server_block
         std::vector<std::string> methods;
         std::string default_file;
         std::string autoindex;
-        void reset_flags()
+        Server_block()
         {
             server_found = false;
             host_found = false;
@@ -188,8 +186,6 @@ struct Client
     ssize_t stream_buffer_size;
     ssize_t stream_buffer_offset;
     bool cgi_started;
-    bool cgi_response_ready;
-    bool pending_close;
     // int client_id;
     std::string session_id;
     // std::string body;
@@ -209,22 +205,19 @@ struct Client
         }
         stream_bytes_remaining = 0;
         stream_buffer_size = 0;
-        cgi_response_ready = false;
-        pending_close = false;
         stream_buffer_offset = 0;
         parsed_request.reset();
     }
 
     Client()
     : fd(-1),
-    port(-1), //used to be 0
+    port(0),
     stream_file_fd(-1),
     stream_bytes_remaining(0),
     response_prepared(false),
     stream_buffer_size(0),
     stream_buffer_offset(0),
-    cgi_started(false),
-    cgi_response_ready(false)
+    cgi_started(false)
     {}
 };
 
@@ -341,14 +334,12 @@ int every_server_has_listen_port();
 std::string next_token(std::vector<std::string>& tokens , size_t &i);
 void expected_token(std::vector<std::string>& tokens, size_t &i, std::string& expected);
 bool isKnownDirective(const std::string& token);
-bool max_uploads_is_unit(size_t size, size_t index);
 bool is_http_method(std::string& method);
 bool is_autoindex_id(std::string& id);
 void parse_root_path(size_t &index);
 void parse_autoindex(size_t &index);
 void parse_upload_store(size_t &index);
 void parse_methods(size_t &index);
-void parse_location_max_size(size_t &index);
 void parse_cgi_extension(size_t &index);
 void parse_cgi_path(size_t &index);
 void parse_return(size_t &index);

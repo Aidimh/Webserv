@@ -170,10 +170,6 @@ size_t  ClientRequest::getServerMaxBodySize(Client& client)
     }
     size_t founded = Conf_File::Servers[i].max_body_size;
 
-    if (Conf_File::Servers[i].body_size_is_MB)
-        founded *= (1024 * 1024);
-    else if (Conf_File::Servers[i].body_size_is_KB)
-        founded *= 1024;
     DDEBUG("ClientRequest") << "getServerMaxBodySize: port=" << client.port
                             << " max_body_size=" << founded << " bytes";
     return (founded);

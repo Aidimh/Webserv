@@ -252,7 +252,7 @@ Response POST::execute(Client& client, const Server_block& server)
     if (target.empty())
     {
         DEBUG("POST") << "execute: target resolution failed, responding status=403 fd=" << client.fd;
-        return buildErrorResponse(403, "Forbidden");
+        return buildErrorResponse(404, "Not Found");
     }
 
     const ClientRequest& request = client.parsed_request;

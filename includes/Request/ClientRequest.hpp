@@ -66,7 +66,7 @@ class ClientRequest
 		size_t										getServerMaxBodySize(Client& client);
 		std::string									readBody() const;
 
-
+		bool										RequestLineTooLong(Client& client);
 		void										setTmpFileFd(int newFd);
 		void										setStatusCode(short StatusCode);
 		void										setBodySize(size_t size);

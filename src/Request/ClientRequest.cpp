@@ -160,29 +160,15 @@ size_t  ClientRequest::getServerMaxBodySize(Client& client)
     size_t i = 0;
     for (i = 0; i < Conf_File::Servers.size(); i++)
     {
-		bool has_port = false;
 		for (size_t j = 0; j < Conf_File::Servers[i].listen_port.size(); j++)
 		{
 			if (Conf_File::Servers[i].listen_port[j] == client.port)
-			{
-				has_port = true;
-				break;
-			}
-			if (has_port)
-				break;
+				return Conf_File::Servers[i].max_body_size;
 		}
     }
-    if (i == Conf_File::Servers.size() || !Conf_File::Servers[i].client_max_body_found)
-    {
-        DDEBUG("ClientRequest") << "getServerMaxBodySize: no limit configured for port=" << client.port
-                                << ", using default=1048576 bytes";
-        return(1048576);
-    }
-    size_t founded = Conf_File::Servers[i].max_body_size;
-
     DDEBUG("ClientRequest") << "getServerMaxBodySize: port=" << client.port
-                            << " max_body_size=" << founded << " bytes";
-    return (founded);
+                            << " max_body_size=" << 1048576 << " bytes";
+    return (1048576);
 }
 
 bool isMethod(std::string& method)

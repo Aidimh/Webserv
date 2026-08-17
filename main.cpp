@@ -230,14 +230,15 @@ int main(int ac , char **av, char **envp)
     signal(SIGINT, handle_sigint);
     signal(SIGQUIT, handle_sigquit);
     signal(SIGTSTP, handle_sigstp);
+	Logging logger("webserv.log");
     try
     {
-        if (ac != 2)
-            throw Error::Argc();
-        if (!av || av[1][0] == '\0')
-            throw Error::Argv();
-		Logging logger("webserv.log");
 		int fileNameIdx = ParseLoggingArgs(ac, av);
+        if (ac != fileNameIdx + 1)
+            throw Error::Argc();
+        if (!av || av[fileNameIdx][0] == '\0')
+            throw Error::Argv();
+		
         open_file(av[fileNameIdx]);
 		INFO() << "Opening file: " << av[fileNameIdx];
         validate_file();

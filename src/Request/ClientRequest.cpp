@@ -41,6 +41,7 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 		state           =   other.state;
 		method          =   other.method;
 		request_path    =   other.request_path;
+		query_string = other.query_string;
 		cgi_extension   =   other.cgi_extension;
 		version         =   other.version;
 		headers         =   other.headers;
@@ -109,6 +110,7 @@ short ClientRequest::getStatusCode() const {return status_code;}
 const std::map<std::string, std::string>& ClientRequest::getHeaders() const  {return headers;}
 int ClientRequest::getTmpFileFd() const {return TmpFileFd;}
 size_t ClientRequest::getBodySize() const {return BodySize;}
+const std::string&	ClientRequest::getQueryString() const{return query_string;}
 
 void ClientRequest::setBodySize(size_t size) {BodySize = size;}
 void ClientRequest::setTmpFileFd(int newFd) {this->TmpFileFd = newFd;}
@@ -120,6 +122,7 @@ void ClientRequest::reset()
     state = HEADERS;
     method.clear();
     request_path.clear();
+	query_string.clear();
     cgi_extension.clear();
     version.clear();
     headers.clear();
@@ -224,6 +227,18 @@ bool ClientRequest::RequestLineValidate(void)
     return (true);
 }
 
+void ClientRequest::SplitQueryString(void)
+{
+	size_t pos = request_path.find('?');
+	if (pos == std::string::npos)
+	{
+		query_string.clear();
+		return;
+	}
+	query_string = request_path.substr(pos + 1);
+	request_path = request_path.substr(0, pos);
+}
+
 void ClientRequest::RequestLineParser(std::string line)
 {
     if (line.empty() || !ValidLine(line))
@@ -250,6 +265,7 @@ void ClientRequest::RequestLineParser(std::string line)
     }
     method = line.substr(0, first_space);
     request_path = line.substr(first_space + 1, second_space - first_space -1);
+	SplitQueryString();
 	if (request_path.length() > 2048)
 	{
 		WARN() << "ClientRequest::RequestLineParser: rejected status=414 uri length=" << request_path.length()

@@ -42,14 +42,15 @@ class ClientRequest
 		bool										RequestLineValidate(void);
 		void	    								CleanUri(void);
 		bool										CheckTransferEncoding(void);
-		bool										CheckContentLength(void);
 		size_t										getContentLength(void);
 		bool										openTempFile(int ClientFd);
 		void										BodyRequest(Client& client);
 		void										HandleTransferEncoding(Client& client);
 		void										HandleContentLength(Client& client);
 		void										reset();
+		void										SplitQueryString(void);
 
+		const std::string&							getQueryString() const;
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;
     	const std::string&							getCgiExtension() const;
@@ -75,6 +76,7 @@ class ClientRequest
 		std::string									TmpFilePath;   // add
 		std::string									method;
 		std::string									request_path;
+		std::string									query_string;
 		std::string									cgi_extension;
 		std::string									version;
 		std::map<std::string, std::string>			headers;

@@ -8,7 +8,7 @@ The subject's own `cgi_tester` refuses to run:
 
 ```
 $ printf 'abc' | env -i REQUEST_METHOD=POST PATH_INFO=/x.bla CONTENT_LENGTH=3 ./cgi_tester
-cgi: invalid SERVER_PROTOCOL version
+cgi: invalid SERVER_PROTOCOL version 
 ```
 
 Every `.bla` request would answer with that error text instead of the echoed

@@ -222,21 +222,22 @@ void printConfig()
 
 
 
-
+////// 12 : here we handle also SIGPIPE ///////////////////////////////////
 
 int main(int ac , char **av, char **envp)
 {
+    signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, handle_sigint);
     signal(SIGQUIT, handle_sigquit);
     signal(SIGTSTP, handle_sigstp);
     try
     {
+        if (ac != 2)
+            throw Error::Argc();
+        if (!av || av[1][0] == '\0')
+            throw Error::Argv();
 		Logging logger("webserv.log");
 		int fileNameIdx = ParseLoggingArgs(ac, av);
-		// if (ac != 2)
-        //     throw Error::Argc();
-        // if (!av || av[1][0] == '\0')
-        //     throw Error::Argv();
         open_file(av[fileNameIdx]);
 		INFO() << "Opening file: " << av[fileNameIdx];
         validate_file();
@@ -248,8 +249,6 @@ int main(int ac , char **av, char **envp)
                   << ", a server cannot operate without a listen port";
             return ERROR;
         }
-        // printConfig();
-        // exit(1);
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())
@@ -273,6 +272,61 @@ int main(int ac , char **av, char **envp)
     catch(const std::exception& e)
     {
         ERR() << "main: " << e.what();
+        return ERROR;
     }
-    return 0;
+    return SUCESS;
 }
+
+
+// int main(int ac , char **av, char **envp)
+// {
+//     signal(SIGINT, handle_sigint);
+//     signal(SIGQUIT, handle_sigquit);
+//     signal(SIGTSTP, handle_sigstp);
+//     try
+//     {
+// 		Logging logger("webserv.log");
+// 		int fileNameIdx = ParseLoggingArgs(ac, av);
+// 		// if (ac != 2)
+//         //     throw Error::Argc();
+//         // if (!av || av[1][0] == '\0')
+//         //     throw Error::Argv();
+//         open_file(av[fileNameIdx]);
+// 		INFO() << "Opening file: " << av[fileNameIdx];
+//         validate_file();
+//         parse_config_file();
+//         int error_nb = every_server_has_listen_port();
+//         if (error_nb)
+//         {
+//             ERR() << "main: missing listen port at server block " << error_nb
+//                   << ", a server cannot operate without a listen port";
+//             return ERROR;
+//         }
+//         // printConfig();
+//         // exit(1);
+//         size_t i = 0;
+//         Multiplexer Mux;
+//         while(i < Conf_File::Servers.size())
+//         {
+//             size_t j = 0;
+//             while (j < Conf_File::Servers[i].ports_count)
+//             {
+//                 Socket *s = new Socket();
+//                 Mux.env = envp;
+//                 s->setup(Conf_File::Servers[i].listen_port[j], Conf_File::Servers[i].host);
+//                 Mux.addServer(s);
+//                 INFO() << "main: listening on " << Conf_File::Servers[i].host
+//                        << ":" << Conf_File::Servers[i].listen_port[j];
+//                 j++;
+//             }
+//             i++;
+//         }
+//         Mux.run();
+//         INFO() << "main: server stopped";
+//     }
+//     catch(const std::exception& e)
+//     {
+//         ERR() << "main: " << e.what();
+//     }
+//     return 0;
+// }

@@ -8,18 +8,18 @@ volatile sig_atomic_t loop_is_true = 1;
 
 // ---------------------------------------- AFd Class ---------------------------------------- //
 
-AFd::AFd() : fd(-1) {}
+// AFd::AFd() : fd(-1) {}
 
-AFd::~AFd()
-{
-    if (fd != -1)
-        close(fd);
-}
+// AFd::~AFd()
+// {
+//     if (fd != -1)
+//         close(fd);
+// }
 
-int AFd::get_fd() const
-{
-    return fd;
-}
+// int AFd::get_fd() const
+// {
+//     return fd;
+// }
 
 
 // ---------------------------------------- Socket Class ------------------------------------- //
@@ -92,7 +92,7 @@ void Multiplexer::registerCgiPipes(Client& client)
     _cgi_pipes[client.cgi.stdin_fd] = client.fd;
     addFd(client.cgi.stdin_fd, EPOLLOUT);
 }
-m
+
 bool Multiplexer::startCgi(Client& client, const Server_block& server)
 {
     const Location_Config* location =
@@ -118,6 +118,28 @@ bool Multiplexer::startCgi(Client& client, const Server_block& server)
     return true;
 }
 
+
+void Multiplexer::releaseCgi(Client& client)
+{
+    closeCgiInput(client);
+    if (client.cgi.stdout_fd != -1)
+    {
+        removeFd(client.cgi.stdout_fd);
+        _cgi_pipes.erase(client.cgi.stdout_fd);
+        close(client.cgi.stdout_fd);
+        client.cgi.stdout_fd = -1;
+    }
+    if (client.cgi.pid != -1)
+    {
+        kill(client.cgi.pid, SIGKILL);
+        waitpid(client.cgi.pid, NULL, 0);
+        DEBUG("Multiplexer") << "releaseCgi: reaped cgi pid=" << client.cgi.pid;
+        client.cgi.pid = -1;
+    }
+    client.cgi.running = false;
+}
+
+
 void Multiplexer::prepareResponse(Client &client)
 {
     if (client.response_prepared)
@@ -140,15 +162,17 @@ void Multiplexer::prepareResponse(Client &client)
 }
 
 
-bool    Multiplexer::sendResponse(int fd, Client &client)
+bool Multiplexer::sendResponse(int fd, Client &client)
 {
     if (client.response.empty())
         return true;
-    ssize_t sent = send( fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+
+    ssize_t sent = send(fd, client.response.data(), client.response.size(), MSG_NOSIGNAL);
     if (sent <= 0)
     {
         WARN() << "Multiplexer::sendResponse: send failed to client fd=" << fd
                << ": " << strerror(errno);
+        _removeClient(fd);
         return false;
     }
     client.response.erase(0, sent);
@@ -200,31 +224,85 @@ void    Multiplexer::disableWrite(int fd)
     }
 }
 
-void    Multiplexer::_writeClient(int fd)
+/////////////////////////// 13 : cgi timeout //////////////////////////////
+
+void Multiplexer::killTimedOutCgi()
 {
-    std::map<int, Client>::iterator it = _clients.find(fd);
-    if (it == _clients.end())
-        return;
-    if (is_cgi(it->second.parsed_request.getRequestPath()))
+    std::map<int, Client>::iterator it;
+    time_t now = time(NULL);
+
+    for (it = _clients.begin(); it != _clients.end(); ++it)
     {
-        handleClient(fd);
+        Client& client = it->second;
+
+        if (!client.cgi.running || now - client.cgi.last_activity <= CGI_TIMEOUT)
+            continue;
+        WARN() << "Multiplexer::killTimedOutCgi: cgi pid=" << client.cgi.pid
+               << " idle for " << (now - client.cgi.last_activity)
+               << "s, responding status=504 client fd=" << client.fd;
+        if (client.cgi.headers_done)
+            client.response += "0\r\n\r\n";
+        else
+            client.response = AMethod::buildErrorResponse(HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout").toString();
+        releaseCgi(client);
+        enableWrite(client.fd);
+    }
+}
+///////////////////////////////////////////////////////////////////////////
+
+/////////////////// cgi output is not http ////////////////////////////////
+
+static bool isStatusHeader(const std::string& line)
+{
+    return line.size() >= 7 && strncasecmp(line.c_str(), "Status:", 7) == 0;
+}
+
+static std::vector<std::string> splitHeaderLines(const std::string& block)
+{
+    std::vector<std::string> lines;
+    size_t start = 0;
+
+    while (start < block.size())
+    {
+        size_t end = block.find('\n', start);
+        std::string line = (end == std::string::npos)
+                         ? block.substr(start)
+                         : block.substr(start, end - start);
+
+        if (!line.empty() && line[line.size() - 1] == '\r')
+            line.erase(line.size() - 1);
+        if (!line.empty())
+            lines.push_back(line);
+        if (end == std::string::npos)
+            break;
+        start = end + 1;
+    }
+    return lines;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void Multiplexer::_writeClient(int fd)
+{
+    Client* client = findClient(fd);
+
+    if (client == NULL)
+        return;
+
+    prepareResponse(*client);
+    if (!sendResponse(fd, *client))
+        return;
+    if (client->stream_file_fd != -1)
+    {
+        sendStreaming(fd, *client);
+        return;
+    }
+    if (client->cgi.running)
+    {
         disableWrite(fd);
-        _removeClient(fd);
         return;
     }
-    Client &client = it->second;
-    prepareResponse(client);
-    if (!sendResponse(fd, client))
-        return;
-    if (client.stream_file_fd != -1)
-    {
-        sendStreaming(fd, client);
-        return;
-    }
-	client.reset();
-    client.response_prepared = false;
-	_removeClient(fd);
-    disableWrite(fd);
+    _removeClient(fd);
 }
 
 
@@ -232,7 +310,7 @@ void Socket::setup(int port, const std::string& host)
 {
     _port = port;
     _host = host;
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
     {
         ERR() << "Socket::setup: socket failed host=" << host << " port=" << port
@@ -593,21 +671,15 @@ void Multiplexer::enableWrite(int fd)
 
 void Multiplexer::_removeClient(int fd)
 {
-    std::map<int, Client>::iterator iter = _clients.find(fd);
-    if (iter == _clients.end()){
+    std::map<int, Client>::iterator it = _clients.find(fd);
+
+    if (it == _clients.end())
         return;
-	}
-	DEBUG("Multiplexer") << "_removeClient: closed client fd=" << fd;
+    releaseCgi(it->second);
+    DEBUG("Multiplexer") << "_removeClient: closed client fd=" << fd;
+    removeFd(fd);
     close(fd);
-    _clients.erase(iter);
-    for (size_t i = 0; i < _pollfds.size(); i++)
-    {
-        if (_pollfds[i].fd == fd)
-        {
-            _pollfds.erase(_pollfds.begin() + i);
-            break;
-        }
-    }
+    _clients.erase(it);
 }
 
 

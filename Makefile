@@ -18,7 +18,6 @@ SRCS = \
 	src/CGI/CGI_class.cpp \
 	src/ConfFile/Conf_file_parsing.cpp \
 	src/ConfFile/location_parsing.cpp \
-	src/ConfFile/init.cpp \
 	src/ConfFile/tools.cpp \
 	src/ConfFile/validate_conf_file.cpp \
 	src/Multiplexing/Engine.cpp \

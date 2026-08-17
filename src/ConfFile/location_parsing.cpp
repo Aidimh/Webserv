@@ -41,7 +41,7 @@ void parse_autoindex(size_t &index)
     if (Conf_File::tokens[index + 2] !=  ";")
         throw Error::SemiColon();
     if (!is_autoindex_id(Conf_File::tokens[index + 1]))
-        throw Error::Unkonwn_Directive_value();
+        throw Error::Unknown_Directive_value();
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_autoindex = true;
     index += 2;
@@ -86,7 +86,7 @@ void parse_methods(size_t &index)
     while (i < Conf_File::tokens.size() && Conf_File::tokens[index] != ";")
     {
         if (!is_http_method(Conf_File::tokens[index]))
-            throw Error::Unkonwn_Directive_value();
+            throw Error::Unknown_Directive_value();
         Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].allowed_methods.push_back(Conf_File::tokens[index++]);
         i++;
     }

@@ -240,6 +240,20 @@ void ClientRequest::SplitQueryString(void)
 	request_path = request_path.substr(0, pos);
 }
 
+bool uriHasForbiddenByte(const std::string& uri)
+{
+    for (size_t i = 0; i < uri.size(); i++)
+    {
+        if (uri[i] == '\0' || static_cast<unsigned char>(uri[i]) < 0x20)
+            return true;
+        if (uri[i] != '%' || i + 2 >= uri.size())
+            continue;
+        if (uri[i + 1] == '0' && uri[i + 2] == '0')
+            return true;
+    }
+    return false;
+}
+
 void ClientRequest::RequestLineParser(std::string line)
 {
     if (line.empty() || !ValidLine(line))
@@ -267,7 +281,7 @@ void ClientRequest::RequestLineParser(std::string line)
     method = line.substr(0, first_space);
     request_path = line.substr(first_space + 1, second_space - first_space -1);
 	SplitQueryString();
-	if (request_path.length() > 2048)
+	if (request_path.length() > MAX_URI_SIZE)
 	{
 		WARN() << "ClientRequest::RequestLineParser: rejected status=414 uri length=" << request_path.length()
 		       << " exceeds limit=2048";
@@ -275,7 +289,13 @@ void ClientRequest::RequestLineParser(std::string line)
 		state = ERROR_STATE;
 		return;
 	}
-
+	if (uriHasForbiddenByte(request_path))
+	{
+		WARN() << "ClientRequest::RequestLineParser: rejected status=400 uri contains a null or control byte";
+		status_code = 400;
+		state = ERROR_STATE;
+		return;
+	}
     size_t  end;
     end = line.find_last_not_of(" \r\n");
     if (end == std::string::npos || end < second_space)
@@ -445,6 +465,20 @@ size_t ClientRequest::getContentLength(void)
     return (length);
 }
 
+bool ClientRequest::RequestLineTooLong(Client& client)
+{
+    size_t lineEnd = client.request.find("\r\n");
+    size_t length = (lineEnd == std::string::npos) ? client.request.size() : lineEnd;
+
+    if (length <= MAX_REQUEST_LINE_SIZE)
+        return false;
+    WARN() << "ClientRequest::RequestLineTooLong: rejected status=414 request line length="
+           << length << " exceeds limit=" << MAX_REQUEST_LINE_SIZE << " fd=" << client.fd;
+    status_code = 414;
+    state = ERROR_STATE;
+    return true;
+}
+
 void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
@@ -457,7 +491,8 @@ void ClientRequest::parse(Client& client)
 	size_t begin = removeWhitespace(client);
 	if (begin > 0)
 		client.request.erase(0, begin);
-	if (client.request.empty())
+
+	if (client.request.empty() || RequestLineTooLong(client))
 		return;
 
 	size_t check = client.request.find("\r\n\r\n");

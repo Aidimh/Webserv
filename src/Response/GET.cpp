@@ -248,7 +248,7 @@ Response GET::execute(Client& client, const Server_block& server)
     if (target.empty())
     {
         DEBUG("GET") << "execute: target resolution failed, responding status=403 uri=" << requestPath;
-        return buildErrorResponse(403, "Forbidden");
+        return buildErrorResponse(404, "Not Found");
     }
     PathType type = getPathType(target);
 

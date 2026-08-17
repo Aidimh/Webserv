@@ -76,13 +76,67 @@ Server_block& which_server(int port)
     return Conf_File::Servers[0];
 }
 
-void    Multiplexer::prepareResponse(Client &client)
+// void    Multiplexer::prepareResponse(Client &client)
+// {
+//     if (client.response_prepared)
+//         return;
+//     Response response = Dispatcher::dispatch(client, which_server(client.port));
+//     client.response = response.toString();
+//     client.response_prepared = true;
+// }
+
+void Multiplexer::registerCgiPipes(Client& client)
+{
+    _cgi_pipes[client.cgi.stdout_fd] = client.fd;
+    addFd(client.cgi.stdout_fd, EPOLLIN);
+    _cgi_pipes[client.cgi.stdin_fd] = client.fd;
+    addFd(client.cgi.stdin_fd, EPOLLOUT);
+}
+m
+bool Multiplexer::startCgi(Client& client, const Server_block& server)
+{
+    const Location_Config* location =
+        Router::resolveLocation(client.parsed_request.getRequestPath(), server);
+
+    if (location == NULL)
+        return false;
+
+    CGI cgi(client, *location, server);
+
+    if (!cgi.isRunnable() || !cgi.execute())
+        return false;
+
+    client.cgi.pid = cgi.get_pid();
+    client.cgi.stdin_fd = cgi.get_input_fd();
+    client.cgi.stdout_fd = cgi.get_output_fd();
+    client.cgi.running = true;
+    client.cgi.last_activity = time(NULL);
+    openCgiBodySource(client);
+    registerCgiPipes(client);
+    INFO() << "Multiplexer::startCgi: started pid=" << client.cgi.pid
+           << " script=" << cgi.get_script() << " client fd=" << client.fd;
+    return true;
+}
+
+void Multiplexer::prepareResponse(Client &client)
 {
     if (client.response_prepared)
         return;
-    Response response = Dispatcher::dispatch(client, which_server(client.port));
-    client.response = response.toString();
+
+    const Server_block& server = which_server(client.port);
+    Response response = Dispatcher::dispatch(client, server);
+
     client.response_prepared = true;
+    if (!response.isCGI())
+    {
+        client.response = response.toString();
+        return;
+    }
+    if (startCgi(client, server))
+        return;
+
+    WARN() << "Multiplexer::prepareResponse: cgi start failed fd=" << client.fd;
+    client.response = AMethod::buildErrorResponse(HTTP_502_BAD_GATEWAY, "Bad Gateway").toString();
 }
 
 

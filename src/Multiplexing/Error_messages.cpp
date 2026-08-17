@@ -82,7 +82,7 @@ const char* Error::SyntaxError::what() const throw()
 
 const char* Error::MaxUploads::what() const throw()
 {
-    return "Error\nMax upload value was exceeded.";
+    return "Error\nMax upload value is invalid or was exceeded.";
 }
 
 const char* Error::Missing_directive_value::what() const throw()

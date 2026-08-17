@@ -123,6 +123,107 @@ int ParseLoggingArgs(int argc, char *argv[])
 	return fileNameIdx;
 }
 
+
+///////////////////////////////////// print debug ////////////////////////////////////////////
+
+
+
+#include <iostream>
+#include <vector>
+#include <map>
+
+// Helper lambda/function to print string vectors conveniently
+static void printStringVector(const std::string& label, const std::vector<std::string>& vec, const std::string& indent = "  ") {
+    std::cout << indent << label << ": [ ";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << "\"" << vec[i] << "\"" << (i + 1 < vec.size() ? ", " : " ");
+    }
+    std::cout << "]\n";
+}
+
+// Helper lambda/function to print error_pages maps
+static void printErrorPages(const std::map<int, std::string>& error_pages, const std::string& indent = "  ") {
+    std::cout << indent << "Error Pages:\n";
+    if (error_pages.empty()) {
+        std::cout << indent << "  (none)\n";
+        return;
+    }
+    for (std::map<int, std::string>::const_iterator it = error_pages.begin(); it != error_pages.end(); ++it) {
+        std::cout << indent << "  Code " << it->first << " -> " << it->second << "\n";
+    }
+}
+
+void printConfig()
+{
+    std::cout << "===========================================\n";
+    std::cout << "        PARSED CONFIGURATION SUMMARY       \n";
+    std::cout << "===========================================\n";
+    std::cout << "Total Server Blocks: " << Conf_File::Servers.size() << "\n\n";
+
+    for (size_t i = 0; i < Conf_File::Servers.size(); ++i) {
+        const Server_block& server = Conf_File::Servers[i];
+
+        std::cout << "-------------------------------------------\n";
+        std::cout << " SERVER BLOCK #" << (i + 1) << "\n";
+        std::cout << "-------------------------------------------\n";
+        std::cout << "  Host:             " << (server.host.empty() ? "(none)" : server.host) << "\n";
+        std::cout << "  Server Name:      " << (server.server_name.empty() ? "(none)" : server.server_name) << "\n";
+        std::cout << "  Root:             " << (server.root.empty() ? "(none)" : server.root) << "\n";
+        std::cout << "  Autoindex:        " << (server.server_auto_index.empty() ? "(none)" : server.server_auto_index) << "\n";
+        std::cout << "  Max Body Size:    " << server.max_body_size << "\n";
+        
+        // Listen Ports
+        std::cout << "  Listen Ports:     [ ";
+        for (size_t p = 0; p < server.listen_port.size(); ++p) {
+            std::cout << server.listen_port[p] << (p + 1 < server.listen_port.size() ? ", " : " ");
+        }
+        std::cout << "]\n";
+
+        // Index Files & Methods
+        printStringVector("Index Files", server.index_files);
+        printStringVector("Allowed Methods", server.methods);
+
+        // Error Pages
+        printErrorPages(server.error_pages);
+
+        // Flags Status
+        std::cout << "  Flags:\n";
+        std::cout << "    [server_found: " << std::boolalpha << server.server_found
+                  << " | host_found: " << server.host_found
+                  << " | root_found: " << server.root_found
+                  << " | listen_found: " << server.listen_found << "]\n";
+
+        std::cout << "\n  --- Location Blocks (" << server.location.size() << ") ---\n";
+        for (size_t j = 0; j < server.location.size(); ++j) {
+            const Location_Config& loc = server.location[j];
+
+            std::cout << "\n    [Location #" << (j + 1) << "]\n";
+            std::cout << "      Path:            " << (loc.path.empty() ? "(none)" : loc.path) << "\n";
+            std::cout << "      Root:            " << (loc.root.empty() ? "(none)" : loc.root) << "\n";
+            std::cout << "      Upload Path:     " << (loc.upload_path.empty() ? "(none)" : loc.upload_path) << "\n";
+            std::cout << "      Return/Redirect: " << (loc._return.empty() ? "(none)" : loc._return) << "\n";
+            std::cout << "      Autoindex:       " << (loc.autoindex.empty() ? "(none)" : loc.autoindex) << "\n";
+            std::cout << "      Max Body Size:   " << loc.max_body_size << "\n";
+
+            printStringVector("Index Files", loc.index_files, "      ");
+            printStringVector("Allowed Methods", loc.allowed_methods, "      ");
+            printStringVector("CGI Extensions", loc.cgi_extensions, "      ");
+            printStringVector("CGI Paths", loc.cgi_paths, "      ");
+            printErrorPages(loc.error_pages, "      ");
+        }
+        std::cout << "\n";
+    }
+    std::cout << "===========================================\n";
+}
+
+
+
+///////////////////////////////////// print debug ////////////////////////////////////////////
+
+
+
+
+
 int main(int ac , char **av, char **envp)
 {
     signal(SIGINT, handle_sigint);
@@ -147,6 +248,8 @@ int main(int ac , char **av, char **envp)
                   << ", a server cannot operate without a listen port";
             return ERROR;
         }
+        // printConfig();
+        // exit(1);
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())

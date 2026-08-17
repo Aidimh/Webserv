@@ -1,4 +1,4 @@
-#include "header.hpp"
+#include "../../includes/multiplexing/header.hpp"
 #include "../Logging/Logging.hpp"
 static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
 {
@@ -13,7 +13,7 @@ void CGI::build_env_vars(Client& client)
     env_vars.push_back("REQUEST_METHOD=" + client.parsed_request.getMethod());
     env_vars.push_back("PATH_INFO=" + client.parsed_request.getRequestPath());
     env_vars.push_back("SCRIPT_FILENAME=" + script);
-    env_vars.push_back("CONTENT_TYPE=" + get_header_value(client.parsed_request.getHeaders(), "content_type"));
+    env_vars.push_back("CONTENT_TYPE=" + get_header_value(client.parsed_request.getHeaders(), "content-type"));
     env_vars.push_back("QUERY_STRING=");
     char buff[32];
     sprintf(buff, "%zu", client.parsed_request.getBodySize());

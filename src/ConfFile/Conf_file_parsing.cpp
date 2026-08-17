@@ -139,18 +139,18 @@ void parse_max_body_size(size_t &index)
         Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
         if (unit != NULL && *unit != '\0')
         {
-            if (unit[0] == 'K' && unit[1] == '\0')
+            if ((unit[0] == 'K' || unit[0] == 'k') && unit[1] == '\0')
             {
                 Conf_File::Servers[server_index].max_body_size *= 1024;
             }
-            else if (unit[0] == 'M'&& unit[1] == '\0')
+            else if ((unit[0] == 'M' || unit[0] == 'm') && unit[1] == '\0')
             {
                 Conf_File::Servers[server_index].max_body_size *= 1024 * 1024;
             }
-            else if (unit[0] == 'G' && unit[1] == '\0') {
+            else if ((unit[0] == 'G' || unit[0] == 'g') && unit[1] == '\0') {
                 Conf_File::Servers[server_index].max_body_size *= 1024 * 1024 * 1024;
             }
-            else 
+            else
                 throw Error::MaxUploads();
         }
     }
@@ -304,6 +304,7 @@ void parse_config_file()
         {
             server_index++;
             Server_block new_server;
+            initServerBlock(new_server);
             Conf_File::Servers.push_back(new_server);
             Conf_File::Servers[server_index].location_count = -1;
             if (depth > 0)
@@ -321,6 +322,7 @@ void parse_config_file()
             Conf_File::Servers[server_index].location_count++;
             Conf_File::Servers[server_index].location_found = true;
             Location_Config obj;
+            initLocationConfig(obj);
             Conf_File::Servers[server_index].location.push_back(obj);
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extns_index = 0;
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index = 0;

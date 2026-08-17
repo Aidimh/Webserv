@@ -36,7 +36,7 @@
 #define MAX_KB 20000
 #define MAX_MB 20
 #define MAX_HEADER_SIZE 8192
-#define MAX_RAM_BUFFER 8
+#define MAX_RAM_BUFFER 8192
 #define MAX_BY 22000000
 #define CGI_TIMEOUT 5
 
@@ -130,9 +130,6 @@ class Server_block
         std::vector<std::string> index_files;
         size_t index_count;
         long max_body_size;
-        bool body_size_is_MB;
-        bool body_size_is_KB;
-        bool body_size_is_BT;
         std::map<int, std::string> error_pages;
         std::vector<Location_Config> location;
         size_t location_count;
@@ -260,7 +257,10 @@ class Multiplexer
         std::map<int, pid_t>            _cgi_pids;
         std::map<int, time_t>           cgi_timeouts;
         std::map<int, std::string>      client_ids;
-
+        int                             _epfd;
+    public:
+        void                            registerCgiPipes(Client& client);
+        bool                            startCgi(Client& client , const Server_block& server);
         void                            _acceptNewClient(Socket *server);
         void                            _readClient(int fd);
         void                            _writeClient(int fd);
@@ -274,7 +274,6 @@ class Multiplexer
         bool                            is_in_cgi_list(std::string& ext);
         // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
         // std::string                     _generateClientID(int fd);
-    public:
         char** env;
         Multiplexer();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
         ~Multiplexer();
@@ -345,3 +344,9 @@ void parse_methods(size_t &index);
 void parse_cgi_extension(size_t &index);
 void parse_cgi_path(size_t &index);
 void parse_return(size_t &index);
+
+
+// ----------------------------- Init Functions --------------------------------//
+
+void initServerBlock(Server_block& server);
+void initLocationConfig(Location_Config& loc);

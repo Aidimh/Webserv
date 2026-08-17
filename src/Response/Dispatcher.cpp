@@ -132,6 +132,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     {
         DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod() << " not allowed on location=" << location->path << ", responding status=405 fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED,"Method Not Allowed");
+		// todo : set the Allow: attribute in the response header
         setErrorPageBody(response);
         return response;
     }

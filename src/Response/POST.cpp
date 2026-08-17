@@ -69,84 +69,110 @@ PathType POST::validateParentDirectory(const std::string& target) const
     return getPathType(parent);
 }
 
+
+static unsigned long nextUploadId()
+{
+    static unsigned long counter = 0;
+    return ++counter;
+}
+
+std::string POST::resolveDestination(const std::string& target) const
+{
+    if (getPathType(target) != DIRECTORY_PATH)
+        return target;
+
+    std::ostringstream path;
+
+    path << target;
+
+    if (target.empty() || target[target.size() - 1] != '/')
+        path << "/";
+
+    //The counter helps avoid having the exact same name if multiple uploads happen during the same second.
+    path << "upload_" << static_cast<long>(time(NULL)) << "_" << nextUploadId();
+    return path.str();
+}
+
 Response POST::handleRegularRequest(Client& client, const std::string& target)
 {
-    PathType type = validateParentDirectory(target);
+    std::string destination = resolveDestination(target);
+    PathType type = validateParentDirectory(destination);
 
     if (type == NOT_FOUND)
     {
-        DEBUG("POST") << "handleRegularRequest: parent directory missing, responding status=404 target=" << target;
+        DEBUG("POST") << "handleRegularRequest: parent directory missing, responding status=404 target=" << destination;
         return buildErrorResponse(404, "Not Found");
     }
 
     if (type == PERMISSION_DENIED)
     {
-        DEBUG("POST") << "handleRegularRequest: parent directory not readable, responding status=403 target=" << target;
+        DEBUG("POST") << "handleRegularRequest: parent directory not readable, responding status=403 target="  << destination;
         return buildErrorResponse(403, "Forbidden");
     }
 
     if (type != DIRECTORY_PATH)
     {
-        DEBUG("POST") << "handleRegularRequest: parent is not a directory, responding status=400 target=" << target;
+        DEBUG("POST") << "handleRegularRequest: parent is not a directory, responding status=400 target=" << destination;
         return buildErrorResponse(400, "Bad Request");
     }
 
-    if (!canWrite(target))
+    if (!canWrite(destination))
     {
-        DEBUG("POST") << "handleRegularRequest: parent directory not writable, responding status=403 target=" << target;
+        DEBUG("POST") << "handleRegularRequest: parent directory not writable, responding status=403 target=" << destination;
         return buildErrorResponse(403, "Forbidden");
     }
 
     const ClientRequest& request = client.parsed_request;
 
-    // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
     if (request.usesTmpFile())
     {
-        // Read content size before moving file
         struct stat st;
+
         if (stat(request.getTmpFilePath().c_str(), &st) != 0)
         {
             ERR() << "POST::handleRegularRequest: stat failed on temp file path="
                   << request.getTmpFilePath() << ": " << strerror(errno);
             return buildErrorResponse(500, "Internal Server Error");
         }
+
         off_t filesize = st.st_size;
 
-        if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
+        if (rename(request.getTmpFilePath().c_str(), destination.c_str()) != 0)
         {
-            ERR() << "POST::handleRegularRequest: rename failed from=" << request.getTmpFilePath()
-                  << " to=" << target << ": " << strerror(errno);
-            return buildErrorResponse(500, "Internal Server Error");
-        }
-        DEBUG("POST") << "handleRegularRequest: moved temp file to target=" << target
-                      << " size=" << filesize << " bytes";
-
-        // Open target for streaming in the client object
-        int fd = open(target.c_str(), O_RDONLY);
-        if (fd == -1)
-        {
-            ERR() << "POST::handleRegularRequest: open target failed path=" << target
+            ERR() << "POST::handleRegularRequest: rename failed from="
+                  << request.getTmpFilePath()
+                  << " to=" << destination
                   << ": " << strerror(errno);
             return buildErrorResponse(500, "Internal Server Error");
         }
-        DEBUG("POST") << "handleRegularRequest: opened stream file fd=" << fd << " path=" << target;
+
+        int fd = open(destination.c_str(), O_RDONLY);
+
+        if (fd == -1)
+        {
+            ERR() << "POST::handleRegularRequest: open target failed path="
+                  << destination << ": " << strerror(errno);
+            return buildErrorResponse(500, "Internal Server Error");
+        }
+
         client.stream_file_fd = fd;
         client.stream_bytes_remaining = filesize;
 
         Response response;
         response.setStatusCode(201);
         response.setReasonPhrase("Created");
-        // No body in the response string; streaming will send file contents
+
         std::ostringstream oss;
         oss << filesize;
+
         response.addHeader("Content-Length", oss.str());
         response.addHeader("content-type", "text/plain");
         response.setResponseMode(Response::STREAMING_RESPONSE);
+
         return response;
     }
 
-    // Case 2: small body in RAM -> save and return content
-    if (!saveBody(target, request.getBody()))
+    if (!saveBody(destination, request.getBody()))
         return buildErrorResponse(500, "Internal Server Error");
 
     Response response;
@@ -154,11 +180,11 @@ Response POST::handleRegularRequest(Client& client, const std::string& target)
     response.setReasonPhrase("Created");
     response.setBody(request.getBody());
     response.addHeader("content-type", "text/plain");
-    INFO() << "POST::handleRegularRequest: created target=" << target
-           << " size=" << request.getBody().size() << " bytes";
+
+    INFO() << "POST::handleRegularRequest: created target=" << destination << " size=" << request.getBody().size() << " bytes";
+
     return response;
 }
-
 
 // Response POST::handleRegularRequest(const Client& client, const std::string& target)
 // {
@@ -246,9 +272,7 @@ Response POST::execute(Client& client, const Server_block& server)
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
-    DEBUG("POST") << "execute: uri=" << client.parsed_request.getRequestPath()
-                  << " target=" << target << " fd=" << client.fd;
-
+    DEBUG("POST") << "execute: uri=" << client.parsed_request.getRequestPath() << " target=" << target << " fd=" << client.fd;
     if (target.empty())
     {
         DEBUG("POST") << "execute: target resolution failed, responding status=403 fd=" << client.fd;
@@ -264,3 +288,5 @@ Response POST::execute(Client& client, const Server_block& server)
     }
     return handleRegularRequest(client, target);
 }
+
+resolveDestination

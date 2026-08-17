@@ -8,7 +8,8 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <unistd.h>
-
+#include <ctime>
+#include <sstream>
 
 class POST : public AMethod
 {
@@ -21,6 +22,7 @@ class POST : public AMethod
         bool saveBody(const std::string& path, const std::string& body) const;
         bool isMultipartRequest(const Client& client) const;
         bool isRequestValid(const Client& client) const;
+        std::string resolveDestination(const std::string& target) const;
     public:
         POST();
         virtual ~POST();

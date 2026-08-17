@@ -14,8 +14,6 @@ AMethod* MethodFactory::createMethod(const std::string& method)
     if (method == "DELETE")
         return new DeleteMethod();
 
-    if(method == "HEAD")
-        return new HeadMethod();
     WARN() << "MethodFactory::createMethod: no handler for method=" << method;
     return NULL;
 }

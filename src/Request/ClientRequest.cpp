@@ -176,19 +176,7 @@ size_t  ClientRequest::getServerMaxBodySize(Client& client)
     return (founded);
 }
 
-bool isMethod(std::string& method)
-{
-	return ((method == "GET" || method ==  "HEAD" ||  method == "POST" || method =="PUT" || method == "DELETE" || method == "CONNECT" || method == "OPTIONS" || method == "TRACE" || method == "PATCH"));
-}
-
-bool ClientRequest::RequestLineValidate(void)
-{
-	if (!isMethod(method))
-	{
-		status_code = 501;
-		state = ERROR_STATE;
-		return (false);
-	}
+c
     if (!request_path.empty() && request_path.find("http://") == 0)
     {
         size_t path_start = request_path.find('/', 7);

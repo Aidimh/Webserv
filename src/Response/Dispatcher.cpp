@@ -135,6 +135,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(response);
         return response;
     }
+    
 
     if (Router::isCGIRequest(client.parsed_request,*location) == true) 
     {

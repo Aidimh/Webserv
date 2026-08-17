@@ -224,6 +224,29 @@ void CGI::writeToChild()
 // }
 
 
+
+////////////////////////////////////////// 26: cgi working directory ////////////////////////////////////////////
+
+static std::string directoryOf(const std::string& path)
+{
+    size_t slash = path.find_last_of('/');
+
+    if (slash == std::string::npos)
+        return "";
+    return path.substr(0, slash);
+}
+
+static std::string fileNameOf(const std::string& path)
+{
+    size_t slash = path.find_last_of('/');
+
+    if (slash == std::string::npos)
+        return path;
+    return path.substr(slash + 1);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /////////////////////////////////// 8 : cgi_body_lost & deadlock //////////////////////////////////////////////////
 
 void Multiplexer::writeCgiInput(int pipe_fd)
@@ -284,12 +307,37 @@ static bool refillCgiBody(CgiState& cgi)
     return true;
 }
 
+// void CGI::runChild()
+// {
+//     char *argv[3];
+
+//     argv[0] = const_cast<char *>(interpreter.c_str());
+//     argv[1] = const_cast<char *>(script.c_str());
+//     argv[2] = NULL;
+
+//     if (dup2(stdin_pipe[0], STDIN_FILENO) == -1 || dup2(stdout_pipe[1], STDOUT_FILENO) == -1)
+//         _exit(1);
+
+//     close(stdin_pipe[0]);
+//     close(stdin_pipe[1]);
+//     close(stdout_pipe[0]);
+//     close(stdout_pipe[1]);
+
+//     execve(interpreter.c_str(), argv, request_vars);
+//     _exit(1);
+// }
+
 void CGI::runChild()
 {
     char *argv[3];
+    std::string directory = directoryOf(script);
+    std::string scriptArgument = script;
+
+    if (!directory.empty() && chdir(directory.c_str()) == 0)
+        scriptArgument = fileNameOf(script);
 
     argv[0] = const_cast<char *>(interpreter.c_str());
-    argv[1] = const_cast<char *>(script.c_str());
+    argv[1] = const_cast<char *>(scriptArgument.c_str());
     argv[2] = NULL;
 
     if (dup2(stdin_pipe[0], STDIN_FILENO) == -1 || dup2(stdout_pipe[1], STDOUT_FILENO) == -1)
@@ -570,6 +618,8 @@ void Multiplexer::applyCgiBackPressure()
             setEvents(client.cgi.stdout_fd, EPOLLIN);
     }
 }
+
+
 
 // void remove_char_at(std::string& str, size_t pos)
 // {

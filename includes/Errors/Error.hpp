@@ -90,7 +90,7 @@ class Error
             public:
                 const char* what() const throw();
         };
-        class Poll : public std::exception
+        class Epoll : public std::exception
         {
             public:
                 const char* what() const throw();
@@ -116,7 +116,7 @@ class Error
                 const char* what() const throw ();
         };
 
-        class Unkonwn_Directive_value : public std::exception
+        class Unknown_Directive_value : public std::exception
         {
             public :
                 const char* what() const throw();

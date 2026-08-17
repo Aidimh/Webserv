@@ -228,7 +228,7 @@ void parse_server_autoindex(size_t &index)
     if (Conf_File::tokens[index + 2] !=  ";")
         throw Error::SemiColon();
     if (!is_autoindex_id(Conf_File::tokens[index + 1]))
-        throw Error::Unkonwn_Directive_value();
+        throw Error::Unknown_Directive_value();
     Conf_File::Servers[server_index].server_auto_index = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].server_has_autoindex = true;
     index += 2;
@@ -304,7 +304,6 @@ void parse_config_file()
         {
             server_index++;
             Server_block new_server;
-            initServerBlock(new_server);
             Conf_File::Servers.push_back(new_server);
             Conf_File::Servers[server_index].location_count = -1;
             if (depth > 0)
@@ -321,8 +320,8 @@ void parse_config_file()
         {
             Conf_File::Servers[server_index].location_count++;
             Conf_File::Servers[server_index].location_found = true;
+            
             Location_Config obj;
-            initLocationConfig(obj);
             Conf_File::Servers[server_index].location.push_back(obj);
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extns_index = 0;
             Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index = 0;

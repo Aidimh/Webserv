@@ -50,9 +50,9 @@ const char* Error::Recv::what() const throw()
     return "Error!\nRecv failed!.";
 }
 
-const char* Error::Poll::what() const throw()
+const char* Error::Epoll::what() const throw()
 {
-    return "Error!\nPoll failed!.";
+    return "Error!\nEpoll failed!.";
 }
 
 const char* Error::Send::what() const throw()
@@ -105,7 +105,7 @@ const char* Error::Methods::what() const throw()
     return "Error\nAllowed methods weren't specified!.";
 }
 
-const char* Error::Unkonwn_Directive_value::what() const throw()
+const char* Error::Unknown_Directive_value::what() const throw()
 {
     return "Error\nUnkown directive value!.";
 }

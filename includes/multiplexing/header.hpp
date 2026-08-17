@@ -311,6 +311,7 @@ class Multiplexer
         void                            _readClient(int fd);
         void                            _writeClient(int fd);
         void                            _removeClient(int fd);
+		void							handlePeerShutdown(int fd, Client& client);
         // std::string&                    _fill_cgi_response(int fd);
         void                            prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 

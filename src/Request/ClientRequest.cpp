@@ -496,14 +496,12 @@ void ClientRequest::BodyRequest(Client& client)
 		state = DONE;
 		return;
 	}
-	if (client.request.empty())
-        return;
-
-	else if (HasTransferEncoding)
-        HandleTransferEncoding(client);
-	else
-		HandleContentLength(client);
-	return;
+	if (HasTransferEncoding)
+	{
+		HandleTransferEncoding(client);
+		return;
+	}
+	HandleContentLength(client);
 }
 
 std::string intToString(int n)

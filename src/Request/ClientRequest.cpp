@@ -594,6 +594,19 @@ bool ClientRequest::openTempFile(int ClientFd)
 	return true;
 }
 
+static size_t chunkedTerminatorEnd(const std::string& buffer, size_t afterSizeLine)
+{
+    if (buffer.size() < afterSizeLine + 2)
+        return std::string::npos;
+    if (buffer.compare(afterSizeLine, 2, "\r\n") == 0)
+        return afterSizeLine + 2;
+
+    size_t end = buffer.find("\r\n\r\n", afterSizeLine);
+
+    if (end == std::string::npos)
+        return std::string::npos;
+    return end + 4;
+}
 
 void	ClientRequest::HandleTransferEncoding(Client& client)
 {
@@ -639,13 +652,13 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 			return;
 		}
 		size_t	needs = pos + 2 + ChunkSize + 2;
-		if (client.request.length() < needs)
+		if (ChunkSize != 0 && client.request.length() < needs)
 		{
 			DDEBUG("ClientRequest") << "HandleTransferEncoding: chunk incomplete, have="
 			                        << client.request.length() << " need=" << needs << " fd=" << client.fd;
 			return;
 		}
-		if (client.request.substr(pos + 2 + ChunkSize, 2) != "\r\n")
+		if (ChunkSize != 0 && client.request.substr(pos + 2 + ChunkSize, 2) != "\r\n")
 		{
 			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 chunk not terminated by CRLF fd="
 			       << client.fd;
@@ -656,13 +669,20 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 
 		if (ChunkSize == 0)
 		{
+			size_t end = chunkedTerminatorEnd(client.request, pos + 2);
+			if (end == std::string::npos)
+			{
+				DDEBUG("ClientRequest") << "HandleTransferEncoding: waiting for the trailer section fd="
+				                        << client.fd;
+				return;
+			}
 			if (TmpFileFd != -1)
 			{
 				DEBUG("ClientRequest") << "HandleTransferEncoding: closed temp file fd=" << TmpFileFd;
 				close(TmpFileFd);
 				TmpFileFd = -1;
 			}
-			client.request.erase(0, needs);
+			client.request.erase(0, end);
 			state = DONE;
 			DEBUG("ClientRequest") << "HandleTransferEncoding: state BODY to DONE, received body_size="
 			                       << BodySize << " bytes fd=" << client.fd;

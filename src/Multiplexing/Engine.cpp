@@ -500,152 +500,152 @@ int Multiplexer::handleClient(int fd)
     return 0;
 }
 
-void Multiplexer::run()
-{
-    while (loop_is_true)  
-    {
-		INFO() << "Multiplexer::run: running, waiting for events";
-        std::map<int , time_t>::iterator iter = cgi_timeouts.begin();
-        time_t current = time(NULL);
-        while (iter != cgi_timeouts.end())
-        {
-			DEBUG("Multiplexer") << "Checking CGI timeout for pipe fd: " << iter->first << ", elapsed time: " << (current - iter->second) << " seconds";
-            if ((current - iter->second) > 5)
-            {
-				DEBUG("Multiplexer") << "CGI timeout occurred for pipe fd: " << iter->first << ", killing CGI process and sending 504 response to client";
-                int pipe_fd = iter->first;
-                int client_fd = _cgi_pipes[pipe_fd];
+// void Multiplexer::run()
+// {
+//     while (loop_is_true)  
+//     {
+// 		INFO() << "Multiplexer::run: running, waiting for events";
+//         std::map<int , time_t>::iterator iter = cgi_timeouts.begin();
+//         time_t current = time(NULL);
+//         while (iter != cgi_timeouts.end())
+//         {
+// 			DEBUG("Multiplexer") << "Checking CGI timeout for pipe fd: " << iter->first << ", elapsed time: " << (current - iter->second) << " seconds";
+//             if ((current - iter->second) > 5)
+//             {
+// 				DEBUG("Multiplexer") << "CGI timeout occurred for pipe fd: " << iter->first << ", killing CGI process and sending 504 response to client";
+//                 int pipe_fd = iter->first;
+//                 int client_fd = _cgi_pipes[pipe_fd];
 
-                kill(_cgi_pids[pipe_fd], SIGKILL);
-                waitpid(_cgi_pids[pipe_fd], NULL, 0);
-				DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[pipe_fd] << " for pipe fd: " << pipe_fd;
-                close(pipe_fd);
-                _cgi_pipes.erase(pipe_fd);
-                _cgi_pids.erase(pipe_fd);
-                cgi_timeouts.erase(iter++);
+//                 kill(_cgi_pids[pipe_fd], SIGKILL);
+//                 waitpid(_cgi_pids[pipe_fd], NULL, 0);
+// 				DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[pipe_fd] << " for pipe fd: " << pipe_fd;
+//                 close(pipe_fd);
+//                 _cgi_pipes.erase(pipe_fd);
+//                 _cgi_pids.erase(pipe_fd);
+//                 cgi_timeouts.erase(iter++);
 
-                for (size_t i = 0; i < _pollfds.size(); i++)
-                {
-                    if (_pollfds[i].fd == pipe_fd)
-                    {
-						DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
-                        _pollfds.erase(_pollfds.begin() + i);
-                        break;
-                    }
-                }
+//                 for (size_t i = 0; i < _pollfds.size(); i++)
+//                 {
+//                     if (_pollfds[i].fd == pipe_fd)
+//                     {
+// 						DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
+//                         _pollfds.erase(_pollfds.begin() + i);
+//                         break;
+//                     }
+//                 }
 
-                _clients[client_fd].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
-                enableWrite(client_fd);
+//                 _clients[client_fd].response = "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n";
+//                 enableWrite(client_fd);
 
-                // close(pipe_fd);
-                // _cgi_pipes.erase(pipe_fd);
-                // _cgi_pids.erase(pipe_fd);
-                // cgi_timeouts.erase(iter++);
+//                 // close(pipe_fd);
+//                 // _cgi_pipes.erase(pipe_fd);
+//                 // _cgi_pids.erase(pipe_fd);
+//                 // cgi_timeouts.erase(iter++);
 
-                // for (size_t i = 0; i < _pollfds.size(); i++)
-                // {
-                //     if (_pollfds[i].fd == pipe_fd)
-                //     {
-				// 		DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
-                //         _pollfds.erase(_pollfds.begin() + i);
-                //         break;
-                //     }
-                // }
-            }
-            else 
-                iter++;
-        }
-		DEBUG("Multiplexer") << "Finished checking CGI timeouts, proceeding to poll for events";
-        int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
-        if (poll_ret < 0)
-        {
-            ERR() << "Multiplexer::run: poll failed: " << strerror(errno);
-            if (errno == EINTR)
-                break;
-            throw Error::Poll();
-        }
-		DEBUG("Multiplexer") << "Poll returned with " << poll_ret << " events, processing events...";
-        for (size_t i = 0; i < _pollfds.size(); i++)
-        {
-			DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
-            try
-            {
-				DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
-                bool is_server = false;
-                if (_pollfds[i].revents == 0) {
-					DEBUG("Multiplexer") << "No events for fd: " << _pollfds[i].fd << ", continuing to next fd";
-                    continue;
-				}
-                else
-                {
-					DEBUG("Multiplexer") << "Event detected for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
-                    size_t j = 0;
-                    while (j < _servers.size())
-                    {
-						DEBUG("Multiplexer") << "Checking if fd: " << _pollfds[i].fd << " is a server socket (server index: " << j << ")";
-                        if (_servers[j]->get_fd() == _pollfds[i].fd && _pollfds[i].revents & POLLIN)
-                        {
-                            _acceptNewClient(_servers[j]);
-                            is_server = true;
-                            break;
-                        }
-                        j++;
-                    }
-                    if (is_server) {
-						DEBUG("Multiplexer") << "Accepted new client on server socket fd: " << _pollfds[i].fd << ", continuing to next fd";
-                        continue;
-					}
-                    if (_cgi_pipes.find(_pollfds[i].fd) != _cgi_pipes.end())
-                    {
-						DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
-                        if (_pollfds[i].revents & POLLIN)
-                        {
-                            char buffer[4096];
-                            int n = read(_pollfds[i].fd, buffer, sizeof(buffer));
-                            if (n > 0)
-                                _clients[_cgi_pipes[_pollfds[i].fd]].response.append(buffer, n);
-                            if (n == 0 || n == -1)
-                            {
-                                int client_fd = _cgi_pipes[_pollfds[i].fd];
-                                DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
-                                enableWrite(client_fd);
-                                waitpid(_cgi_pids[_pollfds[i].fd], NULL, 0);
-                                DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[_pollfds[i].fd] << " for pipe fd: " << _pollfds[i].fd;
-                                close(_pollfds[i].fd);
-                                _pollfds.erase(_pollfds.begin() + i);
-                                _cgi_pids.erase(_pollfds[i].fd);
-                                _cgi_pipes.erase(_pollfds[i].fd);
-                                continue;
-                            }
-                        }
-                    }
-                    if (_pollfds[i].revents & POLLIN) 
-					{
-						DEBUG("Multiplexer") << "run Reading from client fd: " << _pollfds[i].fd;
-                        _readClient(_pollfds[i].fd);
-					}
-                    if (_pollfds[i].revents & POLLOUT)
-					{
-                        DEBUG("Multiplexer") << "run Writing to client fd: " << _pollfds[i].fd;
-                        _writeClient(_pollfds[i].fd);
-					}
-                    if (_pollfds[i].revents & (POLLHUP | POLLERR))
-					{
-                        DEBUG("Multiplexer") << "run Handling POLLHUP or POLLERR for fd: " << _pollfds[i].fd;
-                        _removeClient(_pollfds[i].fd);
-					}
-					DEBUG("Multiplexer") << "run Finished processing event for fd: " << _pollfds[i].fd << ", moving to next fd";
-                }
-            }
-            catch(const std::exception& e)
-            {
-				DEBUG("Multiplexer") << "Exception occurred while processing event for fd: " << _pollfds[i].fd << ", error: " << e.what();
-                std::cerr << e.what() << '\n';
-            }
-        }
-		DDEBUG("Multiplexer") << "run: finished processing events, waiting for next poll";
-    }
-}
+//                 // for (size_t i = 0; i < _pollfds.size(); i++)
+//                 // {
+//                 //     if (_pollfds[i].fd == pipe_fd)
+//                 //     {
+// 				// 		DEBUG("Multiplexer") << "Removing pipe fd: " << pipe_fd << " from pollfds due to timeout";
+//                 //         _pollfds.erase(_pollfds.begin() + i);
+//                 //         break;
+//                 //     }
+//                 // }
+//             }
+//             else 
+//                 iter++;
+//         }
+// 		DEBUG("Multiplexer") << "Finished checking CGI timeouts, proceeding to poll for events";
+//         int poll_ret = poll(_pollfds.data(), _pollfds.size(), -1);
+//         if (poll_ret < 0)
+//         {
+//             ERR() << "Multiplexer::run: poll failed: " << strerror(errno);
+//             if (errno == EINTR)
+//                 break;
+//             throw Error::Poll();
+//         }
+// 		DEBUG("Multiplexer") << "Poll returned with " << poll_ret << " events, processing events...";
+//         for (size_t i = 0; i < _pollfds.size(); i++)
+//         {
+// 			DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
+//             try
+//             {
+// 				DEBUG("Multiplexer") << "Processing event for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
+//                 bool is_server = false;
+//                 if (_pollfds[i].revents == 0) {
+// 					DEBUG("Multiplexer") << "No events for fd: " << _pollfds[i].fd << ", continuing to next fd";
+//                     continue;
+// 				}
+//                 else
+//                 {
+// 					DEBUG("Multiplexer") << "Event detected for fd: " << _pollfds[i].fd << ", revents: " << _pollfds[i].revents;
+//                     size_t j = 0;
+//                     while (j < _servers.size())
+//                     {
+// 						DEBUG("Multiplexer") << "Checking if fd: " << _pollfds[i].fd << " is a server socket (server index: " << j << ")";
+//                         if (_servers[j]->get_fd() == _pollfds[i].fd && _pollfds[i].revents & POLLIN)
+//                         {
+//                             _acceptNewClient(_servers[j]);
+//                             is_server = true;
+//                             break;
+//                         }
+//                         j++;
+//                     }
+//                     if (is_server) {
+// 						DEBUG("Multiplexer") << "Accepted new client on server socket fd: " << _pollfds[i].fd << ", continuing to next fd";
+//                         continue;
+// 					}
+//                     if (_cgi_pipes.find(_pollfds[i].fd) != _cgi_pipes.end())
+//                     {
+// 						DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
+//                         if (_pollfds[i].revents & POLLIN)
+//                         {
+//                             char buffer[4096];
+//                             int n = read(_pollfds[i].fd, buffer, sizeof(buffer));
+//                             if (n > 0)
+//                                 _clients[_cgi_pipes[_pollfds[i].fd]].response.append(buffer, n);
+//                             if (n == 0 || n == -1)
+//                             {
+//                                 int client_fd = _cgi_pipes[_pollfds[i].fd];
+//                                 DEBUG("Multiplexer") << "Handling CGI output for pipe fd: " << _pollfds[i].fd;
+//                                 enableWrite(client_fd);
+//                                 waitpid(_cgi_pids[_pollfds[i].fd], NULL, 0);
+//                                 DEBUG("Multiplexer") << "Killed CGI process with pid: " << _cgi_pids[_pollfds[i].fd] << " for pipe fd: " << _pollfds[i].fd;
+//                                 close(_pollfds[i].fd);
+//                                 _pollfds.erase(_pollfds.begin() + i);
+//                                 _cgi_pids.erase(_pollfds[i].fd);
+//                                 _cgi_pipes.erase(_pollfds[i].fd);
+//                                 continue;
+//                             }
+//                         }
+//                     }
+//                     if (_pollfds[i].revents & POLLIN) 
+// 					{
+// 						DEBUG("Multiplexer") << "run Reading from client fd: " << _pollfds[i].fd;
+//                         _readClient(_pollfds[i].fd);
+// 					}
+//                     if (_pollfds[i].revents & POLLOUT)
+// 					{
+//                         DEBUG("Multiplexer") << "run Writing to client fd: " << _pollfds[i].fd;
+//                         _writeClient(_pollfds[i].fd);
+// 					}
+//                     if (_pollfds[i].revents & (POLLHUP | POLLERR))
+// 					{
+//                         DEBUG("Multiplexer") << "run Handling POLLHUP or POLLERR for fd: " << _pollfds[i].fd;
+//                         _removeClient(_pollfds[i].fd);
+// 					}
+// 					DEBUG("Multiplexer") << "run Finished processing event for fd: " << _pollfds[i].fd << ", moving to next fd";
+//                 }
+//             }
+//             catch(const std::exception& e)
+//             {
+// 				DEBUG("Multiplexer") << "Exception occurred while processing event for fd: " << _pollfds[i].fd << ", error: " << e.what();
+//                 std::cerr << e.what() << '\n';
+//             }
+//         }
+// 		DDEBUG("Multiplexer") << "run: finished processing events, waiting for next poll";
+//     }
+// }
 
 
 bool Response::isCGI() const
@@ -739,3 +739,123 @@ void Multiplexer::_readClient(int fd)
             enableWrite(fd);
     }
 }
+
+///////////////////////////////////////////////// 10: poll loop index invalidation //////////////////////////////////////////
+
+
+void Multiplexer::dispatchEvents(struct epoll_event* events, int count)
+{
+    _dead_fds.clear();
+    for (int i = 0; i < count; i++)
+        handleEvent(events[i].data.fd, events[i].events);
+}
+
+void Multiplexer::handleEvent(int fd, uint32_t revents)
+{
+    if (_dead_fds.find(fd) != _dead_fds.end())
+        return;
+    if (!isRegistered(fd))
+        return;
+    if (handleServerEvent(fd, revents))
+        return;
+    if (handleCgiEvent(fd, revents))
+        return;
+    handleClientEvent(fd, revents);
+}
+
+bool Multiplexer::handleServerEvent(int fd, uint32_t revents)
+{
+    for (size_t i = 0; i < _servers.size(); i++)
+    {
+        if (_servers[i]->get_fd() != fd)
+            continue;
+        if (revents & EPOLLIN)
+            _acceptNewClient(_servers[i]);
+        return true;
+    }
+    return false;
+}
+
+bool Multiplexer::handleCgiEvent(int fd, uint32_t revents)
+{
+    if (_cgi_pipes.find(fd) == _cgi_pipes.end())
+        return false;
+
+    Client* client = findClientByPipe(fd);
+    if (client == NULL)
+    {
+        removeFd(fd);
+        _cgi_pipes.erase(fd);
+        close(fd);
+        return true;
+    }
+    if (fd == client->cgi.stdin_fd)
+    {
+        if (revents & (EPOLLERR | EPOLLHUP))
+            closeCgiInput(*client);
+        else if (revents & EPOLLOUT)
+            writeCgiInput(fd);
+        return true;
+    }
+    if (revents & (EPOLLIN | EPOLLHUP | EPOLLERR))
+        readCgiOutput(fd);
+    return true;
+}
+
+
+void Multiplexer::handleClientEvent(int fd, uint32_t revents)
+{
+    if (revents & EPOLLIN)
+        _readClient(fd);
+    if (findClient(fd) != NULL && (revents & EPOLLOUT))
+        _writeClient(fd);
+    if (findClient(fd) != NULL && (revents & (EPOLLHUP | EPOLLERR)))
+        _removeClient(fd);
+}
+
+void Multiplexer::run()
+{
+    struct epoll_event events[MAX_EVENTS];
+
+    INFO() << "Multiplexer::run: running, waiting for events";
+    while (loop_is_true)
+    {
+        killTimedOutCgi();
+        closeIdleClients();
+        applyCgiBackPressure();
+
+        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, EPOLL_TIMEOUT_MS);
+        if (ready < 0)
+        {
+            if (errno == EINTR)
+                break;
+            ERR() << "Multiplexer::run: epoll_wait failed: " << strerror(errno);
+            throw Error::Epoll();
+        }
+        if (ready == 0)
+            continue;
+        DDEBUG("Multiplexer") << "run: epoll reported " << ready << " ready fd(s)";
+        dispatchEvents(events, ready);
+    }
+}
+
+
+Client* Multiplexer::findClient(int fd)
+{
+    std::map<int, Client>::iterator it = _clients.find(fd);
+
+    if (it == _clients.end())
+        return NULL;
+    return &it->second;
+}
+
+
+Client* Multiplexer::findClientByPipe(int pipe_fd)
+{
+    std::map<int, int>::iterator it = _cgi_pipes.find(pipe_fd);
+
+    if (it == _cgi_pipes.end())
+        return NULL;
+    return findClient(it->second);
+}
+

@@ -44,6 +44,8 @@
 static const size_t CGI_CHUNK_SIZE = 65536;
 static const int EPOLL_TIMEOUT_MS = 1000;
 static const size_t CGI_MAX_PENDING = 1048576;
+static const int EPOLL_TIMEOUT_MS = 1000;
+static const int MAX_EVENTS = 256;
 
 // #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
@@ -328,6 +330,15 @@ class Multiplexer
         void                            emitCgiHeaders(Client& client);
         void                            finishCgiOutput(Client& client);
         void                            applyCgiBackPressure();
+        void                            dispatchEvents(struct epoll_event* events, int count);
+        void                            handleEvent(int fd, uint32_t revents);
+        bool                            handleServerEvent(int fd, uint32_t revents);
+        bool                            handleCgiEvent(int fd, uint32_t revents);
+        void                            handleClientEvent(int fd, uint32_t revents);
+        Client*                         findClient(int fd);
+        Client*                         findClientByPipe(int pipe_fd);
+
+
         // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
         // std::string                     _generateClientID(int fd);
         char** env;

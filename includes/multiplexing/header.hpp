@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <set>
 #include <limits>
 #include <map>
 #include "../../includes/Errors/Error.hpp"
@@ -42,10 +43,16 @@
 #define MAX_BY 22000000
 #define CGI_TIMEOUT 5
 static const size_t CGI_CHUNK_SIZE = 65536;
-static const int EPOLL_TIMEOUT_MS = 1000;
+// static const int EPOLL_TIMEOUT_MS = 1000;
 static const size_t CGI_MAX_PENDING = 1048576;
-static const int EPOLL_TIMEOUT_MS = 1000;
+// static const int EPOLL_TIMEOUT_MS = 1000;
 static const int MAX_EVENTS = 256;
+static const size_t MAX_CLIENTS = 4096;
+static const time_t CLIENT_IDLE_TIMEOUT = 65;
+static const int EPOLL_TIMEOUT_MS = 1000;
+// static const int MAX_EVENTS = 256;
+
+
 
 // #include "include/request/ClientRequest.hpp"
 // #include "include/request/RequestHelpers.hpp"
@@ -110,6 +117,17 @@ typedef struct Location_Config
     size_t cgi_extns_index;
     bool has_max_body_size;
     long max_body_size;
+    Location_Config()
+    {
+        has_index = false;
+        has_root = false;
+        has_autoindex = false;
+        has_max_body_size = false;
+
+        cgi_paths_index = 0;
+        cgi_extns_index = 0;
+        max_body_size = 0;
+    };
 
 } Location_Config;
 
@@ -232,6 +250,9 @@ struct Client
     std::string session_id;
     // std::string body;
     // size_t end_of_header;
+    bool close_after_response;
+    time_t last_activity;
+    // bool last_activity;
     ClientRequest parsed_request;
     CgiState cgi;
     
@@ -265,19 +286,19 @@ struct Client
     {}
 };
 
-// class AFd
-// {
-//     protected:
-//         int fd;
-//     public:
-//         AFd();
-//         virtual ~AFd();
-//         int get_fd() const;
-// };
+class AFd
+{
+    protected:
+        int fd;
+    public:
+        AFd();
+        virtual ~AFd();
+        int get_fd() const;
+};
 
 
 
-class Socket/* : public AFd*/
+class Socket : public AFd
 {
     private:
         int         _port;
@@ -299,12 +320,14 @@ class Multiplexer
     private:
         std::vector<Socket *>           _servers;
         std::map<int, Client>           _clients;
-        std::vector<struct pollfd>      _pollfds;
+        // std::vector<struct pollfd>      _pollfds;
         std::map<int , int>             _cgi_pipes;
         std::map<int, pid_t>            _cgi_pids;
+        std::map<int, uint32_t>         _watched;    /* mirror of the kernel interest list */
+        std::set<int>                   _dead_fds;
         std::map<int, time_t>           cgi_timeouts;
         std::map<int, std::string>      client_ids;
-        int                             _epfd;
+        int                             _epoll_fd;
     public:
         void                            registerCgiPipes(Client& client);
         bool                            startCgi(Client& client , const Server_block& server);
@@ -318,7 +341,7 @@ class Multiplexer
         void                            prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
-        void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
+        // void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
         bool                            is_cgi(const std::string& path); // this func checks weather a path is cgi_path
         bool                            is_in_cgi_list(std::string& ext);
         bool                            openCgiBodySource(Client& client);
@@ -337,7 +360,16 @@ class Multiplexer
         void                            handleClientEvent(int fd, uint32_t revents);
         Client*                         findClient(int fd);
         Client*                         findClientByPipe(int pipe_fd);
-
+        void                            advanceRequest(int fd, Client& client);
+        void                            finishResponse(int fd, Client& client);
+        bool                            isEvictable(const Client& client) const;
+        void                            evictOldestClient();
+        void                            closeIdleClients();
+        void                            addFd(int fd, uint32_t events);
+        void                            removeFd(int fd);
+        void                            setEvents(int fd, uint32_t events);
+        bool                            isRegistered(int fd) const;
+        void                            disableWrite(int fd);
 
         // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
         // std::string                     _generateClientID(int fd);
@@ -378,6 +410,10 @@ class CGI
         void build_env_vars(Client& client, const Server_block& server);
         std::string get_interpreter() const;
         std::string get_script() const;
+        int get_input_fd();
+        int get_output_fd();
+        int get_pid();
+
         void writeToChild();
         bool _find_interpreter(const Location_Config& conf, const Server_block& server);
         // void readFromChild(int fd);

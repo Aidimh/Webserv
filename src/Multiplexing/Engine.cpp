@@ -8,18 +8,18 @@ volatile sig_atomic_t loop_is_true = 1;
 
 // ---------------------------------------- AFd Class ---------------------------------------- //
 
-// AFd::AFd() : fd(-1) {}
+AFd::AFd() : fd(-1) {}
 
-// AFd::~AFd()
-// {
-//     if (fd != -1)
-//         close(fd);
-// }
+AFd::~AFd()
+{
+    if (fd != -1)
+        close(fd);
+}
 
-// int AFd::get_fd() const
-// {
-//     return fd;
-// }
+int AFd::get_fd() const
+{
+    return fd;
+}
 
 
 // ---------------------------------------- Socket Class ------------------------------------- //
@@ -27,16 +27,6 @@ volatile sig_atomic_t loop_is_true = 1;
 Socket::Socket() : _port(0)
 {
     
-}
-
-Multiplexer::~Multiplexer()
-{
-    size_t i = 0;
-    while (i < _servers.size())
-    {
-        delete _servers[i];
-        i++;
-    }
 }
 
 
@@ -212,17 +202,17 @@ void    Multiplexer::sendStreaming(int fd, Client &client)
                           << " remaining=" << client.stream_bytes_remaining;
 }
 
-void    Multiplexer::disableWrite(int fd)
-{
-    for (size_t i = 0; i < _pollfds.size(); i++)
-    {
-        if (_pollfds[i].fd == fd)
-        {
-            _pollfds[i].events &= ~POLLOUT;
-            break;
-        }
-    }
-}
+// void    Multiplexer::disableWrite(int fd)
+// {
+//     for (size_t i = 0; i < _pollfds.size(); i++)
+//     {
+//         if (_pollfds[i].fd == fd)
+//         {
+//             _pollfds[i].events &= ~POLLOUT;
+//             break;
+//         }
+//     }
+// }
 
 /////////////////////////// 13 : cgi timeout //////////////////////////////
 
@@ -250,7 +240,7 @@ void Multiplexer::killTimedOutCgi()
 }
 ///////////////////////////////////////////////////////////////////////////
 
-/////////////////// cgi output is not http ////////////////////////////////
+/////////////////// 14 : cgi output is not http ////////////////////////////////
 
 static bool isStatusHeader(const std::string& line)
 {
@@ -278,6 +268,100 @@ static std::vector<std::string> splitHeaderLines(const std::string& block)
         start = end + 1;
     }
     return lines;
+}
+
+static std::string cgiStatusLine(const std::vector<std::string>& lines)
+{
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        if (!isStatusHeader(lines[i]))
+            continue;
+
+        std::string value = lines[i].substr(7);
+        size_t begin = value.find_first_not_of(" \t");
+
+        if (begin != std::string::npos)
+            return value.substr(begin);
+    }
+    return "200 OK";
+}
+
+static std::string cgiForwardedHeaders(const std::vector<std::string>& lines)
+{
+    std::string headers;
+
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        if (isStatusHeader(lines[i]))
+            continue;
+        headers += lines[i] + "\r\n";
+    }
+    return headers;
+}
+
+static std::string buildCgiResponseHead(const std::string& cgiHeaderBlock)
+{
+    std::vector<std::string> lines = splitHeaderLines(cgiHeaderBlock);
+    std::string head;
+
+    head += "HTTP/1.1 " + cgiStatusLine(lines) + "\r\n";
+    head += cgiForwardedHeaders(lines);
+    head += "Transfer-Encoding: chunked\r\n";
+    head += "Connection: close\r\n";
+    head += "\r\n";
+    return head;
+}
+
+static void appendChunk(std::string& out, const char* data, size_t size)
+{
+    std::ostringstream header;
+
+    if (size == 0)
+        return;
+    header << std::hex << size << "\r\n";
+    out += header.str();
+    out.append(data, size);
+    out += "\r\n";
+}
+
+static size_t findHeaderBlockEnd(const std::string& buffer, size_t& terminatorSize)
+{
+    size_t position = buffer.find("\r\n\r\n");
+
+    if (position != std::string::npos)
+    {
+        terminatorSize = 4;
+        return position;
+    }
+    position = buffer.find("\n\n");
+    if (position != std::string::npos)
+    {
+        terminatorSize = 2;
+        return position;
+    }
+    return std::string::npos;
+}
+
+void Multiplexer::emitCgiHeaders(Client& client)
+{
+    size_t terminatorSize = 0;
+    size_t end = findHeaderBlockEnd(client.cgi.header_buffer, terminatorSize);
+
+    if (end == std::string::npos)
+    {
+        if (client.cgi.header_buffer.size() < MAX_HEADER_SIZE)
+            return;
+        end = 0;
+        terminatorSize = 0;
+    }
+
+    std::string headerBlock = client.cgi.header_buffer.substr(0, end);
+    std::string payload = client.cgi.header_buffer.substr(end + terminatorSize);
+
+    client.response += buildCgiResponseHead(headerBlock);
+    client.cgi.headers_done = true;
+    client.cgi.header_buffer.clear();
+    appendChunk(client.response, payload.data(), payload.size());
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -310,7 +394,7 @@ void Socket::setup(int port, const std::string& host)
 {
     _port = port;
     _host = host;
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    this->fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
     {
         ERR() << "Socket::setup: socket failed host=" << host << " port=" << port
@@ -351,7 +435,7 @@ int Socket::get_listen_port()
 
 Socket::~Socket()
 {
-	DEBUG("Socket") << "~Socket: closed listening socket fd=" << fd;
+	// DEBUG("Socket") << "~Socket: closed listening socket fd=" << fd;
     // close(fd);
 }
 
@@ -359,46 +443,147 @@ Socket::~Socket()
 // ------------------------------------------- Multiplexer Class ------------------------------ //
 
 
-Multiplexer::Multiplexer() {}
+///////////////////////////////////////////////// 31: epoll-eventloop ////////////////////////////////////////////////////
+
+
+// Multiplexer::Multiplexer() {}
+
+Multiplexer::Multiplexer() : _epoll_fd(-1)
+{
+    _epoll_fd = epoll_create(MAX_EVENTS);
+    if (_epoll_fd == -1)
+    {
+        ERR() << "Multiplexer::Multiplexer: epoll_create failed: " << strerror(errno);
+        throw Error::Epoll();
+    }
+    fcntl(_epoll_fd, F_SETFD, FD_CLOEXEC);
+    DEBUG("Multiplexer") << "Multiplexer: epoll instance fd=" << _epoll_fd;
+}
+
+Multiplexer::~Multiplexer()
+{
+    for (size_t i = 0; i < _servers.size(); i++)
+        delete _servers[i];
+    if (_epoll_fd != -1)
+        close(_epoll_fd);
+}
+
 
 void Multiplexer::addServer(Socket *s)
 {
     _servers.push_back(s);
-    struct pollfd addr;
-    addr.events = POLLIN;
-    addr.fd = s->get_fd();
-    addr.revents = 0;
-    _pollfds.push_back(addr);
-
+    addFd(s->get_fd(), EPOLLIN);
 }
+
+
+void Multiplexer::addFd(int fd, uint32_t events)
+{
+    struct epoll_event entry;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.events = events;
+    entry.data.fd = fd;
+    if (epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &entry) == -1)
+    {
+        WARN() << "Multiplexer::addFd: epoll_ctl ADD failed fd=" << fd
+               << ": " << strerror(errno);
+        return;
+    }
+    _watched[fd] = events;
+    DDEBUG("Multiplexer") << "addFd: watching fd=" << fd << " events=" << events
+                          << " total=" << _watched.size();
+}
+
+void Multiplexer::removeFd(int fd)
+{
+    if (_watched.find(fd) == _watched.end())
+        return;
+    if (epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1)
+    {
+        WARN() << "Multiplexer::removeFd: epoll_ctl DEL failed fd=" << fd
+               << ": " << strerror(errno);
+    }
+    _watched.erase(fd);
+    _dead_fds.insert(fd);
+    DDEBUG("Multiplexer") << "removeFd: stopped watching fd=" << fd
+                          << " total=" << _watched.size();
+}
+
+
+bool Multiplexer::isRegistered(int fd) const
+{
+    return _watched.find(fd) != _watched.end();
+}
+
+
+void Multiplexer::disableWrite(int fd)
+{
+    std::map<int, uint32_t>::iterator it = _watched.find(fd);
+
+    if (it == _watched.end())
+        return;
+    setEvents(fd, it->second & ~static_cast<uint32_t>(EPOLLOUT));
+}
+
+
+
+
+
+// void Multiplexer::_acceptNewClient(Socket *s)
+// {
+//     struct sockaddr_in client_id;
+//     socklen_t len = sizeof(client_id);
+//     int client_fd = accept(s->get_fd(), (struct sockaddr *)&client_id, &len);
+//     if (client_fd == -1)
+//     {
+//         ERR() << "Multiplexer::_acceptNewClient: accept failed on listening fd=" << s->get_fd()
+//               << ": " << strerror(errno);
+//         return;
+//     }
+// 	DEBUG("Multiplexer") << "_acceptNewClient: accepted client fd=" << client_fd
+// 	                     << " port=" << s->get_listen_port();
+//     fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+//     Client client;
+
+//     client.fd = client_fd;
+//     client.port = s->get_listen_port();
+//     client.parsed_request.state = ClientRequest::HEADERS;
+//     _clients[client_fd] = client;
+
+//     struct pollfd pfd;
+//     pfd.fd = client_fd;
+//     pfd.events = POLLIN;
+//     pfd.revents = 0;
+//     _pollfds.push_back(pfd);
+// }
+
 
 void Multiplexer::_acceptNewClient(Socket *s)
 {
-    struct sockaddr_in client_id;
-    socklen_t len = sizeof(client_id);
-    int client_fd = accept(s->get_fd(), (struct sockaddr *)&client_id, &len);
+    struct sockaddr_in client_addr;
+    socklen_t len = sizeof(client_addr);
+    int client_fd = accept(s->get_fd(), (struct sockaddr *)&client_addr, &len);
     if (client_fd == -1)
-    {
-        ERR() << "Multiplexer::_acceptNewClient: accept failed on listening fd=" << s->get_fd()
-              << ": " << strerror(errno);
         return;
-    }
-	DEBUG("Multiplexer") << "_acceptNewClient: accepted client fd=" << client_fd
-	                     << " port=" << s->get_listen_port();
+
     fcntl(client_fd, F_SETFL, O_NONBLOCK);
+    fcntl(client_fd, F_SETFD, FD_CLOEXEC);
+
+    if (_clients.size() >= MAX_CLIENTS)
+        evictOldestClient();
 
     Client client;
-
     client.fd = client_fd;
     client.port = s->get_listen_port();
+    client.last_activity = time(NULL);
     client.parsed_request.state = ClientRequest::HEADERS;
     _clients[client_fd] = client;
 
-    struct pollfd pfd;
-    pfd.fd = client_fd;
-    pfd.events = POLLIN;
-    pfd.revents = 0;
-    _pollfds.push_back(pfd);
+    addFd(client_fd, EPOLLIN);
+    // DEBUG("Multiplexer") << "_acceptNewClient: accepted fd=" << client_fd
+    //                      << " port=" << s->get_listen_port()
+    //                      << " total=" << _clients.size();
 }
 
 
@@ -411,13 +596,13 @@ std::string get_listen_value(const std::string& host)
         return "";
 }
 
-static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
-{
-    std::map<std::string, std::string>::const_iterator it = headers.find(key);
-    if (it == headers.end())
-        return "";
-    return it->second;
-}
+// static std::string get_header_value(const std::map<std::string, std::string>& headers, const std::string& key)
+// {
+//     std::map<std::string, std::string>::const_iterator it = headers.find(key);
+//     if (it == headers.end())
+//         return "";
+//     return it->second;
+// }
 
 void read_and_print_fd(int fd)
 {
@@ -447,58 +632,58 @@ void read_and_print_fd(int fd)
         std::cerr << "Error reading from file descriptor" << std::endl;
 }
 
-int Multiplexer::handleClient(int fd)
-{
-    size_t server_index = 0;
-    for (size_t i = 0; i < Conf_File::Servers.size(); i++)
-    {
-        if (get_listen_value(get_header_value(_clients[fd].parsed_request.getHeaders(), "host")) == Conf_File::Servers[i].listen_port_str[0])
-        {
-            server_index = i;
-            break;
-        }
-    }
-    size_t location_index = 0;
-    size_t longest_match = 0;
-    for (size_t i = 0; i < Conf_File::Servers[server_index].location.size(); i++)
-    {
-        std::string loc_path = Conf_File::Servers[server_index].location[i].path;
-        if (_clients[fd].parsed_request.getRequestPath().find(loc_path) == 0 && loc_path.size() > longest_match)
-        {
-            longest_match = loc_path.size();
-            location_index = i;
-        }
-    }
-    Location_Config& loc = Conf_File::Servers[server_index].location[location_index];
-    std::string req_path = _clients[fd].parsed_request.getRequestPath();
-    size_t dot_pos = req_path.rfind('.');
-    if (dot_pos == std::string::npos)
-        return 0;
+// int Multiplexer::handleClient(int fd)
+// {
+//     size_t server_index = 0;
+//     for (size_t i = 0; i < Conf_File::Servers.size(); i++)
+//     {
+//         if (get_listen_value(get_header_value(_clients[fd].parsed_request.getHeaders(), "host")) == Conf_File::Servers[i].listen_port_str[0])
+//         {
+//             server_index = i;
+//             break;
+//         }
+//     }
+//     size_t location_index = 0;
+//     size_t longest_match = 0;
+//     for (size_t i = 0; i < Conf_File::Servers[server_index].location.size(); i++)
+//     {
+//         std::string loc_path = Conf_File::Servers[server_index].location[i].path;
+//         if (_clients[fd].parsed_request.getRequestPath().find(loc_path) == 0 && loc_path.size() > longest_match)
+//         {
+//             longest_match = loc_path.size();
+//             location_index = i;
+//         }
+//     }
+//     Location_Config& loc = Conf_File::Servers[server_index].location[location_index];
+//     std::string req_path = _clients[fd].parsed_request.getRequestPath();
+//     size_t dot_pos = req_path.rfind('.');
+//     if (dot_pos == std::string::npos)
+//         return 0;
 
-    std::string extension = req_path.substr(dot_pos);
-    for (size_t i = 0; i < loc.cgi_extensions.size(); i++)
-    {
-        if (loc.cgi_extensions[i] == extension)
-        {
-            CGI cgi(_clients[fd], loc);
-            int pipe_fd = cgi.execute(_cgi_pids);
-            cgi_timeouts[pipe_fd] = time(NULL);
-            if (pipe_fd == -1)
-                return ERROR;
-            cgi.writeToChild();
-            // std::cout << "heres whats inside the pipe filled by cgi\n";
-            // read_and_print_fd(pipe_fd);
-            _cgi_pipes[pipe_fd] = fd;
-            struct pollfd pfd;
-            pfd.fd = pipe_fd;
-            pfd.events = POLLIN;
-            pfd.revents = 0;
-            _pollfds.push_back(pfd);
-            return 1;
-        }
-    }
-    return 0;
-}
+//     std::string extension = req_path.substr(dot_pos);
+//     for (size_t i = 0; i < loc.cgi_extensions.size(); i++)
+//     {
+//         if (loc.cgi_extensions[i] == extension)
+//         {
+//             CGI cgi(_clients[fd], loc);
+//             int pipe_fd = cgi.execute(_cgi_pids);
+//             cgi_timeouts[pipe_fd] = time(NULL);
+//             if (pipe_fd == -1)
+//                 return ERROR;
+//             cgi.writeToChild();
+//             // std::cout << "heres whats inside the pipe filled by cgi\n";
+//             // read_and_print_fd(pipe_fd);
+//             _cgi_pipes[pipe_fd] = fd;
+//             struct pollfd pfd;
+//             pfd.fd = pipe_fd;
+//             pfd.events = POLLIN;
+//             pfd.revents = 0;
+//             _pollfds.push_back(pfd);
+//             return 1;
+//         }
+//     }
+//     return 0;
+// }
 
 // void Multiplexer::run()
 // {
@@ -656,17 +841,7 @@ bool Response::isCGI() const
 
 void Multiplexer::enableWrite(int fd)
 {
-    size_t i = 0;
-	DEBUG("Multiplexer") << "enableWrite: enabling write for fd=" << fd;
-    while (i < _pollfds.size())
-    {
-        if (_pollfds[i].fd == fd)
-        {
-            _pollfds[i].events = POLLOUT;
-            break;
-        }
-        i++;
-    }
+    setEvents(fd, EPOLLOUT);
 }
 
 void Multiplexer::_removeClient(int fd)
@@ -858,4 +1033,137 @@ Client* Multiplexer::findClientByPipe(int pipe_fd)
         return NULL;
     return findClient(it->second);
 }
+
+
+
+///////////////////////////////////////////////// 23: connection always closed ////////////////////////////////////////////////////
+
+
+static bool clientWantsKeepAlive(const ClientRequest& request)
+{
+    std::map<std::string, std::string>::const_iterator it =
+        request.getHeaders().find("connection");
+    std::string value;
+
+    if (it != request.getHeaders().end())
+    {
+        value = it->second;
+        MyToLower(value);
+    }
+    if (request.getVersion() == "HTTP/1.0")
+        return value == "keep-alive";
+    return value != "close";
+}
+
+void Multiplexer::advanceRequest(int fd, Client& client)
+{
+    client.parsed_request.parse(client);
+    if (client.parsed_request.state == ClientRequest::BODY)
+        client.parsed_request.BodyRequest(client);
+    if (client.parsed_request.state == ClientRequest::DONE
+        || client.parsed_request.state == ClientRequest::ERROR_STATE)
+        enableWrite(fd);
+}
+
+void Multiplexer::setEvents(int fd, uint32_t events)
+{
+    std::map<int, uint32_t>::iterator it = _watched.find(fd);
+
+    if (it == _watched.end() || it->second == events)
+        return;                              /* nothing to say to the kernel */
+
+    struct epoll_event entry;
+
+    memset(&entry, 0, sizeof(entry));
+    entry.events = events;
+    entry.data.fd = fd;
+    if (epoll_ctl(_epoll_fd, EPOLL_CTL_MOD, fd, &entry) == -1)
+    {
+        WARN() << "Multiplexer::setEvents: epoll_ctl MOD failed fd=" << fd
+               << ": " << strerror(errno);
+        return;
+    }
+    it->second = events;
+}
+
+void Multiplexer::finishResponse(int fd, Client& client)
+{
+    if (client.close_after_response || !clientWantsKeepAlive(client.parsed_request))
+    {
+        _removeClient(fd);
+        return;
+    }
+
+    std::string pipelined;
+
+    pipelined.swap(client.request);
+    client.reset();
+    client.request.swap(pipelined);
+    client.last_activity = time(NULL);
+    setEvents(fd, EPOLLIN);
+    DDEBUG("Multiplexer") << "finishResponse: connection kept alive fd=" << fd;
+    if (!client.request.empty())
+        advanceRequest(fd, client);
+}
+
+
+bool Multiplexer::isEvictable(const Client& client) const
+{
+    return !client.cgi.running
+        && client.response.empty()
+        && client.stream_file_fd == -1;
+}
+
+
+void Multiplexer::evictOldestClient()
+{
+    std::map<int, Client>::iterator it;
+    int oldest = -1;
+    time_t oldestSeen = 0;
+
+    for (it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (!isEvictable(it->second))
+            continue;
+        if (oldest == -1 || it->second.last_activity < oldestSeen)
+        {
+            oldest = it->first;
+            oldestSeen = it->second.last_activity;
+        }
+    }
+    if (oldest == -1)
+        return;
+    DEBUG("Multiplexer") << "evictOldestClient: closing least recently used fd=" << oldest
+                         << " live clients=" << _clients.size();
+    _removeClient(oldest);
+}
+
+
+void Multiplexer::closeIdleClients()
+{
+    std::map<int, Client>::iterator it = _clients.begin();
+    std::vector<int> expired;
+    time_t now = time(NULL);
+
+    while (it != _clients.end())
+    {
+        const Client& client = it->second;
+
+        if (client.parsed_request.state == ClientRequest::HEADERS
+            && client.request.empty()
+            && isEvictable(client)
+            && now - client.last_activity > CLIENT_IDLE_TIMEOUT)
+            expired.push_back(it->first);
+        ++it;
+    }
+    for (size_t i = 0; i < expired.size(); i++)
+    {
+        DEBUG("Multiplexer") << "closeIdleClients: idle timeout fd=" << expired[i];
+        _removeClient(expired[i]);
+    }
+}
+
+
+
+
 

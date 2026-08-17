@@ -87,6 +87,22 @@ void CGI::addRequestHeaders(const Client& client)
         addEnv(toEnvName(it->first), it->second);
 }
 
+int CGI::get_input_fd()
+{
+    return stdin_pipe[1];
+}
+
+int CGI::get_output_fd()
+{
+    return stdout_pipe[0];
+}
+
+
+int CGI::get_pid()
+{
+    return pid;
+}
+
 void CGI::buildEnvArray()
 {
     request_vars = new char *[env_vars.size() + 1];
@@ -249,6 +265,20 @@ static std::string fileNameOf(const std::string& path)
 
 /////////////////////////////////// 8 : cgi_body_lost & deadlock //////////////////////////////////////////////////
 
+static bool refillCgiBody(CgiState& cgi)
+{
+    char buffer[CGI_CHUNK_SIZE];
+
+    if (cgi.body_fd == -1)
+        return false;
+
+    ssize_t count = read(cgi.body_fd, buffer, sizeof(buffer));
+    if (count <= 0)
+        return false;
+    cgi.body_buffer.append(buffer, count);
+    return true;
+}
+
 void Multiplexer::writeCgiInput(int pipe_fd)
 {
     Client* client = findClientByPipe(pipe_fd);
@@ -274,6 +304,8 @@ void Multiplexer::writeCgiInput(int pipe_fd)
 }
 
 
+
+
 void Multiplexer::closeCgiInput(Client& client)
 {
     if (client.cgi.stdin_fd != -1)
@@ -293,19 +325,6 @@ void Multiplexer::closeCgiInput(Client& client)
     client.cgi.body_buffer.clear();
 }
 
-static bool refillCgiBody(CgiState& cgi)
-{
-    char buffer[CGI_CHUNK_SIZE];
-
-    if (cgi.body_fd == -1)
-        return false;
-
-    ssize_t count = read(cgi.body_fd, buffer, sizeof(buffer));
-    if (count <= 0)
-        return false;
-    cgi.body_buffer.append(buffer, count);
-    return true;
-}
 
 // void CGI::runChild()
 // {
@@ -514,24 +533,6 @@ static void appendChunk(std::string& out, const char* data, size_t size)
     out += "\r\n";
 }
 
-static size_t findHeaderBlockEnd(const std::string& buffer, size_t& terminatorSize)
-{
-    size_t position = buffer.find("\r\n\r\n");
-
-    if (position != std::string::npos)
-    {
-        terminatorSize = 4;
-        return position;
-    }
-    position = buffer.find("\n\n");
-    if (position != std::string::npos)
-    {
-        terminatorSize = 2;
-        return position;
-    }
-    return std::string::npos;
-}
-
 void Multiplexer::readCgiOutput(int pipe_fd)
 {
     Client* client = findClientByPipe(pipe_fd);
@@ -561,28 +562,6 @@ void Multiplexer::appendCgiPayload(Client& client, const char* data, size_t size
         return;
     }
     appendChunk(client.response, data, size);
-}
-
-void Multiplexer::emitCgiHeaders(Client& client)
-{
-    size_t terminatorSize = 0;
-    size_t end = findHeaderBlockEnd(client.cgi.header_buffer, terminatorSize);
-
-    if (end == std::string::npos)
-    {
-        if (client.cgi.header_buffer.size() < MAX_HEADER_SIZE)
-            return;
-        end = 0;
-        terminatorSize = 0;
-    }
-
-    std::string headerBlock = client.cgi.header_buffer.substr(0, end);
-    std::string payload = client.cgi.header_buffer.substr(end + terminatorSize);
-
-    client.response += buildCgiResponseHead(headerBlock);
-    client.cgi.headers_done = true;
-    client.cgi.header_buffer.clear();
-    appendChunk(client.response, payload.data(), payload.size());
 }
 
 void Multiplexer::finishCgiOutput(Client& client)
@@ -618,45 +597,3 @@ void Multiplexer::applyCgiBackPressure()
             setEvents(client.cgi.stdout_fd, EPOLLIN);
     }
 }
-
-
-
-// void remove_char_at(std::string& str, size_t pos)
-// {
-//     if (pos < str.length())
-//     {
-//         str.erase(pos, 1);
-//     }
-// }
-
-// int CGI::_find_interpreter(const Location_Config& conf)
-// {
-//     size_t i = 0;
-//     size_t pos = request_path.rfind('.');
-//     if (pos == std::string::npos)
-//         return 1;
-//     // we remove the first / here cause execv can't relate to a file path that starts with /
-//     if (request_path.c_str() && request_path[0] == '/')
-//         remove_char_at(request_path, 0);
-//     // here we extract the extension .ext
-//     std::string extension = request_path.substr(pos - 1);
-//     while (i < conf.cgi_extensions.size())
-//     {
-//         if (conf.cgi_extensions[i] == extension)
-//         {
-//             this->interpreter = conf.cgi_paths[i];
-//             extension_found = true;
-//             break;
-//         }
-//         i++;
-//     }
-//     if (!extension_found)
-//     {
-//         DEBUG("CGI") << "_find_interpreter: no interpreter configured for extension=" << extension;
-//         return ERROR;
-//     }
-//     this->script = conf.root + request_path;
-//     DEBUG("CGI") << "_find_interpreter: extension=" << extension
-//                  << " interpreter=" << interpreter << " script=" << script;
-//     return SUCESS;
-// }

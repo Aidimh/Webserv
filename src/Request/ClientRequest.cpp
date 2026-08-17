@@ -55,7 +55,7 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 		HasTransferEncoding = other.HasTransferEncoding;
 		TmpFilePath     =   other.TmpFilePath;
 
-		/* duplicate file descriptor if present. Close existing fd first */
+
 		if (TmpFileFd != -1)
 		{
 			DEBUG("ClientRequest") << "operator=: closed temp file fd=" << TmpFileFd;
@@ -67,7 +67,6 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 			int dupfd = dup(other.TmpFileFd);
 			if (dupfd == -1)
 			{
-				/* on failure keep fd -1; caller may detect error via status_code if desired */
 				ERR() << "ClientRequest::operator=: dup failed for temp file fd=" << other.TmpFileFd
 				      << ": " << strerror(errno);
 				TmpFileFd = -1;
@@ -83,7 +82,9 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
     return *this;
 }
 
-ClientRequest::~ClientRequest()
+ClientRequest::~ClientRequest(){removeTempFile();}
+
+void ClientRequest::removeTempFile()
 {
 	if (TmpFileFd != -1)
     {
@@ -91,9 +92,12 @@ ClientRequest::~ClientRequest()
         close(TmpFileFd);
         TmpFileFd = -1;
     }
+	if (!TmpFilePath.empty())
+	{
+		unlink(TmpFilePath.c_str());
+		TmpFilePath.clear();
+	}
 }
-
-
 void ClientRequest::setMethod(const std::string& value){method = value;}
 void ClientRequest::setRequestPath(const std::string& value){request_path = value;}
 void ClientRequest::setBody(const std::string& value){body = value;}
@@ -129,13 +133,7 @@ void ClientRequest::reset()
     cgi.clear();
     body.clear();
     status_code = 200;
-    if (TmpFileFd != -1)
-    {
-        DEBUG("ClientRequest") << "reset: closed temp file fd=" << TmpFileFd;
-        close(TmpFileFd);
-        TmpFileFd = -1;
-    }
-	TmpFilePath.clear();   // <-- zidha hna
+	removeTempFile();
     BodySize = 0;
     ContentLength = 0;
     HasContentLength = false;
@@ -388,6 +386,12 @@ bool ClientRequest::CheckTransferEncoding(void)
     it = headers.find("transfer-encoding");
     if (it != headers.end() && !it->second.empty())
     {
+		if (this->version == "HTTP/1.0")
+        {
+            status_code = 400;
+            state = ERROR_STATE;
+            return false;
+        }
         std::string value = RemoveFirstLastSpaces(it->second);
         MyToLower(value);
         if (value == "chunked")
@@ -441,7 +445,10 @@ size_t ClientRequest::getContentLength(void)
 void ClientRequest::parse(Client& client)
 {
     if (this->state == ERROR_STATE)
+	{
+		client.request.clear();
 		return;
+	}
 	if (this->state != HEADERS)
 		return;
 	size_t begin = removeWhitespace(client);
@@ -529,17 +536,15 @@ std::string intToString(int n)
 
 bool ClientRequest::openTempFile(int ClientFd)
 {
-	struct stat meta;
-
-	if (stat("www", &meta) != 0)
-		mkdir("www", 0755);
-	if (stat("www/upload", &meta) != 0)
-		mkdir("www/upload", 0755);
-
-	std::string FilePath = "www/upload/storage_" + intToString(ClientFd);
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	
+	std::stringstream stream;
+	stream << "/tmp/storage_" << getpid() << "_" << ClientFd << "_" << tv.tv_sec << "_" << tv.tv_usec;
+	std::string FilePath = stream.str();
 	TmpFilePath = FilePath;
 
-	int fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	int fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
 	if (fd == -1)
 	{
 		ERR() << "ClientRequest::openTempFile: open temp file failed path=" << FilePath

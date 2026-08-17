@@ -49,7 +49,7 @@ class ClientRequest
 		void										HandleContentLength(Client& client);
 		void										reset();
 		void										SplitQueryString(void);
-
+		void										removeTempFile();
 		const std::string&							getQueryString() const;
 		const std::string&							getMethod() const;
     	const std::string&							getRequestPath() const;

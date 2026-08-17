@@ -8,18 +8,18 @@ volatile sig_atomic_t loop_is_true = 1;
 
 // ---------------------------------------- AFd Class ---------------------------------------- //
 
-AFd::AFd() : fd(-1) {}
+// AFd::AFd() : fd(-1) {}
 
-AFd::~AFd()
-{
-    if (fd != -1)
-        close(fd);
-}
+// AFd::~AFd()
+// {
+//     if (fd != -1)
+//         close(fd);
+// }
 
-int AFd::get_fd() const
-{
-    return fd;
-}
+// int AFd::get_fd() const
+// {
+//     return fd;
+// }
 
 
 // ---------------------------------------- Socket Class ------------------------------------- //
@@ -76,25 +76,103 @@ Server_block& which_server(int port)
     return Conf_File::Servers[0];
 }
 
-void    Multiplexer::prepareResponse(Client &client)
+// void    Multiplexer::prepareResponse(Client &client)
+// {
+//     if (client.response_prepared)
+//         return;
+//     Response response = Dispatcher::dispatch(client, which_server(client.port));
+//     client.response = response.toString();
+//     client.response_prepared = true;
+// }
+
+void Multiplexer::registerCgiPipes(Client& client)
 {
-    if (client.response_prepared)
-        return;
-    Response response = Dispatcher::dispatch(client, which_server(client.port));
-    client.response = response.toString();
-    client.response_prepared = true;
+    _cgi_pipes[client.cgi.stdout_fd] = client.fd;
+    addFd(client.cgi.stdout_fd, EPOLLIN);
+    _cgi_pipes[client.cgi.stdin_fd] = client.fd;
+    addFd(client.cgi.stdin_fd, EPOLLOUT);
+}
+
+bool Multiplexer::startCgi(Client& client, const Server_block& server)
+{
+    const Location_Config* location =
+        Router::resolveLocation(client.parsed_request.getRequestPath(), server);
+
+    if (location == NULL)
+        return false;
+
+    CGI cgi(client, *location, server);
+
+    if (!cgi.isRunnable() || !cgi.execute())
+        return false;
+
+    client.cgi.pid = cgi.get_pid();
+    client.cgi.stdin_fd = cgi.get_input_fd();
+    client.cgi.stdout_fd = cgi.get_output_fd();
+    client.cgi.running = true;
+    client.cgi.last_activity = time(NULL);
+    openCgiBodySource(client);
+    registerCgiPipes(client);
+    INFO() << "Multiplexer::startCgi: started pid=" << client.cgi.pid
+           << " script=" << cgi.get_script() << " client fd=" << client.fd;
+    return true;
 }
 
 
-bool    Multiplexer::sendResponse(int fd, Client &client)
+void Multiplexer::releaseCgi(Client& client)
+{
+    closeCgiInput(client);
+    if (client.cgi.stdout_fd != -1)
+    {
+        removeFd(client.cgi.stdout_fd);
+        _cgi_pipes.erase(client.cgi.stdout_fd);
+        close(client.cgi.stdout_fd);
+        client.cgi.stdout_fd = -1;
+    }
+    if (client.cgi.pid != -1)
+    {
+        kill(client.cgi.pid, SIGKILL);
+        waitpid(client.cgi.pid, NULL, 0);
+        DEBUG("Multiplexer") << "releaseCgi: reaped cgi pid=" << client.cgi.pid;
+        client.cgi.pid = -1;
+    }
+    client.cgi.running = false;
+}
+
+
+void Multiplexer::prepareResponse(Client &client)
+{
+    if (client.response_prepared)
+        return;
+
+    const Server_block& server = which_server(client.port);
+    Response response = Dispatcher::dispatch(client, server);
+
+    client.response_prepared = true;
+    if (!response.isCGI())
+    {
+        client.response = response.toString();
+        return;
+    }
+    if (startCgi(client, server))
+        return;
+
+    WARN() << "Multiplexer::prepareResponse: cgi start failed fd=" << client.fd;
+    client.response = AMethod::buildErrorResponse(HTTP_502_BAD_GATEWAY, "Bad Gateway").toString();
+}
+
+
+bool Multiplexer::sendResponse(int fd, Client &client)
 {
     if (client.response.empty())
         return true;
-    ssize_t sent = send( fd,client.response.c_str(),client.response.size(),MSG_NOSIGNAL);
+
+    ssize_t sent = send(fd, client.response.data(), client.response.size(), MSG_NOSIGNAL);
     if (sent <= 0)
     {
         WARN() << "Multiplexer::sendResponse: send failed to client fd=" << fd
                << ": " << strerror(errno);
+        _removeClient(fd);
         return false;
     }
     client.response.erase(0, sent);
@@ -146,31 +224,85 @@ void    Multiplexer::disableWrite(int fd)
     }
 }
 
-void    Multiplexer::_writeClient(int fd)
+/////////////////////////// 13 : cgi timeout //////////////////////////////
+
+void Multiplexer::killTimedOutCgi()
 {
-    std::map<int, Client>::iterator it = _clients.find(fd);
-    if (it == _clients.end())
-        return;
-    if (is_cgi(it->second.parsed_request.getRequestPath()))
+    std::map<int, Client>::iterator it;
+    time_t now = time(NULL);
+
+    for (it = _clients.begin(); it != _clients.end(); ++it)
     {
-        handleClient(fd);
+        Client& client = it->second;
+
+        if (!client.cgi.running || now - client.cgi.last_activity <= CGI_TIMEOUT)
+            continue;
+        WARN() << "Multiplexer::killTimedOutCgi: cgi pid=" << client.cgi.pid
+               << " idle for " << (now - client.cgi.last_activity)
+               << "s, responding status=504 client fd=" << client.fd;
+        if (client.cgi.headers_done)
+            client.response += "0\r\n\r\n";
+        else
+            client.response = AMethod::buildErrorResponse(HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout").toString();
+        releaseCgi(client);
+        enableWrite(client.fd);
+    }
+}
+///////////////////////////////////////////////////////////////////////////
+
+/////////////////// cgi output is not http ////////////////////////////////
+
+static bool isStatusHeader(const std::string& line)
+{
+    return line.size() >= 7 && strncasecmp(line.c_str(), "Status:", 7) == 0;
+}
+
+static std::vector<std::string> splitHeaderLines(const std::string& block)
+{
+    std::vector<std::string> lines;
+    size_t start = 0;
+
+    while (start < block.size())
+    {
+        size_t end = block.find('\n', start);
+        std::string line = (end == std::string::npos)
+                         ? block.substr(start)
+                         : block.substr(start, end - start);
+
+        if (!line.empty() && line[line.size() - 1] == '\r')
+            line.erase(line.size() - 1);
+        if (!line.empty())
+            lines.push_back(line);
+        if (end == std::string::npos)
+            break;
+        start = end + 1;
+    }
+    return lines;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void Multiplexer::_writeClient(int fd)
+{
+    Client* client = findClient(fd);
+
+    if (client == NULL)
+        return;
+
+    prepareResponse(*client);
+    if (!sendResponse(fd, *client))
+        return;
+    if (client->stream_file_fd != -1)
+    {
+        sendStreaming(fd, *client);
+        return;
+    }
+    if (client->cgi.running)
+    {
         disableWrite(fd);
-        _removeClient(fd);
         return;
     }
-    Client &client = it->second;
-    prepareResponse(client);
-    if (!sendResponse(fd, client))
-        return;
-    if (client.stream_file_fd != -1)
-    {
-        sendStreaming(fd, client);
-        return;
-    }
-	client.reset();
-    client.response_prepared = false;
-	_removeClient(fd);
-    disableWrite(fd);
+    _removeClient(fd);
 }
 
 
@@ -178,7 +310,7 @@ void Socket::setup(int port, const std::string& host)
 {
     _port = port;
     _host = host;
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
     {
         ERR() << "Socket::setup: socket failed host=" << host << " port=" << port
@@ -539,21 +671,34 @@ void Multiplexer::enableWrite(int fd)
 
 void Multiplexer::_removeClient(int fd)
 {
-    std::map<int, Client>::iterator iter = _clients.find(fd);
-    if (iter == _clients.end()){
+    std::map<int, Client>::iterator it = _clients.find(fd);
+
+    if (it == _clients.end())
         return;
-	}
-	DEBUG("Multiplexer") << "_removeClient: closed client fd=" << fd;
+    releaseCgi(it->second);
+    DEBUG("Multiplexer") << "_removeClient: closed client fd=" << fd;
+    removeFd(fd);
     close(fd);
-    _clients.erase(iter);
-    for (size_t i = 0; i < _pollfds.size(); i++)
+    _clients.erase(it);
+}
+
+
+void Multiplexer::handlePeerShutdown(int fd, Client& client)
+{
+    ClientRequest& request = client.parsed_request;
+
+    if (request.state == ClientRequest::HEADERS && client.request.empty())
     {
-        if (_pollfds[i].fd == fd)
-        {
-            _pollfds.erase(_pollfds.begin() + i);
-            break;
-        }
+        _removeClient(fd);
+        return;
     }
+    if (request.state != ClientRequest::DONE && request.state != ClientRequest::ERROR_STATE)
+    {
+        WARN() << "Multiplexer::handlePeerShutdown: truncated request, responding status=400 fd=" << fd;
+        request.setStatusCode(400);
+        request.state = ClientRequest::ERROR_STATE;
+    }
+    enableWrite(fd);
 }
 
 
@@ -587,8 +732,7 @@ void Multiplexer::_readClient(int fd)
         else if (bytesRead == 0)
         {
             DEBUG("Multiplexer") << "_readClient: peer closed fd=" << fd;
-            iter->second.parsed_request.state = ClientRequest::DONE;
-            enableWrite(fd);
+            handlePeerShutdown(fd, iter->second);
             return;
         }
         if (iter->second.parsed_request.state == ClientRequest::DONE || iter->second.parsed_request.state == ClientRequest::ERROR_STATE)

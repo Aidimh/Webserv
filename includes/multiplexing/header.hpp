@@ -145,22 +145,28 @@ class Server_block
         bool client_max_body_found;
         bool uploadLimits;
         bool server_has_autoindex;
-        size_t ports_count;
+        
+		long max_body_size;
+
+		size_t ports_count;
+        size_t index_count;
+        size_t location_count;
+
         std::vector<int> listen_port;
         std::vector<std::string> listen_port_str;
-        std::string host;
+        std::vector<std::string> index_files;
+        std::vector<Location_Config> location;
+        std::vector<std::string> methods;
+        
+		std::map<int, std::string> error_pages;
+        
+		std::string host;
         std::string server_name;
         std::string root;
         std::string server_auto_index;
-        std::vector<std::string> index_files;
-        size_t index_count;
-        long max_body_size;
-        std::map<int, std::string> error_pages;
-        std::vector<Location_Config> location;
-        size_t location_count;
-        std::vector<std::string> methods;
         std::string default_file;
         std::string autoindex;
+
         Server_block()
         {
             server_found = false;
@@ -173,7 +179,11 @@ class Server_block
             server_has_autoindex = false;
             error_page_found = false;
             client_max_body_found = false;
+			uploadLimits = false;
             ports_count = 0;
+			index_count = 0;
+    		location_count = 0;
+    		max_body_size = 0;
         }
 };
 

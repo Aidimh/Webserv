@@ -24,9 +24,8 @@ int AFd::get_fd() const
 
 // ---------------------------------------- Socket Class ------------------------------------- //
 
-Socket::Socket() : _port(0)
+Socket::Socket(Server_block& obj) : _port(0), server(obj)
 {
-    
 }
 
 
@@ -66,14 +65,6 @@ Server_block& which_server(int port)
     return Conf_File::Servers[0];
 }
 
-// void    Multiplexer::prepareResponse(Client &client)
-// {
-//     if (client.response_prepared)
-//         return;
-//     Response response = Dispatcher::dispatch(client, which_server(client.port));
-//     client.response = response.toString();
-//     client.response_prepared = true;
-// }
 
 void Multiplexer::registerCgiPipes(Client& client)
 {
@@ -135,7 +126,7 @@ void Multiplexer::prepareResponse(Client &client)
     if (client.response_prepared)
         return;
 
-    const Server_block& server = which_server(client.port);
+    const Server_block& server = client.Client_server;
     Response response = Dispatcher::dispatch(client, server);
 
     client.response_prepared = true;
@@ -573,12 +564,12 @@ void Multiplexer::_acceptNewClient(Socket *s)
     if (_clients.size() >= MAX_CLIENTS)
         evictOldestClient();
 
-    Client client;
+    Client client(s->server);
     client.fd = client_fd;
     client.port = s->get_listen_port();
     client.last_activity = time(NULL);
     client.parsed_request.state = ClientRequest::HEADERS;
-    _clients[client_fd] = client;
+    _clients.insert(std::make_pair(client_fd, client));
 
     addFd(client_fd, EPOLLIN);
     // DEBUG("Multiplexer") << "_acceptNewClient: accepted fd=" << client_fd
@@ -896,6 +887,7 @@ void Multiplexer::_readClient(int fd)
         {
             iter->second.request.append(buffer, bytesRead);
             DDEBUG("Multiplexer") << "_readClient: appended " << bytesRead << " bytes to request buffer fd=" << fd;
+            DDEBUG("Multiplexer") << "\n" <<buffer << "\n";
             iter->second.parsed_request.parse(iter->second);
             if (iter->second.parsed_request.state == ClientRequest::BODY)
 			{
@@ -999,7 +991,7 @@ void Multiplexer::run()
         closeIdleClients();
         applyCgiBackPressure();
 
-        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, EPOLL_TIMEOUT_MS);
+        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
         if (ready < 0)
         {
             if (errno == EINTR)

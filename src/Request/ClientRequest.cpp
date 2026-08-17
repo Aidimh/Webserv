@@ -156,16 +156,16 @@ void ClientRequest::CleanUri()
 }
 
 size_t  ClientRequest::getServerMaxBodySize(Client& client)
-{
-    size_t i = 0;
-    for (i = 0; i < Conf_File::Servers.size(); i++)
-    {
-		for (size_t j = 0; j < Conf_File::Servers[i].listen_port.size(); j++)
+{   
+	for (size_t j = 0; j < client.Client_server.listen_port.size(); j++)
+	{
+		if (client.Client_server.listen_port[j] == client.port)
 		{
-			if (Conf_File::Servers[i].listen_port[j] == client.port)
-				return Conf_File::Servers[i].max_body_size;
+			WARN() << client.Client_server.host << " " << client.Client_server.listen_port[j];
+			return client.Client_server.max_body_size;
 		}
-    }
+	}
+
     DDEBUG("ClientRequest") << "getServerMaxBodySize: port=" << client.port
                             << " max_body_size=" << 1048576 << " bytes";
     return (1048576);
@@ -445,7 +445,7 @@ size_t ClientRequest::getContentLength(void)
     std::string&    value   = it->second;
     size_t          length  = 0;
     size_t          max     = std::numeric_limits<size_t>::max();
-
+	DEBUG("ClientRequest")  << value;
     for (size_t i = 0; i < value.length(); i++)
     {
         if (!isdigit(value[i]))

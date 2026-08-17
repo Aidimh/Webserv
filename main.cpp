@@ -220,6 +220,25 @@ void printConfig()
 
 ///////////////////////////////////// print debug ////////////////////////////////////////////
 
+bool port_is_dup()
+
+{
+
+	std::map<std::string, size_t> host_map;
+
+	for(size_t i = 0; i < Conf_File::Servers.size(); i++)
+
+		host_map[Conf_File::Servers[i].host] = i;
+
+	if (host_map.size() != Conf_File::Servers.size())
+
+		return (false);
+
+	return (true);
+
+} 
+
+
 
 
 ////// 12 : here we handle also SIGPIPE ///////////////////////////////////
@@ -250,6 +269,11 @@ int main(int ac , char **av, char **envp)
                   << ", a server cannot operate without a listen port";
             return ERROR;
         }
+        if (!port_is_dup())
+        {
+            std::cerr << "Error\n";//todo : error class
+            return ERROR;
+        }
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())
@@ -257,7 +281,7 @@ int main(int ac , char **av, char **envp)
             size_t j = 0;
             while (j < Conf_File::Servers[i].ports_count)
             {
-                Socket *s = new Socket();
+                Socket *s = new Socket(Conf_File::Servers[i]);
                 Mux.env = envp;
                 s->setup(Conf_File::Servers[i].listen_port[j], Conf_File::Servers[i].host);
                 Mux.addServer(s);

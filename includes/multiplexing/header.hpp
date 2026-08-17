@@ -255,6 +255,7 @@ struct Client
     char    stream_buffer[4096];
     ssize_t stream_buffer_size;
     ssize_t stream_buffer_offset;
+    Server_block& Client_server;
     bool cgi_started;
     // int client_id;
     std::string session_id;
@@ -282,18 +283,51 @@ struct Client
         stream_buffer_size = 0;
         stream_buffer_offset = 0;
         parsed_request.reset();
-    }
+        
+    };
 
-    Client()
-    : fd(-1),
+    Client(Server_block& client_server):
+    fd(-1),
     port(0),
     stream_file_fd(-1),
     stream_bytes_remaining(0),
     response_prepared(false),
     stream_buffer_size(0),
     stream_buffer_offset(0),
+    Client_server(client_server),
     cgi_started(false)
     {}
+
+    Client& operator=(const Client& other)
+    {
+        if (this != &other)
+        {
+            fd = other.fd;
+            request = other.request;
+            response = other.response;
+            port = other.port;
+            stream_file_fd = other.stream_file_fd;
+            stream_bytes_remaining = other.stream_bytes_remaining;
+            response_prepared = other.response_prepared;
+
+            for (int i = 0; i < 4096; ++i)
+                stream_buffer[i] = other.stream_buffer[i];
+
+            stream_buffer_size = other.stream_buffer_size;
+            stream_buffer_offset = other.stream_buffer_offset;
+
+            // DO NOT assign Client_server.
+            // It is a reference and must remain bound to the original Server_block.
+
+            cgi_started = other.cgi_started;
+            session_id = other.session_id;
+            close_after_response = other.close_after_response;
+            last_activity = other.last_activity;
+            parsed_request = other.parsed_request;
+            cgi = other.cgi;
+        }
+        return *this;
+    }
 };
 
 class AFd
@@ -313,11 +347,13 @@ class Socket : public AFd
     private:
         int         _port;
         std::string _host;
+        // Server_block& server;
  
     public:
-        Socket();
+        Socket(Server_block& server);
         ~Socket();
         std::string GetClientIp();
+        Server_block& server;
         int get_listen_port();
         void setup(int port, const std::string& host);
         int  acceptClient();        
@@ -402,6 +438,8 @@ class CGI
         // int client_fd;
         pid_t pid;
         std::string request_path;
+        std::string request_pacceptNewClientath;
+        std::string request;
         std::string interpreter;
         std::string script;
         std::string body;

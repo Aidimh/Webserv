@@ -339,6 +339,28 @@ std::string MultipartUploadStrategy::sanitizeFilename(const std::string& filenam
     return base;
 }
 
+
+// Response MultipartUploadStrategy::handleMultipartRequest(const Client& client, const std::string& target)
+// {
+//     if (getPathType(target) != DIRECTORY_PATH)
+//     {
+//         DEBUG("POST") << "handleMultipartRequest: upload target is not a directory, responding status=400 target="
+//                     << target;
+//         return buildErrorResponse(400, "Upload target must be a directory");
+//     }
+
+//     if (!canWrite(target))
+//     {
+//         DEBUG("POST") << "handleMultipartRequest: upload target not writable, responding status=403 target="
+//                     << target;
+//         return buildErrorResponse(403, "Forbidden");
+//     }
+
+//     DEBUG("POST") << "handleMultipartRequest: handling multipart upload into target=" << target;
+//     std::string body = client.parsed_request.readBody();
+//     return multiPart.handleMultipartUpload(body, client.parsed_request.getHeaders(), target);
+// }
+
 bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const std::string& filename, const std::string& content) const
 {
     std::string safeFilename = sanitizeFilename(filename);
@@ -366,24 +388,20 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
 
     if (!outFile.is_open())
     {
-        ERR() << "MultipartUploadStrategy::saveUploadedFile: open file failed path=" << path
-              << ": " << strerror(errno);
+        ERR() << "MultipartUploadStrategy::saveUploadedFile: open file failed path=" << path << ": " << strerror(errno);
         return false;
     }
 
-    outFile.write(content.data(),
-                  static_cast<std::streamsize>(content.size()));
+    outFile.write(content.data(), static_cast<std::streamsize>(content.size()));
 
     bool success = outFile.good();
 
     outFile.close();
 
     if (success)
-        DEBUG("MultipartUploadStrategy") << "saveUploadedFile: wrote " << content.size()
-                                         << " bytes to path=" << path;
+        DEBUG("MultipartUploadStrategy") << "saveUploadedFile: wrote " << content.size() << " bytes to path=" << path;
     else
         ERR() << "MultipartUploadStrategy::saveUploadedFile: write failed path=" << path;
 
     return success;
 }
-

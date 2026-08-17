@@ -33,6 +33,8 @@ class MultipartUploadStrategy
         Response    buildErrorResponse(int statusCode, const std::string& reasonPhrase, const std::string& body) const;
         void        parseMultipart(const std::string& body, const std::string& delimiter, const std::string& target, size_t& partCount, size_t& savedFileCount) const;
         Response    buildSummaryResponse(size_t partCount, size_t savedFileCount) const;
+        // Response    handleMultipartRequest(const Client& client, const std::string& target)
+
     public:
         bool        validateRequest(const std::map<std::string, std::string>& headers, std::string& boundary) const;
         bool        isMultipartUpload(const std::map<std::string, std::string>& headers) const;

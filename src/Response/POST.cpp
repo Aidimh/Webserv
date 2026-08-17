@@ -186,81 +186,10 @@ Response POST::handleRegularRequest(Client& client, const std::string& target)
     return response;
 }
 
-// Response POST::handleRegularRequest(const Client& client, const std::string& target)
-// {
-//     PathType type = validateParentDirectory(target);
-
-//     if (type == NOT_FOUND)
-//         return buildErrorResponse(404, "Not Found");
-
-//     if (type == PERMISSION_DENIED)
-//         return buildErrorResponse(403, "Forbidden");
-
-//     if (type != DIRECTORY_PATH)
-//         return buildErrorResponse(400, "Bad Request");
-
-//     if (!canWrite(target))
-//         return buildErrorResponse(403, "Forbidden");
-
-//     const ClientRequest& request = client.parsed_request;
-
-//     // std::cout<<"Test\n";
-//     // Case 1: body kbir, streamed l temp file → ghir bddel smiytou l target
-//     if (request.usesTmpFile())
-//     {
-//         std::cout<<"Test\n";
-//         if (rename(request.getTmpFilePath().c_str(), target.c_str()) != 0)
-//             return buildErrorResponse(500, "Internal Server Error");
-//         return buildCreatedResponse(201, "Created");
-//     }
-
-//     // Case 2: body sghir, f RAM → save 3adi
-//     if (!saveBody(target, request.getBody()))
-//         return buildErrorResponse(500, "Internal Server Error");
-
-//     return buildCreatedResponse(201, "Created");
-// }
-
-
-Response POST::handleMultipartRequest(const Client& client, const std::string& target)
-{
-if (getPathType(target) != DIRECTORY_PATH)
-    {
-        DEBUG("POST") << "handleMultipartRequest: upload target is not a directory, responding status=400 target="
-                      << target;
-        return buildErrorResponse(400, "Upload target must be a directory");
-    }
-
-    if (!canWrite(target))
-    {
-        DEBUG("POST") << "handleMultipartRequest: upload target not writable, responding status=403 target="
-                      << target;
-        return buildErrorResponse(403, "Forbidden");
-    }
-
-    DEBUG("POST") << "handleMultipartRequest: handling multipart upload into target=" << target;
-    std::string body = client.parsed_request.readBody();
-    return multiPart.handleMultipartUpload(body, client.parsed_request.getHeaders(), target);
-}
-
-bool POST::isMultipartRequest(const Client& client) const
-{
-    const std::map<std::string, std::string>& headers = client.parsed_request.getHeaders();
-    std::map<std::string, std::string>::const_iterator it = headers.find("content-type");
-
-    if (it == headers.end())
-        return false;
-
-    const std::string& contentType = it->second;
-
-    return contentType.find("multipart/") != std::string::npos;
-}
-
 bool POST::isRequestValid(const Client& client) const
 {
     return !client.parsed_request.getRequestPath().empty();
 }
-
 
 Response POST::execute(Client& client, const Server_block& server)
 {
@@ -269,24 +198,26 @@ Response POST::execute(Client& client, const Server_block& server)
         DEBUG("POST") << "execute: empty request path, responding status=400 fd=" << client.fd;
         return buildErrorResponse(400, "Bad Request");
     }
+
     const Location_Config* location = resolveLocation(client, server);
     std::string target = resolveTarget(client, server, location);
 
     DEBUG("POST") << "execute: uri=" << client.parsed_request.getRequestPath() << " target=" << target << " fd=" << client.fd;
+
     if (target.empty())
     {
-        DEBUG("POST") << "execute: target resolution failed, responding status=403 fd=" << client.fd;
+        DEBUG("POST") << "execute: target resolution failed, " << "responding status=404 fd=" << client.fd;
         return buildErrorResponse(404, "Not Found");
     }
 
-    const ClientRequest& request = client.parsed_request;
-    std::string body = request.ClientRequest::readBody();
-    if (isMultipartRequest(client))
+    if (multiPart.isMultipartUpload(client.parsed_request.getHeaders()))
     {
-        DEBUG("POST") << "execute: multipart request, body_size=" << body.size() << " bytes fd=" << client.fd;
-        return multiPart.handleMultipartUpload(body,request.getHeaders(),target);
+        if (getPathType(target) != DIRECTORY_PATH)
+            return buildErrorResponse(400, "Upload target must be a directory");
+        if (!canWrite(target))
+            return buildErrorResponse(403, "Forbidden");
+        const ClientRequest& request = client.parsed_request;
+        return multiPart.handleMultipartUpload(request.readBody(),request.getHeaders(),target);
     }
     return handleRegularRequest(client, target);
 }
-
-resolveDestination

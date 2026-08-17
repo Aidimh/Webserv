@@ -557,6 +557,25 @@ void Multiplexer::_removeClient(int fd)
 }
 
 
+void Multiplexer::handlePeerShutdown(int fd, Client& client)
+{
+    ClientRequest& request = client.parsed_request;
+
+    if (request.state == ClientRequest::HEADERS && client.request.empty())
+    {
+        _removeClient(fd);
+        return;
+    }
+    if (request.state != ClientRequest::DONE && request.state != ClientRequest::ERROR_STATE)
+    {
+        WARN() << "Multiplexer::handlePeerShutdown: truncated request, responding status=400 fd=" << fd;
+        request.setStatusCode(400);
+        request.state = ClientRequest::ERROR_STATE;
+    }
+    enableWrite(fd);
+}
+
+
 void Multiplexer::_readClient(int fd)
 {
     char buffer[4096];
@@ -587,8 +606,7 @@ void Multiplexer::_readClient(int fd)
         else if (bytesRead == 0)
         {
             DEBUG("Multiplexer") << "_readClient: peer closed fd=" << fd;
-            iter->second.parsed_request.state = ClientRequest::DONE;
-            enableWrite(fd);
+            handlePeerShutdown(fd, iter->second);
             return;
         }
         if (iter->second.parsed_request.state == ClientRequest::DONE || iter->second.parsed_request.state == ClientRequest::ERROR_STATE)

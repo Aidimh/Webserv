@@ -503,6 +503,7 @@ void parse_methods(size_t &index);
 void parse_cgi_extension(size_t &index);
 void parse_cgi_path(size_t &index);
 void parse_return(size_t &index);
+void parse_location_max(size_t &index);
 
 
 // ----------------------------- Init Functions --------------------------------//

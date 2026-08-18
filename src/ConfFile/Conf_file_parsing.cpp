@@ -237,6 +237,7 @@ void parse_server_autoindex(size_t &index)
                       << " server=" << server_index;
 }
 
+
 void parse_directives(std::string& token, size_t &i)
 {
     DDEBUG("ConfFile") << "parse_directives: dispatching token=" << token << " index=" << i;
@@ -273,6 +274,8 @@ void parse_location_directives(std::string& token, size_t &i)
     else if (token == "index")
         parse_location_index(i);
 	//todo : Adding the client max body size inside the location blocks
+    else if (token == "client_max_body_size")
+        parse_location_max(i);
     else if (token == "index")
         parse_location_index(i);
     else if (token == "autoindex")
@@ -342,7 +345,7 @@ void parse_config_file()
             i++;
             DEBUG("ConfFile") << "parse_config_file: leaving location block index="
                               << Conf_File::Servers[server_index].location_count
-                              << " server=" << server_index;
+                              << " server=" << server_index << "hers the max body size of the location : " << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].max_body_size;
         }
         else if (token == "{")
             throw std::runtime_error("Error\nUnexpected '{'. only 'server' or 'location' can open a block!.");

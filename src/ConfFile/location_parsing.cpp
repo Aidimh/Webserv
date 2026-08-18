@@ -99,6 +99,40 @@ void parse_methods(size_t &index)
                       << " server=" << server_index;
 }
 
+void parse_location_max(size_t &index)
+{
+    size_t size = Conf_File::tokens[index + 1].size();
+    if (index + 2 >= Conf_File::tokens.size() || Conf_File::tokens[index + 2] != ";")
+        throw Error::MaxUploads();
+
+    size_t count = Conf_File::Servers[server_index].location_count;
+    // Location_Config& location = Conf_File::Servers[server_index].location[count];
+    char *unit = NULL;
+    Conf_File::Servers[server_index].location[count].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
+    if (unit != NULL && *unit != '\0')
+    {
+        if ((unit[0] == 'B' || unit[0] == 'b') && unit[1] == '\0'){}
+        else if ((unit[0] == 'K' || unit[0] == 'k') && unit[1] == '\0')
+        {
+            Conf_File::Servers[server_index].location[count].max_body_size *= 1024;
+        }
+        else if ((unit[0] == 'M' || unit[0] == 'm') && unit[1] == '\0')
+        {
+            Conf_File::Servers[server_index].location[count].max_body_size *= 1024 * 1024;
+        }
+        else if ((unit[0] == 'G' || unit[0] == 'g') && unit[1] == '\0') {
+            Conf_File::Servers[server_index].location[count].max_body_size *= 1024 * 1024 * 1024;
+        }
+        else
+            throw Error::MaxUploads();
+    }
+    index += 2;
+    Conf_File::Servers[server_index].location[count].has_max_body_size = true;
+    DEBUG("ConfFile") << "parse_max_body_size: parsed client_max_body_size="
+                      << Conf_File::Servers[server_index].max_body_size
+                      << " bytes server=" << server_index;
+}
+
 void parse_cgi_extension(size_t &index)
 {
     size_t j = Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths_index;

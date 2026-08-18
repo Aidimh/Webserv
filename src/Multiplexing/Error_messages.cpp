@@ -25,6 +25,11 @@ const char* Error::Duplicated_hosts::what() const throw()
     return "Error\nEach server block must have its Unique Host Address\n";
 }
 
+const char* Error::Return::what() const throw()
+{
+    return "Error\nReturn directive values are missing or invalid!.";
+}
+
 const char* Error::Socket::what() const throw() 
 {
     return "Error!\nSocket failed!.";

@@ -105,15 +105,25 @@ typedef struct Location_Config
     std::string path;
     std::string upload_path;
     std::vector<std::string> index_files;
+    std::map<int, std::string> return_code_and_url;
+    std::map<int, std::string> return_code_and_path;
+    std::map<int, std::string> return_code_and_message;
     std::vector<std::string> allowed_methods;
     std::vector<std::string> cgi_extensions;
     std::vector<std::string> cgi_paths;
     std::map<int, std::string> error_pages;
+    std::string return_url;
+    long return_code;
     std::string _return;
     std::string autoindex;
     bool has_index;
     bool has_root;
     bool has_autoindex;
+    bool return_value_is_code_only;
+    bool return_value_is_URL_only;
+    bool has_code_and_url;
+    bool has_code_and_path;
+    bool has_code_and_message;
     size_t cgi_paths_index;
     size_t cgi_extns_index;
     bool has_max_body_size;
@@ -124,9 +134,15 @@ typedef struct Location_Config
         has_root = false;
         has_autoindex = false;
         has_max_body_size = false;
+        return_value_is_URL_only = false;
+        return_value_is_code_only = false;
+        has_code_and_url = false;
+        has_code_and_path = false;
+        has_code_and_message = false;
 
         cgi_paths_index = 0;
         cgi_extns_index = 0;
+        return_code = 0;
         max_body_size = 0;
     };
 
@@ -505,6 +521,7 @@ void parse_cgi_extension(size_t &index);
 void parse_cgi_path(size_t &index);
 void parse_return(size_t &index);
 void parse_location_max(size_t &index);
+bool is_number(const std::string& s);
 
 
 // ----------------------------- Init Functions --------------------------------//

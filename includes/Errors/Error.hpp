@@ -65,6 +65,11 @@ class Error
                 int server_in;
                 const char* what() const throw();
         };
+        class Return : public std::exception
+        {
+            public:
+                const char* what() const throw();
+        };
         class Duplicated_hosts : public std::exception
         {
             public:

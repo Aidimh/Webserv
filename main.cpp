@@ -43,6 +43,24 @@ void open_file(std::string filename)
                 i++;
             continue;
         }
+        if (content[i] == '"')
+        {
+            std::string word;
+            word += content[i];
+            i++;
+            while (i < content.size() && content[i] != '"')
+            {
+                word += content[i];
+                i++;
+            }
+            if (i < content.size()) 
+            {
+                word += content[i];
+                i++;
+            }
+            Conf_File::tokens.push_back(word);
+            continue;
+        }
         if (content[i] == '{' || content[i] == '}' || content[i] == ';')
         {
             Conf_File::tokens.push_back(std::string(1, content[i]));

@@ -27,6 +27,18 @@ void skip_directive(std::string& line, size_t &i)
         i++;
 }
 
+bool is_number(const std::string& s)
+{
+    if (s.empty())
+        return false;
+    for (size_t i = 0; i < s.length(); i++)
+    {
+        if (!isdigit(s[i]))
+            return false;
+    }
+    return true;
+}
+
 bool path_file_exists(std::string& name)
 {
     struct stat buffer;

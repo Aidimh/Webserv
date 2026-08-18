@@ -20,6 +20,11 @@ const char* Error::Listen_port::what() const throw()
     return "Error\nListen port is invalid!.";
 }
 
+const char* Error::Duplicated_hosts::what() const throw()
+{
+    return "Error\nEach server block must have its Unique Host Address\n";
+}
+
 const char* Error::Socket::what() const throw() 
 {
     return "Error!\nSocket failed!.";

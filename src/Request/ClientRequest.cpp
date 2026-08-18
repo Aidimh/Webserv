@@ -157,18 +157,16 @@ void ClientRequest::CleanUri()
 
 size_t  ClientRequest::getServerMaxBodySize(Client& client)
 {   
-	for (size_t j = 0; j < client.Client_server.listen_port.size(); j++)
+	
+	for (size_t j = 0; j < client.Client_server.location.size(); j++)
 	{
-		if (client.Client_server.listen_port[j] == client.port)
-		{
-			WARN() << client.Client_server.host << " " << client.Client_server.listen_port[j];
-			return client.Client_server.max_body_size;
-		}
+		if (client.Client_server.location[j].path == request_path)
+			return client.Client_server.location[j].max_body_size;
 	}
-
-    DDEBUG("ClientRequest") << "getServerMaxBodySize: port=" << client.port
-                            << " max_body_size=" << 1048576 << " bytes";
-    return (1048576);
+    if (client.Client_server.client_max_body_found)
+		return (client.Client_server.max_body_size);
+	else
+		return (DEFAULT_MAX_BODY_SIZE);
 }
 
 bool isMethod(std::string& method)

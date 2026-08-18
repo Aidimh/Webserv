@@ -48,23 +48,6 @@ bool Multiplexer::is_cgi(const std::string& path)
     return false;
 }
 
-Server_block& which_server(int port)
-{
-    size_t i = 0;
-    while (i < Conf_File::Servers.size())
-    {
-        size_t j = 0;
-        while(j < Conf_File::Servers[i].ports_count)
-        {
-            if (Conf_File::Servers[i].listen_port[j] == port)
-                return Conf_File::Servers[i];
-            j++;
-        }
-        i++;
-    }
-    return Conf_File::Servers[0];
-}
-
 
 void Multiplexer::registerCgiPipes(Client& client)
 {
@@ -887,7 +870,7 @@ void Multiplexer::_readClient(int fd)
         {
             iter->second.request.append(buffer, bytesRead);
             DDEBUG("Multiplexer") << "_readClient: appended " << bytesRead << " bytes to request buffer fd=" << fd;
-            DDEBUG("Multiplexer") << "\n" <<buffer << "\n";
+            // DDEBUG("Multiplexer") << "\n" <<buffer << "\n";
             iter->second.parsed_request.parse(iter->second);
             if (iter->second.parsed_request.state == ClientRequest::BODY)
 			{

@@ -2,6 +2,7 @@
 #include "MethodFactory.hpp"
 #include "../../includes/multiplexing/header.hpp"
 #include "../Logging/Logging.hpp"
+// #include "../../includes/Routing/Routing.hpp"
 
 #include <fstream>
 
@@ -127,16 +128,16 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(response);
         return response;
     }
+    
     // this method khasha tkon inside this object (location)
     if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location)) 
     {
-        DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod() << " not allowed on location=" << location->path << ", responding status=405 fd=" << client.fd;
-        Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED,"Method Not Allowed");
-		// todo : set the Allow: attribute in the response header
+        DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod() << " not allowed on location=" << location->path<< ", responding status=405 fd=" << client.fd;
+        Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
+        response.addHeader("Allow", Router::allowedMethodList(*location));
         setErrorPageBody(response);
         return response;
     }
-    
 
     if (Router::isCGIRequest(client.parsed_request,*location) == true) 
     {

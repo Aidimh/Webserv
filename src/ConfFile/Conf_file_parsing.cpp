@@ -139,7 +139,8 @@ void parse_max_body_size(size_t &index)
         Conf_File::Servers[server_index].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
         if (unit != NULL && *unit != '\0')
         {
-            if ((unit[0] == 'K' || unit[0] == 'k') && unit[1] == '\0')
+            if ((unit[0] == 'B' || unit[0] == 'b') && unit[1] == '\0'){}
+            else if ((unit[0] == 'K' || unit[0] == 'k') && unit[1] == '\0')
             {
                 Conf_File::Servers[server_index].max_body_size *= 1024;
             }
@@ -273,7 +274,6 @@ void parse_location_directives(std::string& token, size_t &i)
         parse_root_path(i);
     else if (token == "index")
         parse_location_index(i);
-	//todo : Adding the client max body size inside the location blocks
     else if (token == "client_max_body_size")
         parse_location_max(i);
     else if (token == "index")

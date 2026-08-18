@@ -44,6 +44,21 @@ const Location_Config* Router::resolveLocation( const std::string& uri,const Ser
     return match;
 }
 
+std::string Router::allowedMethodList(const Location_Config& location)
+{
+    std::string list;
+
+    for (size_t i = 0; i < location.allowed_methods.size(); i++)
+    {
+        if (!list.empty())
+            list += ", ";
+        list += location.allowed_methods[i];
+    }
+    if (list.empty())
+        list = "GET, HEAD, POST, DELETE";
+    return list;
+}
+
 
 bool Router::isMethodAllowed(const std::string& method,const Location_Config& location)
 {

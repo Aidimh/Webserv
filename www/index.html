@@ -5,282 +5,253 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WEBSERV // ONLINE</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: #0a0a0a; color: #00ff88; font-family: 'Courier New', monospace; min-height: 100vh; overflow-x: hidden; position: relative; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0, 255, 136, 0.03) 0px, rgba(0, 255, 136, 0.03) 1px, transparent 1px, transparent 3px); pointer-events: none; z-index: 1; }
-        body::after { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 136, 0.05) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; z-index: 0; }
-        .container { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 60px 40px; }
-        
-        /* Header & Photos */
-        .header { position: relative; overflow: hidden; text-align: center; margin-bottom: 80px; padding: 40px 0; }
-        .team-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; gap: 30px; z-index: 1; opacity: 0.15; pointer-events: none; }
-        .team-background img { height: 85%; max-width: 25%; object-fit: cover; border-radius: 12px; filter: grayscale(100%) brightness(0.6) sepia(1) hue-rotate(75deg) saturate(4); box-shadow: 0 0 40px rgba(0, 255, 136, 0.3); }
-        .title { position: relative; z-index: 2; font-size: 120px; font-weight: bold; letter-spacing: 15px; color: #00ff88; text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88, 0 0 40px #00ff88, 0 0 80px #00cc66, 0 0 120px #00cc66; animation: flicker 3s infinite alternate; margin-bottom: 20px; }
-        .subtitle { position: relative; z-index: 2; font-size: 18px; letter-spacing: 8px; color: #00cc66; text-shadow: 0 0 10px #00ff88; text-transform: uppercase; }
-        .version { position: relative; z-index: 2; margin-top: 20px; font-size: 14px; color: #005522; letter-spacing: 3px; }
-        @keyframes flicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88, 0 0 40px #00ff88, 0 0 80px #00cc66, 0 0 120px #00cc66; opacity: 1; } 20%, 24%, 55% { text-shadow: none; opacity: 0.8; } }
+        /* Modern clean UI */
+        :root{
+            --bg: #f7fafc; /* light gray */
+            --card: #ffffff;
+            --muted: #6b7280;
+            --text: #0f172a;
+            --primary: #2563eb; /* blue */
+            --accent: #06b6d4; /* cyan */
+            --success: #16a34a;
+            --danger: #ef4444;
+            --radius: 10px;
+        }
 
-        /* Status Cards */
-        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-bottom: 60px; }
-        .status-card { background: rgba(13, 31, 13, 0.6); border: 1px solid #00ff88; border-radius: 8px; padding: 30px; box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 20px rgba(0, 255, 136, 0.05); transition: all 0.3s ease; }
-        .status-card:hover { box-shadow: 0 0 40px rgba(0, 255, 136, 0.6), inset 0 0 30px rgba(0, 255, 136, 0.1); transform: translateY(-5px); }
-        .card-title { font-size: 12px; letter-spacing: 4px; color: #00cc66; text-transform: uppercase; margin-bottom: 15px; text-shadow: 0 0 5px #00ff88; }
-        .card-value { font-size: 32px; font-weight: bold; color: #00ff88; text-shadow: 0 0 15px #00ff88; margin-bottom: 10px; }
-        .card-detail { font-size: 13px; color: #00aa55; letter-spacing: 2px; }
-        .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 10px #00ff88; margin-right: 10px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); } }
+        *{box-sizing: border-box;margin:0;padding:0}
+        html,body{height:100%}
+        body{font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased}
 
-        /* Actions */
-        .actions-section { margin-bottom: 60px; }
-        .section-title { font-size: 24px; letter-spacing: 6px; color: #00ff88; text-shadow: 0 0 10px #00ff88; margin-bottom: 30px; text-transform: uppercase; text-align: center; }
-        .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 40px; }
-        .action-card { background: rgba(13, 31, 13, 0.6); border: 2px solid #00ff88; border-radius: 12px; padding: 40px; box-shadow: 0 0 30px rgba(0, 255, 136, 0.3), inset 0 0 20px rgba(0, 255, 136, 0.05); transition: all 0.3s ease; }
-        .action-card:hover { box-shadow: 0 0 50px rgba(0, 255, 136, 0.6), inset 0 0 30px rgba(0, 255, 136, 0.1); }
-        .action-card.cgi { border-color: #00ffff; box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.05); }
-        .action-card.cgi:hover { box-shadow: 0 0 50px rgba(0, 255, 255, 0.6), inset 0 0 30px rgba(0, 255, 255, 0.1); }
-        .action-card.endpoint { border-color: #cc66ff; box-shadow: 0 0 30px rgba(204, 102, 255, 0.3), inset 0 0 20px rgba(204, 102, 255, 0.05); }
-        .action-card.endpoint:hover { box-shadow: 0 0 50px rgba(204, 102, 255, 0.6), inset 0 0 30px rgba(204, 102, 255, 0.1); }
-        .action-title { font-size: 18px; letter-spacing: 4px; color: #00cc66; text-transform: uppercase; margin-bottom: 25px; text-shadow: 0 0 8px #00ff88; text-align: center; }
-        .action-card.cgi .action-title { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
-        .action-card.endpoint .action-title { color: #cc66ff; text-shadow: 0 0 8px #cc66ff; }
-        .action-desc { font-size: 13px; color: #00aa55; margin-bottom: 25px; line-height: 1.6; text-align: center; }
+        .container{max-width:1100px;margin:32px auto;padding:24px}
 
-        /* Inputs & Buttons */
-        .file-input-wrapper { margin-bottom: 20px; }
-        .file-input { display: none; }
-        .file-label { display: block; padding: 15px 25px; background: rgba(0, 0, 0, 0.5); border: 1px solid #00ff88; border-radius: 6px; color: #00ff88; font-family: 'Courier New', monospace; font-size: 14px; letter-spacing: 2px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
-        .file-label:hover { background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); }
-        .file-name { margin-top: 10px; font-size: 12px; color: #00aa55; text-align: center; min-height: 20px; }
-        .text-input { width: 100%; padding: 15px 20px; background: rgba(0, 0, 0, 0.5); border: 1px solid #00ff88; border-radius: 6px; color: #00ff88; font-family: 'Courier New', monospace; font-size: 14px; letter-spacing: 2px; margin-bottom: 20px; transition: all 0.3s ease; }
-        .text-input:focus { outline: none; box-shadow: 0 0 20px rgba(0, 255, 136, 0.4); border-color: #00ff88; }
-        .text-input::placeholder { color: #005522; }
-        .text-input.cyan { border-color: #00ffff; color: #00ffff; }
-        .text-input.cyan:focus { box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); }
-        .text-input.cyan::placeholder { color: #005555; }
-        .text-input.purple { border-color: #cc66ff; color: #cc66ff; }
-        .text-input.purple:focus { box-shadow: 0 0 20px rgba(204, 102, 255, 0.4); }
-        .text-input.purple::placeholder { color: #552255; }
-        .neon-button { width: 100%; padding: 18px 30px; background: transparent; border: 2px solid #00ff88; border-radius: 6px; color: #00ff88; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; text-shadow: 0 0 10px #00ff88; box-shadow: 0 0 20px rgba(0, 255, 136, 0.3), inset 0 0 20px rgba(0, 255, 136, 0.1); }
-        .neon-button:hover { background: rgba(0, 255, 136, 0.15); box-shadow: 0 0 40px rgba(0, 255, 136, 0.6), inset 0 0 30px rgba(0, 255, 136, 0.2); transform: translateY(-2px); }
-        .neon-button.delete { border-color: #ff3366; color: #ff3366; text-shadow: 0 0 10px #ff3366; box-shadow: 0 0 20px rgba(255, 51, 102, 0.3), inset 0 0 20px rgba(255, 51, 102, 0.1); }
-        .neon-button.delete:hover { background: rgba(255, 51, 102, 0.15); box-shadow: 0 0 40px rgba(255, 51, 102, 0.6), inset 0 0 30px rgba(255, 51, 102, 0.2); }
-        .neon-button.cyan { border-color: #00ffff; color: #00ffff; text-shadow: 0 0 10px #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1); }
-        .neon-button.cyan:hover { background: rgba(0, 255, 255, 0.15); box-shadow: 0 0 40px rgba(0, 255, 255, 0.6), inset 0 0 30px rgba(0, 255, 255, 0.2); }
-        .neon-button.purple { border-color: #cc66ff; color: #cc66ff; text-shadow: 0 0 10px #cc66ff; box-shadow: 0 0 20px rgba(204, 102, 255, 0.3), inset 0 0 20px rgba(204, 102, 255, 0.1); }
-        .neon-button.purple:hover { background: rgba(204, 102, 255, 0.15); box-shadow: 0 0 40px rgba(204, 102, 255, 0.6), inset 0 0 30px rgba(204, 102, 255, 0.2); }
+        header.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+        .brand{display:flex;align-items:center;gap:12px}
+        .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px}
+        .site-title{font-size:20px;font-weight:700}
+        .site-sub{font-size:12px;color:var(--muted)}
 
-        /* Results & Terminal */
-        .result-display { margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 6px; font-size: 12px; color: #00aa55; min-height: 60px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; display: none; }
-        .result-display.active { display: block; }
-        .result-display.cyan { border-color: rgba(0, 255, 255, 0.3); color: #00aaaa; }
-        .result-display.purple { border-color: rgba(204, 102, 255, 0.3); color: #aa66cc; }
-        .result-display .success { color: #00ff88; }
-        .result-display .error { color: #ff3366; }
-        .result-display .info { color: #00ffff; }
-        .terminal { background: rgba(0, 0, 0, 0.8); border: 1px solid #00ff88; border-radius: 8px; padding: 30px; margin-bottom: 60px; box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); }
-        .terminal-header { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0, 255, 136, 0.3); }
-        .terminal-dots { display: flex; gap: 8px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 10px #00ff88; }
-        .terminal-title { margin-left: 20px; font-size: 12px; letter-spacing: 3px; color: #00cc66; }
-        .terminal-body { font-size: 14px; line-height: 1.8; color: #00ff88; }
-        .prompt { color: #00cc66; }
-        .command { color: #00ff88; text-shadow: 0 0 5px #00ff88; }
-        .output { color: #00aa55; padding-left: 20px; }
-        .cursor { display: inline-block; width: 10px; height: 18px; background: #00ff88; animation: blink 1s infinite; vertical-align: middle; box-shadow: 0 0 10px #00ff88; }
-        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        .grid{display:grid;grid-template-columns:1fr 360px;gap:20px}
+        @media (max-width:960px){.grid{grid-template-columns:1fr}}
 
-        /* Features & Footer */
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 60px; }
-        .feature { padding: 20px; border-left: 2px solid #00ff88; background: rgba(0, 255, 136, 0.03); }
-        .feature-title { font-size: 14px; letter-spacing: 3px; color: #00ff88; text-shadow: 0 0 5px #00ff88; margin-bottom: 10px; text-transform: uppercase; }
-        .feature-desc { font-size: 13px; color: #00aa55; line-height: 1.6; }
-        .footer { text-align: center; padding: 40px 0; border-top: 1px solid rgba(0, 255, 136, 0.2); font-size: 12px; letter-spacing: 3px; color: #005522; }
-        .footer span { color: #00ff88; text-shadow: 0 0 5px #00ff88; }
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 768px) { .title { font-size: 60px; letter-spacing: 8px; } .container { padding: 30px 20px; } .actions-grid { grid-template-columns: 1fr; } }
+        /* Main card style */
+        .card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 18px rgba(16,24,40,0.06);padding:20px}
+        .card h2{font-size:16px;margin-bottom:12px}
+        .muted{color:var(--muted);font-size:13px}
+
+        /* Status tiles */
+        .status-row{display:flex;gap:12px;margin-bottom:16px}
+        .tile{flex:1;padding:14px;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px solid #e6eefc}
+        .tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+        .tile .v{font-size:18px;font-weight:700;margin-top:6px}
+
+        /* forms */
+        form.row{display:flex;gap:12px;align-items:center}
+        input[type='text'],input[type='file'],button,select{font-family:inherit}
+        .input{flex:1;padding:10px 12px;border:1px solid #e6e9ef;border-radius:8px;background:#fff}
+        .btn{padding:10px 14px;border-radius:8px;border:none;background:var(--primary);color:white;font-weight:600;cursor:pointer}
+        .btn.secondary{background:transparent;color:var(--primary);border:1px solid #dbe7ff}
+        .btn.danger{background:var(--danger)}
+
+        /* actions list */
+        .actions{display:grid;gap:12px}
+
+        /* right-side column */
+        .sidebar .card{padding:16px}
+        .terminal-sample{background:#0b1220;color:#e6f2ff;padding:12px;border-radius:8px;font-family:monospace;font-size:13px;max-height:260px;overflow:auto}
+
+        footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+
+        a.link{color:var(--primary);text-decoration:none}
+        .small{font-size:13px;color:var(--muted)}
+
+        /* subtle helper styles */
+        .row-flex{display:flex;gap:12px;align-items:center}
+        .label{font-size:13px;color:var(--muted);min-width:110px}
+        .center{display:flex;align-items:center;justify-content:center}
+
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="team-background">
-                <img src="/photos/imgi_1_moel-aid.jpg" alt="Team Member 1">
-                <img src="/photos/imgi_25_mzanana.jpg" alt="Team Member 2">
-                <img src="/photos/imgi_28_salhali.jpg" alt="Team Member 3">
+        <header class="app-header">
+            <div class="brand">
+                <div class="logo">WS</div>
+                <div>
+                    <div class="site-title">WebServ</div>
+                    <div class="site-sub">HTTP server dashboard • v1.0</div>
+                </div>
             </div>
-            <h1 class="title">WEBSERV</h1>
-            <p class="subtitle">// HTTP SERVER ONLINE //</p>
-            <p class="version">[ VERSION 1.0 // PROTOCOL HTTP/1.1 ]</p>
-        </div>
+            <div class="small">Port: <strong>8080</strong> • Protocol: <strong>HTTP/1.1</strong></div>
+        </header>
 
-        <!-- Status Cards -->
-        <div class="status-grid">
-            <div class="status-card"><div class="card-title">STATUS</div><div class="card-value"><span class="pulse"></span>ONLINE</div><div class="card-detail">ALL SYSTEMS OPERATIONAL</div></div>
-            <div class="status-card"><div class="card-title">PORT</div><div class="card-value">:8080</div><div class="card-detail">LISTENING FOR CONNECTIONS</div></div>
-            <div class="status-card"><div class="card-title">UPTIME</div><div class="card-value">ACTIVE</div><div class="card-detail">EVENT LOOP RUNNING</div></div>
-            <div class="status-card"><div class="card-title">METHODS</div><div class="card-value">GET</div><div class="card-detail">POST // DELETE</div></div>
-        </div>
+        <div class="grid">
+            <!-- Main column -->
+            <main>
+                <section class="card">
+                    <h2>Overview</h2>
+                    <div class="status-row">
+                        <div class="tile"><div class="k">Status</div><div class="v">Online</div></div>
+                        <div class="tile"><div class="k">Uptime</div><div class="v">Active</div></div>
+                        <div class="tile"><div class="k">Methods</div><div class="v">GET • POST • DELETE</div></div>
+                    </div>
+                    <p class="muted">This dashboard replaces the old embedded CGI/iframe flows with a modern UX: every interaction that returns content opens in a new page for clarity and for browser-like behavior.</p>
+                </section>
 
-        <!-- File Operations -->
-        <div class="actions-section">
-            <h2 class="section-title">// FILE OPERATIONS //</h2>
-            <div class="actions-grid">
-                <div class="action-card">
-                    <div class="action-title">[ UPLOAD FILE ]</div>
-                    <div class="action-desc">Select a file to upload to the server</div>
-                    <form action="/upload" method="POST" enctype="multipart/form-data">
-                        <div class="file-input-wrapper">
-                            <input type="file" name="file" id="file-upload" class="file-input" required>
-                            <label for="file-upload" class="file-label">⟁ SELECT FILE</label>
-                            <div class="file-name" id="file-name-display">NO FILE SELECTED</div>
+                <section class="card" style="margin-top:16px">
+                    <h2>File operations</h2>
+                    <div class="actions">
+                        <!-- Upload -->
+                        <div>
+                            <div class="small" style="margin-bottom:8px">Upload a file to the server (response opens in a new page)</div>
+                            <form id="upload-form" class="row" onsubmit="handleUpload(event)">
+                                <input id="upload-file" class="input" type="file" name="file" required />
+                                <button class="btn" type="submit">Upload</button>
+                            </form>
                         </div>
-                        <button type="submit" class="neon-button">▲ POST UPLOAD</button>
+
+                        <!-- Delete -->
+                        <div style="margin-top:12px">
+                            <div class="small" style="margin-bottom:8px">Delete a file (response opens in a new page)</div>
+                            <form id="delete-form" class="row" onsubmit="handleDelete(event)">
+                                <input id="delete-filename" class="input" type="text" placeholder="filename.ext" required />
+                                <button class="btn danger" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card" style="margin-top:16px">
+                    <h2>CGI & Scripts</h2>
+                    <div class="small" style="margin-bottom:10px">Run a CGI script or open a dynamic endpoint. The response will open in a new tab so you can see full headers/body like a browser would.</div>
+                    <form id="cgi-form" class="row" onsubmit="handleCgi(event)">
+                        <input id="cgi-path" class="input" type="text" placeholder="/cgi-bin/test.py or /some/endpoint" required />
+                        <button class="btn secondary" type="submit">Open</button>
                     </form>
-                </div>
-                <div class="action-card">
-                    <div class="action-title">[ DELETE FILE ]</div>
-                    <div class="action-desc">Enter the filename to delete from the server</div>
-                    <input type="text" id="delete-filename" name="filename" class="text-input" placeholder="ENTER FILENAME..." required>
-                    <button type="button" class="neon-button delete" onclick="deleteFile(this)">✕ DELETE FILE</button>
-                    <div class="result-display" id="delete-result" style="border-color: rgba(255, 51, 102, 0.3); color: #ff3366;"></div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Diagnostic Tests -->
-        <div class="actions-section">
-            <h2 class="section-title">// DIAGNOSTIC TESTS //</h2>
-            <div class="actions-grid">
-                <!-- CGI Tester -->
-                <div class="action-card cgi">
-                    <div class="action-title">[ CGI TESTER ]</div>
-                    <div class="action-desc">Execute a CGI script and display the response</div>
-                    <form onsubmit="event.preventDefault(); testCgi();">
-                        <input type="text" id="cgi-input" class="text-input cyan" placeholder="ENTER CGI PATH (e.g., /cgi-bin/test.py)" required>
-                        <button type="submit" class="neon-button cyan">▶ EXECUTE CGI</button>
+                    <div style="margin-top:12px" class="small">Session scripts should be opened directly in a new tab (no iframe). Enter a script path and click open.</div>
+                    <form id="session-form" class="row" onsubmit="handleSession(event)">
+                        <input id="session-path" class="input" type="text" value="/session/session.py" required />
+                        <button class="btn" type="submit">Open Session Page</button>
                     </form>
-                    <div class="result-display cyan" id="cgi-result"></div>
+                </section>
+
+            </main>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="card">
+                    <h2>Live Console (sample)</h2>
+                    <div class="terminal-sample">
+                        <div>$ curl -I http://localhost:8080/</div>
+                        <div>HTTP/1.1 200 OK</div>
+                        <div>Content-Type: text/html</div>
+                        <div>Server: webserv/1.0</div>
+                        <div>Connection: keep-alive</div>
+                    </div>
                 </div>
-                <div class="status-card" style="margin-bottom: 30px; border-color: #cc66ff;">
-                    <div class="card-title" style="color: #cc66ff;">ACTIVE COOKIES</div>
-                    <div class="card-value" id="cookie-display" style="font-size: 16px; color: #cc66ff; word-break: break-all;">NONE</div>
-                    <div class="card-detail">Automatically sent with every request</div>
+
+                <div class="card" style="margin-top:12px">
+                    <h2>Cookies</h2>
+                    <div class="small" id="cookie-display">Checking...</div>
                 </div>
-                <!-- Session Manager (Iframe) -->
-                <div class="action-card endpoint">
-                    <div class="action-title">[ SESSION MANAGER ]</div>
-                    <div class="action-desc">Load and interact with the Python session script</div>
-                    <form onsubmit="event.preventDefault(); loadSessionPage();">
-                        <input type="text" id="session-path-input" class="text-input purple" placeholder="ENTER SCRIPT PATH (e.g., /session/session.py)" value="/session/session.py" required>
-                        <button type="submit" class="neon-button purple">▶ LOAD PAGE</button>
-                    </form>
-                    <iframe id="session-iframe" src="about:blank" style="width: 100%; height: 350px; background: #000; border: 1px solid #cc66ff; border-radius: 6px; margin-top: 20px; display: none;"></iframe>
-                    <div class="result-display purple" id="session-result"></div>
+
+                <div class="card" style="margin-top:12px">
+                    <h2>Features</h2>
+                    <ul class="small" style="margin-top:8px;line-height:1.6">
+                        <li>CGI Support</li>
+                        <li>Multiplexing</li>
+                        <li>File Uploads</li>
+                        <li>Virtual Hosts</li>
+                    </ul>
                 </div>
-            </div>
+
+            </aside>
         </div>
 
-        <!-- Terminal -->
-        <div class="terminal">
-            <div class="terminal-header">
-                <div class="terminal-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                <div class="terminal-title">root@webserv:~#</div>
-            </div>
-            <div class="terminal-body">
-                <div><span class="prompt">$</span> <span class="command">curl -I http://localhost:8080/</span></div>
-                <div class="output">HTTP/1.1 200 OK</div>
-                <div class="output">Content-Type: text/html</div>
-                <div class="output">Server: webserv/1.0</div>
-                <div class="output">Connection: keep-alive</div>
-                <br>
-                <div><span class="prompt">$</span> <span class="command">curl -X POST -F "file=@test.txt" http://localhost:8080/upload</span></div>
-                <div class="output">HTTP/1.1 201 Created</div>
-                <div class="output">File uploaded successfully</div>
-                <br>
-                <div><span class="prompt">$</span> <span class="command">curl -X DELETE http://localhost:8080/delete?file=test.txt</span></div>
-                <div class="output">HTTP/1.1 204 No Content</div>
-                <div class="output">File deleted successfully</div>
-                <br>
-                <div><span class="prompt">$</span> <span class="cursor"></span></div>
-            </div>
-        </div>
-
-        <!-- Features -->
-        <div class="features">
-            <div class="feature"><div class="feature-title">[ CGI SUPPORT ]</div><div class="feature-desc">Dynamic content execution via Common Gateway Interface</div></div>
-            <div class="feature"><div class="feature-title">[ MULTIPLEXING ]</div><div class="feature-desc">Non-blocking I/O with poll() event loop</div></div>
-            <div class="feature"><div class="feature-title">[ FILE UPLOADS ]</div><div class="feature-desc">Handle POST requests with multipart data</div></div>
-            <div class="feature"><div class="feature-title">[ VIRTUAL HOSTS ]</div><div class="feature-desc">Multiple server blocks on different ports</div></div>
-            <div class="feature"><div class="feature-title">[ ERROR PAGES ]</div><div class="feature-desc">Custom error responses for all HTTP codes</div></div>
-            <div class="feature"><div class="feature-title">[ AUTOINDEX ]</div><div class="feature-desc">Directory listing when enabled in config</div></div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer"><span>[ WEBSERV ]</span> // 42 SCHOOL PROJECT // BUILT WITH C++98</div>
+        <footer>WebServ • 42 School Project • Built in C++98</footer>
     </div>
 
     <script>
-        document.getElementById('file-upload').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'NO FILE SELECTED';
-            document.getElementById('file-name-display').textContent = fileName;
-        });
-
-        async function testCgi() {
-            const input = document.getElementById('cgi-input');
-            const result = document.getElementById('cgi-result');
-            const form = input.closest('form');
-            const button = form.querySelector('button');
-            const path = input.value.trim();
-            if (!path) { result.classList.add('active'); result.innerHTML = '<span class="error">[ERROR]</span> No path provided.'; return; }
-            button.innerHTML = '<span class="spinner"></span>EXECUTING...'; button.disabled = true; result.classList.add('active');
-            result.innerHTML = '<span class="info">[INFO]</span> Sending request to: ' + path + '\n';
+        // Helper to open a new tab and write a simple result page.
+        function openResultWindow(title, headers, bodyText) {
             try {
-                const startTime = performance.now();
-                const response = await fetch(path, { method: 'GET', headers: { 'X-Test-Header': 'cgi-test-' + Date.now() } });
-                const duration = (performance.now() - startTime).toFixed(2);
-                const contentType = response.headers.get('content-type') || 'unknown';
-                let body = ''; try { body = await response.text(); } catch (e) { body = '[Could not read body]'; }
-                result.innerHTML = '<span class="success">[SUCCESS]</span> CGI executed in ' + duration + 'ms\n<span class="info">[STATUS]</span> ' + response.status + ' ' + response.statusText + '\n<span class="info">[CONTENT-TYPE]</span> ' + contentType + '\n<span class="info">[LENGTH]</span> ' + body.length + ' bytes\n─────────────────────────────\n' + body.substring(0, 500) + (body.length > 500 ? '\n... [truncated]' : '');
-            } catch (error) { result.innerHTML = '<span class="error">[ERROR]</span> ' + error.message; }
-            finally { button.innerHTML = '▶ EXECUTE CGI'; button.disabled = false; }
+                const w = window.open('', '_blank');
+                if (!w) { alert('Pop-up blocked: allow popups for this site to see responses in a new page.'); return; }
+                const safeBody = bodyText ? escapeHtml(bodyText) : '';
+                const headerHtml = headers ? '<pre style="font-family:monospace;white-space:pre-wrap">' + escapeHtml(headers) + '</pre>' : '';
+                const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+                    <meta name="viewport" content="width=device-width,initial-scale=1">
+                    <style>body{font-family:Inter,system-ui,Arial;padding:20px;background:#fff;color:#111}pre{background:#f3f6fb;padding:12px;border-radius:8px;border:1px solid #e6eefc}</style>
+                    </head><body><h2>${escapeHtml(title)}</h2>${headerHtml}<pre>${safeBody}</pre></body></html>`;
+                w.document.open(); w.document.write(html); w.document.close();
+            } catch (e) { console.error('openResultWindow', e); }
         }
 
-        function loadSessionPage() {
-            const input = document.getElementById('session-path-input');
-            const iframe = document.getElementById('session-iframe');
-            const result = document.getElementById('session-result');
-            const path = input.value.trim();
-            if (!path) { result.classList.add('active'); result.innerHTML = '<span class="error">[ERROR]</span> No path provided.'; iframe.style.display = 'none'; return; }
-            iframe.style.display = 'block';
-            iframe.src = path;
-            result.classList.add('active');
-            result.innerHTML = '<span class="info">[INFO]</span> Loading session page from: ' + path + '\n<span class="success">[SUCCESS]</span> Interact with the form inside the frame below.';
+        function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        // Upload: POST multipart form and open response in a new page
+        async function handleUpload(e){
+            e.preventDefault();
+            const input = document.getElementById('upload-file');
+            if(!input.files || input.files.length===0){ alert('Select a file first'); return; }
+            const fd = new FormData(); fd.append('file', input.files[0]);
+            const tab = window.open('', '_blank'); // open early to avoid popup blocking
+            if(!tab){ alert('Allow popups to view upload result'); return; }
+            try{
+                const res = await fetch('/upload', { method: 'POST', body: fd });
+                const headers = `Status: ${res.status} ${res.statusText}\nContent-Type: ${res.headers.get('content-type') || 'unknown'}`;
+                let body = '';
+                try{ body = await res.text(); } catch(e){ body = '[could not read body]'; }
+                const html = `<!doctype html><html><head><meta charset="utf-8"><title>Upload result</title><meta name="viewport" content="width=device-width,initial-scale=1">
+                    <style>body{font-family:Inter,system-ui,Arial;padding:20px;background:#fff;color:#111}pre{background:#f3f6fb;padding:12px;border-radius:8px;border:1px solid #e6eefc}</style></head><body><h2>Upload result</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
+                tab.document.open(); tab.document.write(html); tab.document.close();
+            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
         }
 
-        async function deleteFile(button) {
-            const input = document.getElementById('delete-filename');
-            const result = document.getElementById('delete-result');
-            const filename = input.value.trim();
-            if (!filename) { result.classList.add('active'); result.innerHTML = '<span class="error">[ERROR]</span> PLEASE ENTER A FILENAME'; return; }
-            button.innerHTML = '<span class="spinner"></span>DELETING...'; button.disabled = true; result.classList.add('active');
-            try {
-                const response = await fetch('/upload/' + encodeURIComponent(filename), { method: 'DELETE' });
-                if (response.ok) { result.innerHTML = '<span class="success">[SUCCESS]</span> File deleted successfully\n<span class="info">[STATUS]</span> ' + response.status + ' ' + response.statusText; }
-                else { result.innerHTML = '<span class="error">[ERROR]</span> Failed to delete file\n<span class="info">[STATUS]</span> ' + response.status + ' ' + response.statusText; }
-            } catch (error) { result.innerHTML = '<span class="error">[ERROR]</span> ' + error.message; }
-            finally { button.innerHTML = '✕ DELETE FILE'; button.disabled = false; }
+        // Delete: send DELETE and open result
+        async function handleDelete(e){
+            e.preventDefault();
+            const name = document.getElementById('delete-filename').value.trim();
+            if(!name) { alert('Enter filename'); return; }
+            const tab = window.open('', '_blank'); if(!tab){ alert('Allow popups to view delete result'); return; }
+            try{
+                const res = await fetch('/upload/' + encodeURIComponent(name), { method: 'DELETE' });
+                const headers = `Status: ${res.status} ${res.statusText}`;
+                let body = '';
+                try{ body = await res.text(); } catch(e){ body = ''; }
+                const html = `<!doctype html><html><head><meta charset="utf-8"><title>Delete result</title></head><body><h2>Delete result</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
+                tab.document.open(); tab.document.write(html); tab.document.close();
+            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
         }
-        function updateCookieDisplay() {
-            const display = document.getElementById('cookie-display');
-            if (display) {
-                display.textContent = document.cookie || 'NONE';
-            }
-            }
-            // Update on load and every time a button is clicked
-            updateCookieDisplay();
-            setInterval(updateCookieDisplay, 1000);
+
+        // CGI: GET the path and open response in a new page
+        async function handleCgi(e){
+            e.preventDefault();
+            const path = document.getElementById('cgi-path').value.trim();
+            if(!path) { alert('Enter endpoint'); return; }
+            const tab = window.open('', '_blank'); if(!tab){ alert('Allow popups to view CGI result'); return; }
+            try{
+                const res = await fetch(path, { method: 'GET', headers: { 'X-Requested-With':'webserv-dashboard' } });
+                const headers = `Status: ${res.status} ${res.statusText}\nContent-Type: ${res.headers.get('content-type') || 'unknown'}`;
+                let body = '';
+                try{ body = await res.text(); } catch(e){ body = '[could not read body]'; }
+                const html = `<!doctype html><html><head><meta charset="utf-8"><title>CGI result</title></head><body><h2>CGI result for ${escapeHtml(path)}</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
+                tab.document.open(); tab.document.write(html); tab.document.close();
+            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
+        }
+
+        // Session: open session URL in a new tab (not in iframe)
+        function handleSession(e){
+            e.preventDefault();
+            const path = document.getElementById('session-path').value.trim();
+            if(!path) { alert('Enter session path'); return; }
+            window.open(path, '_blank');
+        }
+
+        // Cookie display
+        function updateCookieDisplay(){ const el = document.getElementById('cookie-display'); if(el) el.textContent = document.cookie || 'None'; }
+        updateCookieDisplay(); setInterval(updateCookieDisplay,1000);
+
     </script>
 </body>
 </html>

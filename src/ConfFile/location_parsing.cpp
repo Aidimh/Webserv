@@ -34,6 +34,90 @@ void parse_root_path(size_t &index)
                       << " location=" << count << " server=" << server_index;
 }
 
+void parse_return(size_t &index)
+{
+
+    // std::cout << Conf_File::tokens[index] << " " << Conf_File::tokens[index + 1] << " " << Conf_File::tokens[index + 2] << std::endl;
+    size_t count = Conf_File::Servers[server_index].location_count;
+    size_t values_count = 0;
+    while(values_count < Conf_File::tokens.size() && Conf_File::tokens[index + values_count] != ";")
+        values_count++;
+    values_count -= 1; // Subtract 1 to exclude the "return" token itself
+    if (values_count == 2 && Conf_File::tokens[index + 3] != ";")
+        throw Error::Return();
+    else if (values_count == 1 && Conf_File::tokens[index + 2] == ";")
+        throw Error::Return();
+    if (values_count != 2 && values_count != 1)
+        throw Error::Return();
+    if (values_count == 1 && (index + 1 < Conf_File::tokens.size()))
+    {
+        if(Conf_File::tokens[index + 1].find("https://") != std::string::npos)
+        {
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_value_is_URL_only = true;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_value_is_code_only = false;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_url = next_token(Conf_File::tokens, index);
+        }
+        else if (is_number(Conf_File::tokens[index + 1].c_str()))
+        {
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_value_is_URL_only = false;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_value_is_code_only = true;
+            char *garbage = NULL;
+            Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].return_code = strtol(next_token(Conf_File::tokens, index).c_str(), &garbage, 10);
+            if (garbage != NULL && *garbage != '\0')
+                throw Error::Return();
+        }
+        else
+            throw Error::Return();
+        index += 3;
+    }
+    else if (values_count == 2 && (index + 2 < Conf_File::tokens.size()))
+    {
+        if (!is_number(Conf_File::tokens[index + 1].c_str()))
+            throw Error::Return();
+        char *garbage = NULL;
+        size_t code = strtol(Conf_File::tokens[index + 1].c_str(), &garbage, 10);
+        if (code < 100 || code > 599 || (garbage != NULL && *garbage != '\0'))
+            throw Error::Return();
+
+        if ((Conf_File::tokens[index + 2].find("https://") != std::string::npos || Conf_File::tokens[index + 2].find("http://") != std::string::npos) && Conf_File::tokens[index + 2][0] != '/')
+        {
+            std::cout << "reached here\n";
+            Conf_File::Servers[server_index].location[count].has_code_and_url = true;
+            char* garbage = NULL;
+            Conf_File::Servers[server_index].location[count].return_code_and_url[code] = Conf_File::tokens[index + 2];
+            if (garbage != NULL && *garbage != '\0')
+                throw Error::Return(); 
+        }
+        else if (Conf_File::tokens[index + 2][0] == '/')
+        {
+            Conf_File::Servers[server_index].location[count].has_code_and_path = true;
+            char* garbage = NULL;
+            Conf_File::Servers[server_index].location[count].return_code_and_path[code] = Conf_File::tokens[index + 2];
+            if (garbage != NULL && *garbage != '\0')
+                throw Error::Return(); 
+        }
+        else if (Conf_File::tokens[index + 2][0] == '\"')
+        {
+            Conf_File::Servers[server_index].location[count].has_code_and_message = true;
+            Conf_File::Servers[server_index].location[count].return_code_and_message[code] = Conf_File::tokens[index + 2];
+            // std::string &msg = Conf_File::Servers[server_index].location[count].return_code_and_message[code];
+            // if (!msg.empty() && msg[msg.length() - 1] != '"')
+            //     throw Error::Return();
+        }
+        index += 4;
+    }
+    // std::cout << Conf_File::tokens[index] << std::endl;
+    std::cout << "parse_return: parsed return directive for location=" << count
+              << " server=" << server_index
+              << " return_value_is_URL_only=" << Conf_File::Servers[server_index].location[count].return_value_is_URL_only
+              << " return_value_is_code_only=" << Conf_File::Servers[server_index].location[count].return_value_is_code_only
+              << " has_code_and_url=" << Conf_File::Servers[server_index].location[count].has_code_and_url
+              << " has_code_and_path=" << Conf_File::Servers[server_index].location[count].has_code_and_path
+              << " has_code_and_message=" << Conf_File::Servers[server_index].location[count].has_code_and_message << std::endl;
+    // exit(0); // Exit after printing the debug message
+}
+
+
 void parse_autoindex(size_t &index)
 {
     if (index + 2 >= Conf_File::tokens.size())
@@ -172,14 +256,3 @@ void parse_cgi_extension(size_t &index)
 //     Conf_File::Servers[server_index].location.cgi_path = next_token(Conf_File::tokens, index);
 //     index += 2;
 // }
-
-void parse_return(size_t &index)
-{
-    // size_t i = 0;
-    if (index + 2 >= Conf_File::tokens.size())
-        throw Error::Unknown_Directive();
-    if (Conf_File::tokens[index + 2] != ";")
-        throw Error::Unknown_Directive();
-    //todo: you should store the return value and the status code in the location config, and go to the next token
-    WARN() << "parse_return: 'return' directive is validated but not stored, it will have no effect";
-}

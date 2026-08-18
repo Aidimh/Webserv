@@ -258,8 +258,6 @@ void parse_directives(std::string& token, size_t &i)
         parse_listen(i);
     else if (token == "error_page")
         parse_error_pages(i);
-    else if (token == "return")
-        parse_return(i);
     else if (token == "location" || token == "{" || token == "}" || token == "server")
         return;
     else

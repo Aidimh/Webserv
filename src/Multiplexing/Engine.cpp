@@ -1,6 +1,5 @@
 #include "../../includes/multiplexing/header.hpp"
 #include "../../includes/Request/ClientRequest.hpp"
-// #include "../../includes/Request/RequestHelpers.hpp"
 #include "../../includes/Response/Dispatcher.hpp"
 #include "../Logging/Logging.hpp"
 

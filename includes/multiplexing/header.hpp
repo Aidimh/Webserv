@@ -456,6 +456,8 @@ void handle_sigint(int sig);
 void handle_sigquit(int sig);
 void handle_sigstp(int sig);
 
+// ----------------------------- Conf File Tokenizer --------------------------------//
+void open_file(std::string filename);
 
 // ----------------------------- Parsing Functions --------------------------------//
 bool is_comment(std::string& line);

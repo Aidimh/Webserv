@@ -3,11 +3,6 @@
 
 #include "../multiplexing/header.hpp"
 
-/*
- * Router kayqelleb 3la l-location li katmatchi l-URI dyal request.
- * Ma kaydirch execution dyal GET/POST/DELETE; hadik mas2ouliya
- * dyal MethodFactory w l-method handler.
- */
 class Router
 {
     public:

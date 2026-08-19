@@ -6,12 +6,6 @@
 
 #include <fstream>
 
-/*
- * Error pages are served internally, keeping the original HTTP status code.
- * A 302 redirect here would turn, for example, a 404 into a successful
- * redirect and would hide the real error from the client.
- */
-
 void Dispatcher::setErrorPageBody(Response& response, const Server_block& server)
 {
     if (response.getStatusCode() < 400)

@@ -1,8 +1,6 @@
 #include "header.hpp"
 #include "../Logging/Logging.hpp"
 
-// bool curly_brackets_even()
-
 bool is_comment(std::string& line)
 {
     size_t i = 0;

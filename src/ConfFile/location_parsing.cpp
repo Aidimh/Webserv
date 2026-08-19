@@ -21,13 +21,11 @@ void parse_root_path(size_t &index)
 
 void parse_return(size_t &index)
 {
-
-    // std::cout << Conf_File::tokens[index] << " " << Conf_File::tokens[index + 1] << " " << Conf_File::tokens[index + 2] << std::endl;
     size_t count = Conf_File::Servers[server_index].location_count;
     size_t values_count = 0;
     while(values_count < Conf_File::tokens.size() && Conf_File::tokens[index + values_count] != ";")
         values_count++;
-    values_count -= 1; // Subtract 1 to exclude the "return" token itself
+    values_count -= 1;
     if (values_count == 2 && Conf_File::tokens[index + 3] != ";")
         throw Error::Return();
     else if (values_count == 1 && Conf_File::tokens[index + 2] == ";")

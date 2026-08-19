@@ -8,9 +8,9 @@ import random
 import string
 
 # ── config ────────────────────────────────────────────────────────────────────
-USERS           = {"admin": "password123", "user1": "secret42"}
+USERS           = {"admin": "1337", "user1": "secret42"}
 SESSION_DIR     = "/tmp/webserv_sessions"
-SESSION_TIMEOUT = 60          # seconds
+SESSION_TIMEOUT = 20         # seconds
 COOKIE_NAME     = "session_id"
 
 # ── helpers ───────────────────────────────────────────────────────────────────

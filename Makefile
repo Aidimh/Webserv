@@ -25,7 +25,6 @@ SRCS = \
 	src/Request/RequestHelpers.cpp \
 	src/Routing/Router.cpp \
 	src/Response/AMethod.cpp \
-	src/Response/BuffersStrategy.cpp \
 	src/Response/DeleteMethod.cpp \
 	src/Response/Dispatcher.cpp \
 	src/Response/GET.cpp \

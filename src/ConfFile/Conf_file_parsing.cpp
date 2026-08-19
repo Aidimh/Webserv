@@ -348,3 +348,70 @@ int every_server_has_listen_port()
     }
     return 0;
 }
+
+
+void open_file(std::string filename)
+{
+    std::ifstream file(filename.c_str());
+    if (!file.is_open())
+        throw Error::FileNotFound();
+
+    std::string content((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    file.close();
+    size_t i = 0;
+
+    while (i < content.size())
+    {
+        if (isspace(content[i]))
+        {
+            i++;
+            continue;
+        }
+        if (content[i] == '#')
+        {
+            while (i < content.size() && content[i] != '\n')
+                i++;
+            continue;
+        }
+        if (content[i] == '"')
+        {
+            std::string word;
+            word += content[i];
+            i++;
+            while (i < content.size() && content[i] != '"')
+            {
+                word += content[i];
+                i++;
+            }
+            if (i < content.size()) 
+            {
+                word += content[i];
+                i++;
+            }
+            Conf_File::tokens.push_back(word);
+            continue;
+        }
+        if (content[i] == '{' || content[i] == '}' || content[i] == ';')
+        {
+            Conf_File::tokens.push_back(std::string(1, content[i]));
+            i++;
+            continue;
+        }
+        std::string word;
+        while (i < content.size()
+                && !isspace(content[i])
+                && content[i] != '{'
+                && content[i] != '}'
+                && content[i] != ';'
+                && content[i] != '#')
+        {
+            word += content[i];
+            i++;
+        }
+        Conf_File::tokens.push_back(word);
+    }
+
+    if (Conf_File::tokens.empty())
+        throw Error::EmptyConfig();
+}

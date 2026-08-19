@@ -13,8 +13,6 @@ static std::string get_header_value(const std::map<std::string, std::string>& he
     return it->second;
 }
 
-/////////////////////////////////////////// 7: cgi_env_vars //////////////////////////////////////////////////////////////////
-
 
 static std::string toEnvName(const std::string& header)
 {
@@ -61,24 +59,6 @@ void CGI::build_env_vars(Client& client, const Server_block& server)
     buildEnvArray();
 }
 
-// void CGI::build_env_vars(Client& client)
-// {
-//     env_vars.push_back("REQUEST_METHOD=" + client.parsed_request.getMethod());
-//     env_vars.push_back("PATH_INFO=" + client.parsed_request.getRequestPath());
-//     env_vars.push_back("SCRIPT_FILENAME=" + script);
-//     env_vars.push_back("CONTENT_TYPE=" + get_header_value(client.parsed_request.getHeaders(), "content-type"));
-//     env_vars.push_back("QUERY_STRING=");
-//     char buff[32];
-//     sprintf(buff, "%zu", client.parsed_request.getBodySize());
-//     std::string result = buff;
-//     env_vars.push_back("CONTENT_LENGTH=" + result);
-//     request_vars = new char *[env_vars.size() + 1];
-
-//     for (size_t i = 0; i < env_vars.size() ; i++)
-//         request_vars[i] = strdup(env_vars[i].c_str());
-//     request_vars[env_vars.size()] = NULL;
-// }
-
 void CGI::addRequestHeaders(const Client& client)
 {
     const std::map<std::string, std::string>& headers = client.parsed_request.getHeaders();
@@ -124,10 +104,6 @@ std::string CGI::get_interpreter() const
 {
     return interpreter;
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////// 9 : cgi_script_path ////////////////////////////////
 
 std::string joinPath(const std::string& root, const std::string& path)
 {

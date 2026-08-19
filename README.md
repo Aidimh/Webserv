@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by mzanana, <partner_login>.*
+**This project has been created as part of the 42 curriculum by mzanana, salhali, moel-aid.**
 
 ## Description
 

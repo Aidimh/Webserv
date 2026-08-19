@@ -137,9 +137,6 @@ std::string AMethod::resolveTarget(const Client& client,const Server_block& serv
     if (root.size() > 1 && root[root.size() - 1] == '/')
         root.erase(root.size() - 1);
 
-    // IMPORTANT:
-    // root-style behavior:
-    // root + FULL request URI
     std::string pathToAppend = requestPath;
 
     bool outOfBounds = false;

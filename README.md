@@ -1,6 +1,63 @@
-<h1 align="center"><b>Webserv</b></h1>
+*This project has been created as part of the 42 curriculum by mzanana, <partner_login>.*
 
-# Introduction 
+## Description
+
+WebServ is a fully functioning HTTP/1.1 web server written entirely from scratch in C++98. The primary goal of this project is to understand the underlying mechanics of the HTTP protocol, non-blocking socket programming, I/O multiplexing, and the architecture of enterprise web servers like NGINX. 
+
+The server is built to handle multiple concurrent client connections efficiently without relying on multithreading or multiprocessing (except for CGI execution). It relies on the `epoll` system call to monitor state changes and stream data asynchronously. WebServ correctly implements standard HTTP methods (GET, POST, DELETE), serves static files, manages virtual hosts, processes chunked and multipart uploads, and securely handles CGI scripts.
+
+## Instructions
+
+### Compilation
+
+You will need a C++ compiler and `make` installed on your system. To compile the project, run the following command at the root of the repository:
+
+```bash
+make
+```
+This will compile the source code and generate the `webserv` executable.
+
+### Execution
+
+The server requires a configuration file to define its operational parameters. You can run the server by providing the path to a `.conf` file:
+
+```bash
+./webserv conf.conf
+```
+
+If no configuration file is provided, the server will default to standard behaviors or return an error depending on the implementation.
+
+### Configuration
+
+The `.conf` file uses an NGINX-inspired syntax. It allows you to define virtual servers, ports, hostnames, error pages, maximum client body sizes, allowed HTTP methods, return redirections, CGI extensions, and upload storage paths.
+
+## Resources
+
+During the development of this project, the following resources were consulted:
+- RFC 7230 to RFC 7235 (HTTP/1.1 Specifications)
+- Beej's Guide to Network Programming
+- Manual pages for socket programming (`socket`, `bind`, `listen`, `accept`, `recv`, `send`)
+- Manual pages for multiplexing (`epoll_create`, `epoll_ctl`, `epoll_wait`)
+
+### AI Usage
+
+Artificial Intelligence was used during the development of this project to assist with the following tasks:
+- **Code Auditing and Hardening:** AI was used to analyze the codebase for critical vulnerabilities, such as file descriptor leaks, memory leaks during massive file uploads, and directory traversal vulnerabilities in the CGI routing logic.
+- **Edge Case Identification:** AI assisted in simulating extreme edge cases required by the 42 evaluation framework, such as HTTP chunk size buffer overflows and missing header validation.
+- **Refactoring:** AI was utilized to help refactor the `return` directive parsing logic and integrate the HTTP `Connection: close` header mechanics for better HTTP/1.1 compliance.
+- **Documentation:** AI generated and formatted markdown reports detailing the identified vulnerabilities and helped structure this README file to meet the required guidelines.
+
+## Technical Features
+
+- **I/O Multiplexing:** Built with `epoll` for efficient, non-blocking asynchronous event handling.
+- **Virtual Hosting:** Capability to run multiple servers on different ports or different hostnames.
+- **Configuration File:** Custom parser for an NGINX-style configuration file.
+- **CGI Execution:** Seamless integration with Python, PHP, and bash scripts.
+- **Security:** Protections against buffer overflows, file descriptor leaks, and path traversal.
+- **Chunked Encoding:** Supports HTTP Transfer-Encoding chunked and massive file uploads.
+
+
+
 ## Definitions
 
 ### Server
@@ -123,5 +180,4 @@ The web server returns a HTTP based response. The response is divides by three s
 ### Routing
 Determining which resource to return is what we refer by routing, connecting request with the requested resource that being requested, there is two types of routing, static and dynamic, in webserv project we use just the static : 
   + Static routing: Serving actual files out of a folder, we can point the web server to a specific file inside a directory to return anything that's requested, example `localhost:1337/www/profile.png` 
-
 

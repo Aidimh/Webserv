@@ -270,11 +270,14 @@
             border-radius: 20px;
             padding: 40px;
             border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
         }
 
         .test-card h3 { font-size: 1.5rem; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
         .test-card h3 i { color: var(--neon-purple); }
         .test-card p { color: var(--text-muted); margin-bottom: 30px; }
+        .card-action { margin-top: auto; display: flex; flex-direction: column; width: 100%; }
 
         .form-group { margin-bottom: 25px; }
         .form-group label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-main); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
@@ -513,11 +516,22 @@
                 <p>Interactive testing controls designed for quick and complete project evaluation.</p>
             </div>
             <div class="testing-grid">
-                <!-- 1. Upload -->
+                <!-- 1. AutoIndex -->
+                <div class="test-card">
+                    <h3><i class="fas fa-folder-tree"></i> AutoIndex Directory Listing</h3>
+                    <p>Browse server directories dynamically with generated AutoIndex listings</p>
+                    <div class="card-action">
+                        <button onclick="window.open('/upload/', '_blank')" class="btn btn-cyan" style="width: 100%;">
+                            <i class="fas fa-folder-open"></i> Browse /upload/
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Upload -->
                 <div class="test-card">
                     <h3><i class="fas fa-file-upload"></i> File Upload (POST)</h3>
                     <p>Upload files to server upload directory via multipart POST request</p>
-                    <form onsubmit="handleUpload(event)">
+                    <form class="card-action" onsubmit="handleUpload(event)">
                         <div class="form-group">
                             <label for="file-upload">Select File</label>
                             <div class="custom-file-upload">
@@ -534,22 +548,11 @@
                     </form>
                 </div>
 
-                <!-- 2. AutoIndex -->
-                <div class="test-card">
-                    <h3><i class="fas fa-folder-tree"></i> AutoIndex Directory Listing</h3>
-                    <p>Browse server directories dynamically with generated AutoIndex listings</p>
-                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
-                        <button onclick="window.open('/upload/', '_blank')" class="btn btn-cyan" style="width: 100%;">
-                            <i class="fas fa-folder-open"></i> Browse /upload/ Directory
-                        </button>
-                    </div>
-                </div>
-
                 <!-- 3. Delete -->
                 <div class="test-card">
                     <h3><i class="fas fa-trash-alt"></i> File Deletion (DELETE)</h3>
                     <p>Delete uploaded files from the server via HTTP DELETE request</p>
-                    <form onsubmit="handleDelete(event)">
+                    <form class="card-action" onsubmit="handleDelete(event)">
                         <div class="form-group">
                             <label for="delete-file">Filename to Delete</label>
                             <input type="text" id="delete-file" name="filename" placeholder="example.txt" required>
@@ -564,24 +567,35 @@
                 <div class="test-card">
                     <h3><i class="fas fa-terminal"></i> CGI Script Execution</h3>
                     <p>Execute dynamic scripts (Python, PHP, Bash) and view output</p>
-                    <form onsubmit="event.preventDefault(); openCustomPath();">
+                    <form class="card-action" onsubmit="event.preventDefault(); openCustomPath();">
                         <div class="form-group">
                             <label for="cgi-path">CGI Script Path</label>
                             <input type="text" id="cgi-path" placeholder="/cgi_tester/" value="/cgi_tester/" required>
                         </div>
                         <button type="submit" class="btn btn-purple" style="width: 100%;">
-                            <i class="fas fa-external-link-alt"></i> Execute & Open in New Tab
+                            <i class="fas fa-external-link-alt"></i> Execute
                         </button>
                     </form>
                 </div>
 
                 <!-- 5. CGI Timeout (504) -->
                 <div class="test-card">
-                    <h3><i class="fas fa-stopwatch"></i> CGI Timeout (504 Test)</h3>
-                    <p>Trigger a hanging script to test non-blocking CGI timeout & 504 error page</p>
-                    <div style="margin-top: 25px;">
+                    <h3><i class="fas fa-stopwatch"></i> CGI Timeout </h3>
+                    <p>Trigger a hanging script & 504 error page</p>
+                    <div class="card-action">
                         <button onclick="window.open('/cgi_tester/main.py', '_blank')" class="btn btn-pink" style="width: 100%;">
-                            <i class="fas fa-clock"></i> Run Sleeping CGI (504 Test)
+                            <i class="fas fa-clock"></i> TimeOut
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6. Session Management -->
+                <div class="test-card">
+                    <h3><i class="fas fa-cookie-bite"></i> Session Management & Cookies</h3>
+                    <p>Test session persistence, cookie handling, and state management via CGI script</p>
+                    <div class="card-action">
+                        <button onclick="window.open('/session/session.py', '_blank')" class="btn btn-purple" style="width: 100%;">
+                            <i class="fas fa-user-shield"></i> CGI Management
                         </button>
                     </div>
                 </div>

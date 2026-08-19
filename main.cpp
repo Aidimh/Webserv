@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include "src/Logging/Logging.hpp"
+
 
 using namespace std;
 
@@ -80,47 +80,10 @@ void open_file(std::string filename)
         throw Error::EmptyConfig();
 }
 
-void initDebug(string &className)
-{
-	if (className.empty())
-		Logging::EnableDebug("");
-	else
-		Logging::EnableDebug(className);
-}
 
-void initDetailedDebug(string &className)
-{
-	if (className.empty())
-		Logging::EnableDetailDebug("");
-	else
-		Logging::EnableDetailDebug(className);
-}
 
-int ParseLoggingArgs(int argc, char *argv[])
-{
-	int fileNameIdx = 1;
-	for (int i = 1; i < argc; ++i)
-	{
-		std::string arg = argv[i];
-		if (arg.length() >= 2 && arg[0] == '-')
-		{
-			std::string className = arg.substr(2);
 
-			if (arg[1] == 'd')
-			{
-				initDebug(className);
-			}
-			else if (arg[1] == 'D')
-			{
-				initDetailedDebug(className);
-			}
-			fileNameIdx++;
-		}
-		else
-			break;
-	}
-	return fileNameIdx;
-}
+
 
 int main(int ac , char **av, char **envp)
 {
@@ -128,16 +91,14 @@ int main(int ac , char **av, char **envp)
     signal(SIGINT, handle_sigint);
     signal(SIGQUIT, handle_sigquit);
     signal(SIGTSTP, handle_sigstp);
-	Logging logger("webserv.log");
     try
     {
-		int fileNameIdx = ParseLoggingArgs(ac, av);
-        if (ac != fileNameIdx + 1)
+        if (ac != 2)
             throw Error::Argc();
-        if (!av || av[fileNameIdx][0] == '\0')
+        if (!av || av[1][0] == '\0')
             throw Error::Argv();
 		
-        open_file(av[fileNameIdx]);
+        open_file(av[1]);
         validate_file();
         parse_config_file();
         int error_nb = every_server_has_listen_port();

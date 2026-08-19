@@ -1,5 +1,4 @@
 NAME = webserv
-
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 
@@ -35,8 +34,7 @@ SRCS = \
 	src/Response/MultipartUploadStrategy.cpp \
 	src/Response/POST.cpp \
 	src/Response/Response.cpp \
-	src/Signals/signal_handling.cpp \
-	src/Logging/Logging.cpp 
+	src/Signals/signal_handling.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 

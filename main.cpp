@@ -142,23 +142,23 @@ int ParseLoggingArgs(int argc, char *argv[])
 }
 
 
-bool port_is_dup()
-{
-    std::set<std::string> seen_hosts;
-
-    for (size_t i = 0; i < Conf_File::Servers.size(); i++)
-    {
-        std::string host = Conf_File::Servers[i].host;
-
-        // If the host is already in the set, we found a duplicate host!
-        if (seen_hosts.find(host) != seen_hosts.end())
-        {
-            return false; // Duplicate found
-        }
-        seen_hosts.insert(host);
-    }
-    return true; // No duplicate hosts found
-}
+// bool port_is_dup()
+// {
+//     std::set<std::string> seen_hosts;
+// 
+//     for (size_t i = 0; i < Conf_File::Servers.size(); i++)
+//     {
+//         std::string host = Conf_File::Servers[i].host;
+// 
+//         // If the host is already in the set, we found a duplicate host!
+//         if (seen_hosts.find(host) != seen_hosts.end())
+//         {
+//             return false; // Duplicate found
+//         }
+//         seen_hosts.insert(host);
+//     }
+//     return true; // No duplicate hosts found
+// }
 
 int main(int ac , char **av, char **envp)
 {
@@ -186,8 +186,8 @@ int main(int ac , char **av, char **envp)
                   << ", a server cannot operate without a listen port";
             return ERROR;
         }
-        if (!port_is_dup())
-            throw Error::Duplicated_hosts();
+        // if (!port_is_dup())
+        //     throw Error::Duplicated_hosts();
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())

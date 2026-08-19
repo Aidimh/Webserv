@@ -423,7 +423,6 @@ class Multiplexer
         Client*                         findClient(int fd);
         Client*                         findClientByPipe(int pipe_fd);
         void                            advanceRequest(int fd, Client& client);
-        void                            finishResponse(int fd, Client& client);
         bool                            isEvictable(const Client& client) const;
         void                            evictOldestClient();
         void                            closeIdleClients();

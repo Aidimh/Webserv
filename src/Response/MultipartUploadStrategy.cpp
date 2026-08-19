@@ -110,15 +110,27 @@ Response MultipartUploadStrategy::buildSummaryResponse(size_t partCount, size_t 
     INFO() << "MultipartUploadStrategy::buildSummaryResponse: saved " << savedFileCount
            << " of " << partCount << " part(s)";
 
-    std::ostringstream summary;
-    summary << savedFileCount << " of " << partCount << " part(s) saved";
+    std::ostringstream html;
+    html << "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+         << "<title>Upload Successful | WebServ</title><link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>"
+         << "<style>body{background:#050508;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;}"
+         << ".card{background:#12121a;border:1px solid rgba(0,229,255,0.3);border-radius:25px;padding:50px;text-align:center;max-width:500px;width:100%;box-shadow:0 0 50px rgba(0,229,255,0.15);}"
+         << ".icon{font-size:3.5rem;color:#00e5ff;margin-bottom:20px;}"
+         << "h1{font-size:2rem;margin-bottom:15px;color:#fff;}"
+         << "p{color:#8b8b9e;font-size:1.1rem;margin-bottom:30px;}"
+         << ".btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 36px;background:linear-gradient(135deg,#00e5ff,#0077ff);color:#000;text-decoration:none;font-weight:bold;border-radius:50px;text-transform:uppercase;letter-spacing:1px;box-shadow:0 4px 20px rgba(0,229,255,0.3);transition:all 0.3s;}"
+         << ".btn:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,229,255,0.5);}</style></head>"
+         << "<body><div class='card'><div class='icon'><i class='fas fa-check-circle'></i></div>"
+         << "<h1>Upload Successful</h1>"
+         << "<p>" << savedFileCount << " of " << partCount << " part(s) saved successfully.</p>"
+         << "<a class='btn' href='/'><i class='fas fa-home'></i> Return Home</a></div></body></html>";
 
     Response response;
 
     response.setStatusCode(201);
     response.setReasonPhrase("Created");
-    response.addHeader("content-type", "text/plain");
-    response.setBody(summary.str());
+    response.addHeader("content-type", "text/html");
+    response.setBody(html.str());
 
     return response;
 }

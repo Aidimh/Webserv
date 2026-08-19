@@ -34,100 +34,97 @@
             overflow-x: hidden;
         }
 
-        /* --- HERO SLIDER --- */
-        .hero-slider {
+        /* --- HERO BANNER --- */
+        .hero-banner {
             position: relative;
-            height: 85vh;
+            min-height: 75vh;
             width: 100%;
-            overflow: hidden;
-        }
-
-        .slide {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0;
-            transition: opacity 1s ease-in-out;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-size: cover;
-            background-position: center;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(189, 0, 255, 0.12), rgba(5, 5, 8, 0.95));
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 60px 20px;
         }
 
-        .slide.active { opacity: 1; }
-
-        /* Dark vibrant overlays for each slide */
-        .slide::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 5, 8, 0.75);
-            z-index: 1;
-        }
-
-        .slide:nth-child(1)::before { background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(5, 5, 8, 0.9)); }
-        .slide:nth-child(2)::before { background: linear-gradient(135deg, rgba(189, 0, 255, 0.3), rgba(5, 5, 8, 0.9)); }
-        .slide:nth-child(3)::before { background: linear-gradient(135deg, rgba(255, 0, 85, 0.3), rgba(5, 5, 8, 0.9)); }
-
-        .slide-content {
-            position: relative;
-            z-index: 2;
+        .banner-content {
             text-align: center;
-            max-width: 800px;
-            padding: 20px;
-            transform: translateY(20px);
-            opacity: 0;
-            transition: all 0.8s ease 0.3s;
+            max-width: 900px;
+            z-index: 2;
         }
 
-        .slide.active .slide-content {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .slide-content h1 {
+        .banner-content h1 {
             font-size: 4.5rem;
             font-weight: 800;
-            margin-bottom: 20px;
-            letter-spacing: -2px;
-            text-transform: uppercase;
+            margin-bottom: 25px;
+            letter-spacing: -1px;
+            background: var(--gradient-cyan);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
         }
 
-        .slide:nth-child(1) .slide-content h1 { color: var(--neon-cyan); text-shadow: 0 0 30px rgba(0, 229, 255, 0.5); }
-        .slide:nth-child(2) .slide-content h1 { color: var(--neon-purple); text-shadow: 0 0 30px rgba(189, 0, 255, 0.5); }
-        .slide:nth-child(3) .slide-content h1 { color: var(--neon-pink); text-shadow: 0 0 30px rgba(255, 0, 85, 0.5); }
-
-        .slide-content p {
-            font-size: 1.5rem;
-            color: var(--text-muted);
+        .peers-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
             margin-bottom: 30px;
         }
 
-        .slide-dots {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            z-index: 10;
-        }
-
-        .dot {
-            width: 12px; height: 12px;
+        .peer-avatar {
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: 4px;
+            background: var(--gradient-cyan);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            transition: all 0.4s ease;
         }
 
-        .dot.active { background: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); }
+        .peer-avatar:nth-child(2) {
+            background: var(--gradient-purple);
+            box-shadow: 0 0 20px rgba(189, 0, 255, 0.4);
+            width: 140px;
+            height: 140px;
+        }
+
+        .peer-avatar:nth-child(3) {
+            background: var(--gradient-pink);
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+        }
+
+        .peer-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .peer-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .quote-line {
+            width: 240px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--neon-cyan), transparent);
+            margin: 25px auto;
+        }
+
+        .quote-text {
+            font-size: 1.3rem;
+            color: var(--text-main);
+            font-style: italic;
+            margin-bottom: 35px;
+            font-weight: 300;
+        }
 
         /* --- NAVIGATION --- */
         nav {
             position: sticky;
             top: 0;
-            background: rgba(18, 18, 26, 0.8);
+            background: rgba(18, 18, 26, 0.85);
             backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(255,255,255,0.05);
             z-index: 100;
@@ -155,10 +152,10 @@
         .nav-links a {
             text-decoration: none;
             color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
             transition: color 0.3s;
         }
-        .nav-links a:hover { color: var(--text-main); }
+        .nav-links a:hover { color: var(--neon-cyan); }
 
         /* --- BUTTONS --- */
         .btn {
@@ -169,6 +166,7 @@
             transition: all 0.3s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
             border: none;
             cursor: pointer;
@@ -186,22 +184,19 @@
         .btn-pink { background: var(--gradient-pink); color: #fff; box-shadow: 0 4px 20px rgba(255, 0, 85, 0.3); }
         .btn-pink:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 0, 85, 0.5); }
 
-        .btn-outline { background: transparent; color: var(--neon-cyan); border: 2px solid var(--neon-cyan); }
-        .btn-outline:hover { background: var(--neon-cyan); color: #000; }
-
         /* --- MAIN LAYOUT --- */
-        .container { max-width: 1200px; margin: 0 auto; padding: 80px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 60px 20px; }
         
-        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header { text-align: center; margin-bottom: 50px; }
         .section-header h2 { font-size: 2.8rem; margin-bottom: 15px; }
         .section-header p { color: var(--text-muted); font-size: 1.2rem; }
 
         /* --- STATUS BAR --- */
+        #status { scroll-margin-top: 100px; margin-bottom: 80px; }
         .status-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 25px;
-            margin-bottom: 80px;
         }
 
         .status-card {
@@ -220,11 +215,11 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
         /* --- FEATURES --- */
+        #features { scroll-margin-top: 100px; margin-bottom: 80px; }
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 30px;
-            margin-bottom: 80px;
         }
 
         .feature-card {
@@ -263,11 +258,11 @@
         .feature-card p { color: var(--text-muted); }
 
         /* --- TESTING SECTION --- */
+        #testing { scroll-margin-top: 100px; margin-bottom: 80px; }
         .testing-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 30px;
-            margin-bottom: 80px;
         }
 
         .test-card {
@@ -284,8 +279,7 @@
         .form-group { margin-bottom: 25px; }
         .form-group label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-main); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
         
-        .form-group input[type="text"],
-        .form-group input[type="file"] {
+        .form-group input[type="text"] {
             width: 100%;
             padding: 16px 20px;
             background: var(--bg-input);
@@ -296,37 +290,103 @@
             transition: all 0.3s;
         }
 
+        .custom-file-upload {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-file-upload input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-input);
+            border: 2px dashed rgba(0, 229, 255, 0.4);
+            border-radius: 12px;
+            color: var(--neon-cyan);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .custom-file-upload:hover .file-label {
+            background: rgba(0, 229, 255, 0.08);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .file-label i {
+            font-size: 1.4rem;
+        }
+
         .form-group input:focus { outline: none; border-color: var(--neon-purple); box-shadow: 0 0 20px rgba(189, 0, 255, 0.2); }
 
-        /* --- CONTACT --- */
-        .contact-section {
+        /* --- MODAL STYLING --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 8, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
             background: var(--bg-card);
-            border-radius: 30px;
-            padding: 80px 40px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 480px;
+            width: 90%;
             text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 80px;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.2);
+            animation: modalPop 0.3s ease-out;
         }
 
-        .contact-section h2 { font-size: 2.5rem; margin-bottom: 20px; }
-        .contact-section p { color: var(--text-muted); font-size: 1.2rem; margin-bottom: 40px; }
-
-        .social-links { display: flex; justify-content: center; gap: 25px; margin-top: 40px; }
-        .social-links a {
-            width: 60px; height: 60px;
-            background: var(--bg-input);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-main);
-            font-size: 1.5rem;
-            transition: all 0.3s;
-            text-decoration: none;
-            border: 1px solid rgba(255,255,255,0.1);
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-        .social-links a:hover { transform: translateY(-5px) scale(1.1); }
-        .social-links a:nth-child(1):hover { background: #333; border-color: #fff; box-shadow: 0 10px 20px rgba(255,255,255,0.2); }
-        .social-links a:nth-child(2):hover { background: #0077b5; border-color: #0077b5; box-shadow: 0 10px 20px rgba(0, 119, 181, 0.4); }
-        .social-links a:nth-child(3):hover { background: #1da1f2; border-color: #1da1f2; box-shadow: 0 10px 20px rgba(29, 161, 242, 0.4); }
+
+        .modal-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon.success { color: var(--neon-cyan); }
+        .modal-icon.error { color: var(--neon-pink); }
+
+        .modal-title {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-message {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 1.05rem;
+            white-space: pre-line;
+        }
 
         /* --- FOOTER --- */
         footer {
@@ -337,46 +397,14 @@
         }
 
         @media (max-width: 768px) {
-            .slide-content h1 { font-size: 2.5rem; }
-            .nav-links { display: none; }
+            .banner-content h1 { font-size: 2.8rem; }
+            .peers-container { gap: 15px; }
+            .peer-avatar { width: 90px; height: 90px; }
+            .peer-avatar:nth-child(2) { width: 105px; height: 105px; }
         }
     </style>
 </head>
 <body>
-
-    <!-- HERO SLIDER -->
-    <section class="hero-slider">
-        <!-- Slide 1: Team Member 1 -->
-        <div class="slide active" style="background-image: url('/photos/imgi_1_moel-aid.jpg');">
-            <div class="slide-content">
-                <h1>WebServ</h1>
-                <p>High-Performance HTTP Server Built with C++98</p>
-                <a href="#features" class="btn btn-cyan"><i class="fas fa-rocket"></i> Explore Features</a>
-            </div>
-        </div>
-        <!-- Slide 2: Team Member 2 -->
-        <div class="slide" style="background-image: url('/photos/imgi_25_mzanana.jpg');">
-            <div class="slide-content">
-                <h1>Dynamic CGI</h1>
-                <p>Execute Python, PHP, and custom scripts seamlessly</p>
-                <a href="#testing" class="btn btn-purple"><i class="fas fa-terminal"></i> Test CGI</a>
-            </div>
-        </div>
-        <!-- Slide 3: Team Member 3 -->
-        <div class="slide" style="background-image: url('/photos/imgi_28_salhali.jpg');">
-            <div class="slide-content">
-                <h1>Secure Sessions</h1>
-                <p>Cookie-based authentication and session management</p>
-                <a href="#testing" class="btn btn-pink"><i class="fas fa-user-lock"></i> Try Sessions</a>
-            </div>
-        </div>
-
-        <div class="slide-dots">
-            <div class="dot active" onclick="goToSlide(0)"></div>
-            <div class="dot" onclick="goToSlide(1)"></div>
-            <div class="dot" onclick="goToSlide(2)"></div>
-        </div>
-    </section>
 
     <!-- NAVIGATION -->
     <nav>
@@ -386,14 +414,38 @@
                 <a href="#status">Status</a>
                 <a href="#features">Features</a>
                 <a href="#testing">Testing</a>
-                <a href="#contact" class="btn btn-outline" style="padding: 10px 24px; font-size: 0.9rem;">Contact Us</a>
             </div>
         </div>
     </nav>
 
+    <!-- HERO BANNER -->
+    <section class="hero-banner">
+        <div class="banner-content">
+            <h1>WebServ</h1>
+            <div class="peers-container">
+                <div class="peer-avatar" title="moel-aid">
+                    <img src="/photos/imgi_1_moel-aid.jpg" alt="Peer 1">
+                </div>
+                <div class="peer-avatar" title="mzanana">
+                    <img src="/photos/imgi_25_mzanana.jpg" alt="Peer 2">
+                </div>
+                <div class="peer-avatar" title="salhali">
+                    <img src="/photos/imgi_28_salhali.jpg" alt="Peer 3">
+                </div>
+            </div>
+            <div class="quote-line"></div>
+            <p class="quote-text">"Crafting standard HTTP server performance from scratch with precision and non-blocking C++98 architecture."</p>
+            <a href="#status" class="btn btn-cyan"><i class="fas fa-server"></i> View Status</a>
+        </div>
+    </section>
+
     <div class="container">
         <!-- STATUS -->
         <section id="status">
+            <div class="section-header">
+                <h2>Server Status</h2>
+                <p>Live server operational metrics and network settings</p>
+            </div>
             <div class="status-grid">
                 <div class="status-card">
                     <div class="status-value"><span class="status-online"></span>ONLINE</div>
@@ -429,7 +481,7 @@
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-bolt"></i></div>
                     <h3>Non-Blocking I/O</h3>
-                    <p>Efficient event-driven architecture using poll() for handling multiple concurrent connections without blocking the main thread.</p>
+                    <p>Efficient event-driven architecture using epoll() for handling multiple concurrent connections without blocking the main thread.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fas fa-upload"></i></div>
@@ -457,18 +509,18 @@
         <!-- TESTING -->
         <section id="testing">
             <div class="section-header">
-                <h2>Test Your Server</h2>
-                <p>Interact with your server endpoints directly. Results open in new tabs.</p>
+                <h2>Evaluation Test Suite</h2>
+                <p>Interactive testing controls designed for quick and complete project evaluation.</p>
             </div>
             <div class="testing-grid">
-                <!-- CGI -->
+                <!-- CGI Execution -->
                 <div class="test-card">
-                    <h3><i class="fas fa-terminal"></i> CGI Script Tester</h3>
-                    <p>Execute CGI scripts and view the output in a full new page</p>
+                    <h3><i class="fas fa-terminal"></i> CGI Script Execution</h3>
+                    <p>Execute dynamic scripts (Python, PHP, Bash) and view output</p>
                     <form onsubmit="event.preventDefault(); openCustomPath();">
                         <div class="form-group">
                             <label for="cgi-path">CGI Script Path</label>
-                            <input type="text" id="cgi-path" placeholder="/cgi_tester/..." value="/cgi_tester/..." required>
+                            <input type="text" id="cgi-path" placeholder="/cgi_tester/" value="/cgi_tester/" required>
                         </div>
                         <button type="submit" class="btn btn-purple" style="width: 100%;">
                             <i class="fas fa-external-link-alt"></i> Execute & Open in New Tab
@@ -476,29 +528,42 @@
                     </form>
                 </div>
 
-                <!-- Session -->
+                <!-- CGI Timeout (504) -->
                 <div class="test-card">
-                    <h3><i class="fas fa-user-lock"></i> Session Management</h3>
-                    <p>Test cookie-based authentication in a full new page</p>
-                    <form onsubmit="event.preventDefault(); openSessionPath();">
-                        <div class="form-group">
-                            <label for="session-path">Session Endpoint</label>
-                            <input type="text" id="session-path" value="/session/..." required>
-                        </div>
-                        <button type="submit" class="btn btn-purple" style="width: 100%;">
-                            <i class="fas fa-sign-in-alt"></i> Open Session Manager
+                    <h3><i class="fas fa-stopwatch"></i> CGI Timeout (504 Test)</h3>
+                    <p>Trigger a hanging script to test non-blocking CGI timeout & 504 error page</p>
+                    <div style="margin-top: 25px;">
+                        <button onclick="window.open('/cgi_tester/main.py', '_blank')" class="btn btn-pink" style="width: 100%;">
+                            <i class="fas fa-clock"></i> Run Sleeping CGI (504 Test)
                         </button>
-                    </form>
+                    </div>
+                </div>
+
+                <!-- AutoIndex -->
+                <div class="test-card">
+                    <h3><i class="fas fa-folder-tree"></i> AutoIndex Directory Listing</h3>
+                    <p>Browse server directories dynamically with generated AutoIndex listings</p>
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+                        <button onclick="window.open('/upload/', '_blank')" class="btn btn-cyan" style="width: 100%;">
+                            <i class="fas fa-folder-open"></i> Browse /upload/ Directory
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Upload -->
                 <div class="test-card">
-                    <h3><i class="fas fa-file-upload"></i> File Upload</h3>
-                    <p>Upload files to the server using POST requests</p>
-                    <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <h3><i class="fas fa-file-upload"></i> File Upload (POST)</h3>
+                    <p>Upload files to server upload directory via multipart POST request</p>
+                    <form onsubmit="handleUpload(event)">
                         <div class="form-group">
                             <label for="file-upload">Select File</label>
-                            <input type="file" id="file-upload" name="file" required>
+                            <div class="custom-file-upload">
+                                <input type="file" id="file-upload" name="file" onchange="updateFileName(this)" required>
+                                <label for="file-upload" class="file-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span id="file-label-text">Choose File or Drag & Drop</span>
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-cyan" style="width: 100%;">
                             <i class="fas fa-upload"></i> Upload File
@@ -508,8 +573,8 @@
 
                 <!-- Delete -->
                 <div class="test-card">
-                    <h3><i class="fas fa-trash-alt"></i> File Deletion</h3>
-                    <p>Delete files from the server using DELETE method</p>
+                    <h3><i class="fas fa-trash-alt"></i> File Deletion (DELETE)</h3>
+                    <p>Delete uploaded files from the server via HTTP DELETE request</p>
                     <form onsubmit="handleDelete(event)">
                         <div class="form-group">
                             <label for="delete-file">Filename to Delete</label>
@@ -522,19 +587,18 @@
                 </div>
             </div>
         </section>
+    </div>
 
-        <!-- CONTACT -->
-        <section id="contact" class="contact-section">
-            <h2>Get In Touch</h2>
-            <p>Have questions about the project or want to connect with the team?</p>
-            <a href="mailto:team@webserv.42.fr" class="btn btn-cyan"><i class="fas fa-envelope"></i> Email Us</a>
-            
-            <div class="social-links">
-                <a href="https://github.com/yourusername" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-                <a href="https://linkedin.com/in/yourusername" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                <a href="https://twitter.com/yourusername" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
-            </div>
-        </section>
+    <!-- POPUP MODAL -->
+    <div id="statusModal" class="modal-overlay">
+        <div class="modal-card">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <p id="modalMessage" class="modal-message"></p>
+            <button onclick="closeModal()" class="btn btn-cyan" style="width: 100%;">
+                <i class="fas fa-home"></i> Return Home
+            </button>
+        </div>
     </div>
 
     <!-- FOOTER -->
@@ -543,25 +607,37 @@
     </footer>
 
     <script>
-        // --- SLIDER LOGIC ---
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const dots = document.querySelectorAll('.dot');
+        // --- MODAL LOGIC ---
+        function showModal(title, message, type) {
+            const modal = document.getElementById('statusModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalIcon = document.getElementById('modalIcon');
 
-        function goToSlide(index) {
-            slides[currentSlide].classList.remove('active');
-            dots[currentSlide].classList.remove('active');
-            currentSlide = index;
-            slides[currentSlide].classList.add('active');
-            dots[currentSlide].classList.add('active');
+            modalTitle.innerText = title;
+            modalMessage.innerText = message;
+            if (type === 'success') {
+                modalIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                modalIcon.className = 'modal-icon success';
+            } else {
+                modalIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                modalIcon.className = 'modal-icon error';
+            }
+            modal.classList.add('active');
         }
 
-        function nextSlide() {
-            goToSlide((currentSlide + 1) % slides.length);
+        function closeModal() {
+            document.getElementById('statusModal').classList.remove('active');
         }
 
-        // Auto-advance slider every 5 seconds
-        setInterval(nextSlide, 5000);
+        function updateFileName(input) {
+            const labelText = document.getElementById('file-label-text');
+            if (input.files && input.files.length > 0) {
+                labelText.innerText = input.files[0].name;
+            } else {
+                labelText.innerText = 'Choose File or Drag & Drop';
+            }
+        }
 
         // --- FORM LOGIC ---
         function openCustomPath() {
@@ -573,22 +649,59 @@
         function openSessionPath() {
             const path = document.getElementById('session-path').value.trim();
             if (path) window.open(path, '_blank');
-            else alert('Please enter a valid path');
+            else showModal('Error', 'Please enter a valid path', 'error');
+        }
+
+        async function handleUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-upload');
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload.');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const text = await response.text();
+                if (response.ok) {
+                    showModal('Upload Successful', `File "${fileInput.files[0].name}" was uploaded successfully!\n\nStatus: ${response.status} Created`, 'success');
+                    fileInput.value = '';
+                    document.getElementById('file-label-text').innerText = 'Choose File or Drag & Drop';
+                } else {
+                    document.open();
+                    document.write(text);
+                    document.close();
+                }
+            } catch (error) {
+                alert('Network Error: ' + error.message);
+            }
         }
 
         async function handleDelete(e) {
             e.preventDefault();
-            const filename = document.getElementById('delete-file').value;
+            const filename = document.getElementById('delete-file').value.trim();
+            if (!filename) {
+                alert('Please enter a filename to delete.');
+                return;
+            }
             try {
                 const response = await fetch(`/upload/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+                const text = await response.text();
                 if (response.ok) {
-                    alert('File deleted successfully!');
+                    showModal('Deletion Successful', `File "${filename}" was deleted successfully!`, 'success');
                     document.getElementById('delete-file').value = '';
                 } else {
-                    alert('Failed to delete file: ' + response.status);
+                    document.open();
+                    document.write(text);
+                    document.close();
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                alert('Network Error: ' + error.message);
             }
         }
 

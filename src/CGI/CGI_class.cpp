@@ -1,4 +1,5 @@
 #include "../../includes/multiplexing/header.hpp"
+#include "../../includes/Response/Dispatcher.hpp"
 #include "../Logging/Logging.hpp"
 
 
@@ -450,76 +451,7 @@ bool CGI::execute()
 ////////////////////////////////// 14: cgi output is not http ///////////////////////////////////////////////////////////////////////
 
 
-static std::vector<std::string> splitHeaderLines(const std::string& block)
-{
-    std::vector<std::string> lines;
-    size_t start = 0;
-
-    while (start < block.size())
-    {
-        size_t end = block.find('\n', start);
-        std::string line = (end == std::string::npos)
-                         ? block.substr(start)
-                         : block.substr(start, end - start);
-
-        if (!line.empty() && line[line.size() - 1] == '\r')
-            line.erase(line.size() - 1);
-        if (!line.empty())
-            lines.push_back(line);
-        if (end == std::string::npos)
-            break;
-        start = end + 1;
-    }
-    return lines;
-}
-
-
-static bool isStatusHeader(const std::string& line)
-{
-    return line.size() >= 7 && strncasecmp(line.c_str(), "Status:", 7) == 0;
-}
-
-static std::string cgiStatusLine(const std::vector<std::string>& lines)
-{
-    for (size_t i = 0; i < lines.size(); i++)
-    {
-        if (!isStatusHeader(lines[i]))
-            continue;
-
-        std::string value = lines[i].substr(7);
-        size_t begin = value.find_first_not_of(" \t");
-
-        if (begin != std::string::npos)
-            return value.substr(begin);
-    }
-    return "200 OK";
-}
-
-static std::string cgiForwardedHeaders(const std::vector<std::string>& lines)
-{
-    std::string headers;
-
-    for (size_t i = 0; i < lines.size(); i++)
-    {
-        if (isStatusHeader(lines[i]))
-            continue;
-        headers += lines[i] + "\r\n";
-    }
-    return headers;
-}
-
-static std::string buildCgiResponseHead(const std::string& cgiHeaderBlock)
-{
-    std::vector<std::string> lines = splitHeaderLines(cgiHeaderBlock);
-    std::string head;
-
-    head += "HTTP/1.1 " + cgiStatusLine(lines) + "\r\n";
-    head += cgiForwardedHeaders(lines);
-    head += "Transfer-Encoding: chunked\r\n";
-    head += "Connection: close\r\n";
-    head += "\r\n";
-    return head;
-}
+// static void appendChunk
 
 static void appendChunk(std::string& out, const char* data, size_t size)
 {
@@ -568,12 +500,17 @@ void Multiplexer::finishCgiOutput(Client& client)
 {
     if (!client.cgi.headers_done)
     {
-        std::string payload = client.cgi.header_buffer;
+        Response response;
+        response.setStatusCode(502);
+        response.setReasonPhrase("Bad Gateway");
+        Dispatcher::setErrorPageBody(response, client.Client_server);
 
-        client.cgi.header_buffer.clear();
-        client.response += buildCgiResponseHead("");
+        client.response = response.toString();
         client.cgi.headers_done = true;
-        appendChunk(client.response, payload.data(), payload.size());
+        DEBUG("Multiplexer") << "finishCgiOutput: CGI process exited without valid headers, serving status=502 fd=" << client.fd;
+        releaseCgi(client);
+        enableWrite(client.fd);
+        return;
     }
     client.response += "0\r\n\r\n";
     DEBUG("Multiplexer") << "finishCgiOutput: cgi answer complete client fd=" << client.fd;

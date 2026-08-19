@@ -405,8 +405,7 @@ class Multiplexer
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
         // void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
-        bool                            is_cgi(const std::string& path); // this func checks weather a path is cgi_path
-        bool                            is_in_cgi_list(std::string& ext);
+        bool                            is_cgi(const std::string& path, const Location_Config& location); // checks if path extension is enabled in location config
         bool                            openCgiBodySource(Client& client);
         void                            writeCgiInput(int pipe_fd);
         void                            closeCgiInput(Client& client);

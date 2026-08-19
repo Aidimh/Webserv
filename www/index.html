@@ -513,44 +513,7 @@
                 <p>Interactive testing controls designed for quick and complete project evaluation.</p>
             </div>
             <div class="testing-grid">
-                <!-- CGI Execution -->
-                <div class="test-card">
-                    <h3><i class="fas fa-terminal"></i> CGI Script Execution</h3>
-                    <p>Execute dynamic scripts (Python, PHP, Bash) and view output</p>
-                    <form onsubmit="event.preventDefault(); openCustomPath();">
-                        <div class="form-group">
-                            <label for="cgi-path">CGI Script Path</label>
-                            <input type="text" id="cgi-path" placeholder="/cgi_tester/" value="/cgi_tester/" required>
-                        </div>
-                        <button type="submit" class="btn btn-purple" style="width: 100%;">
-                            <i class="fas fa-external-link-alt"></i> Execute & Open in New Tab
-                        </button>
-                    </form>
-                </div>
-
-                <!-- CGI Timeout (504) -->
-                <div class="test-card">
-                    <h3><i class="fas fa-stopwatch"></i> CGI Timeout (504 Test)</h3>
-                    <p>Trigger a hanging script to test non-blocking CGI timeout & 504 error page</p>
-                    <div style="margin-top: 25px;">
-                        <button onclick="window.open('/cgi_tester/main.py', '_blank')" class="btn btn-pink" style="width: 100%;">
-                            <i class="fas fa-clock"></i> Run Sleeping CGI (504 Test)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- AutoIndex -->
-                <div class="test-card">
-                    <h3><i class="fas fa-folder-tree"></i> AutoIndex Directory Listing</h3>
-                    <p>Browse server directories dynamically with generated AutoIndex listings</p>
-                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
-                        <button onclick="window.open('/upload/', '_blank')" class="btn btn-cyan" style="width: 100%;">
-                            <i class="fas fa-folder-open"></i> Browse /upload/ Directory
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Upload -->
+                <!-- 1. Upload -->
                 <div class="test-card">
                     <h3><i class="fas fa-file-upload"></i> File Upload (POST)</h3>
                     <p>Upload files to server upload directory via multipart POST request</p>
@@ -571,7 +534,18 @@
                     </form>
                 </div>
 
-                <!-- Delete -->
+                <!-- 2. AutoIndex -->
+                <div class="test-card">
+                    <h3><i class="fas fa-folder-tree"></i> AutoIndex Directory Listing</h3>
+                    <p>Browse server directories dynamically with generated AutoIndex listings</p>
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 25px;">
+                        <button onclick="window.open('/upload/', '_blank')" class="btn btn-cyan" style="width: 100%;">
+                            <i class="fas fa-folder-open"></i> Browse /upload/ Directory
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Delete -->
                 <div class="test-card">
                     <h3><i class="fas fa-trash-alt"></i> File Deletion (DELETE)</h3>
                     <p>Delete uploaded files from the server via HTTP DELETE request</p>
@@ -584,6 +558,32 @@
                             <i class="fas fa-trash"></i> Delete File
                         </button>
                     </form>
+                </div>
+
+                <!-- 4. CGI Execution -->
+                <div class="test-card">
+                    <h3><i class="fas fa-terminal"></i> CGI Script Execution</h3>
+                    <p>Execute dynamic scripts (Python, PHP, Bash) and view output</p>
+                    <form onsubmit="event.preventDefault(); openCustomPath();">
+                        <div class="form-group">
+                            <label for="cgi-path">CGI Script Path</label>
+                            <input type="text" id="cgi-path" placeholder="/cgi_tester/" value="/cgi_tester/" required>
+                        </div>
+                        <button type="submit" class="btn btn-purple" style="width: 100%;">
+                            <i class="fas fa-external-link-alt"></i> Execute & Open in New Tab
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 5. CGI Timeout (504) -->
+                <div class="test-card">
+                    <h3><i class="fas fa-stopwatch"></i> CGI Timeout (504 Test)</h3>
+                    <p>Trigger a hanging script to test non-blocking CGI timeout & 504 error page</p>
+                    <div style="margin-top: 25px;">
+                        <button onclick="window.open('/cgi_tester/main.py', '_blank')" class="btn btn-pink" style="width: 100%;">
+                            <i class="fas fa-clock"></i> Run Sleeping CGI (504 Test)
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -645,13 +645,6 @@
             if (path) window.open(path, '_blank');
             else alert('Please enter a valid path');
         }
-
-        function openSessionPath() {
-            const path = document.getElementById('session-path').value.trim();
-            if (path) window.open(path, '_blank');
-            else showModal('Error', 'Please enter a valid path', 'error');
-        }
-
         async function handleUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('file-upload');

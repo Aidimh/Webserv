@@ -29,20 +29,15 @@ Socket::Socket(Server_block& obj) : _port(0), server(obj)
 }
 
 
-bool Multiplexer::is_in_cgi_list(std::string& ext)
+bool Multiplexer::is_cgi(const std::string& path, const Location_Config& location)
 {
-	//todo : remove this method because it should come from the config file directly
-    return (ext == ".py" || ext == ".sh" || ext == ".pl" || ext == ".php" || ext == ".bla");
-}
-
-
-bool Multiplexer::is_cgi(const std::string& path)
-{
-    size_t pos = path.find(".");
-    if (pos != std::string::npos)
+    size_t pos = path.rfind('.');
+    if (pos == std::string::npos)
+        return false;
+    std::string ext = path.substr(pos);
+    for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
     {
-        std::string ext = path.substr(pos);
-        if(is_in_cgi_list(ext))
+        if (location.cgi_extensions[i] == ext)
             return true;
     }
     return false;

@@ -143,15 +143,30 @@ void ClientRequest::reset()
 
 void ClientRequest::CleanUri()
 {
-    std::string cleanUri = "/";
-    
-    for (size_t i = 1; i < request_path.length(); i++)
-    {
-        if (request_path[i] == '/' && request_path[i - 1] == '/')
+    std::vector<std::string> segments;
+    std::string segment;
+    std::istringstream stream(request_path);
+
+    while (std::getline(stream, segment, '/')) {
+        if (segment.empty() || segment == ".")
             continue;
-            
-        cleanUri += request_path[i];
+        if (segment == "..") {
+            if (!segments.empty())
+                segments.pop_back();
+        } else {
+            segments.push_back(segment);
+        }
     }
+
+    std::string cleanUri = "/";
+    for (size_t i = 0; i < segments.size(); i++) {
+        cleanUri += segments[i];
+        if (i + 1 < segments.size())
+            cleanUri += "/";
+    }
+    if (request_path.length() > 1 && request_path[request_path.length() - 1] == '/')
+        cleanUri += "/";
+
     request_path = cleanUri;
 }
 
@@ -551,6 +566,13 @@ void ClientRequest::parse(Client& client)
 
 void ClientRequest::BodyRequest(Client& client)
 {
+	if (method == "POST") {
+		if (!HasContentLength && !HasTransferEncoding) {
+			status_code = 411;
+			state = ERROR_STATE;
+			return;
+		}
+	}
 	if (!HasContentLength && !HasTransferEncoding)
 	{
 		DEBUG("ClientRequest") << "BodyRequest: state BODY to DONE, no body expected fd=" << client.fd;
@@ -627,7 +649,14 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
     {
         size_t pos  = client.request.find("\r\n");
         if (pos == std::string::npos)
+		{
+			if (client.request.size() > MAX_HEADER_SIZE)
+			{
+				this->status_code = 431;
+				this->state = ERROR_STATE;
+			}
             return;
+		}
         if (pos > 100)
 		{
 			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 chunk size line too long="

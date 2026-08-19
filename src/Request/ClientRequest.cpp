@@ -548,8 +548,6 @@ bool ClientRequest::openTempFile(int ClientFd)
 	int fd = open(FilePath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0600);
 	if (fd == -1)
 	{
-		ERR() << "ClientRequest::openTempFile: open temp file failed path=" << FilePath
-		      << ": " << strerror(errno);
 		status_code = 500;
 		state       = ERROR_STATE;
 		TmpFilePath.clear();
@@ -682,8 +680,6 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 			ssize_t written = write(TmpFileFd, chunk.data(), ChunkSize);
 			if (written < 0 || (size_t)written != ChunkSize)
 			{
-				ERR() << "ClientRequest::HandleTransferEncoding: write to temp file fd=" << TmpFileFd
-				      << " failed, wrote=" << written << " of " << ChunkSize << ": " << strerror(errno);
 				status_code = 500;
 				state = ERROR_STATE;
 				return;
@@ -750,8 +746,6 @@ void ClientRequest::HandleContentLength(Client& client)
 		ssize_t written = write(TmpFileFd, client.request.data(), bytesToTake);
 		if (written < 0)
 		{
-			ERR() << "ClientRequest::HandleContentLength: write to temp file fd=" << TmpFileFd
-			      << " failed: " << strerror(errno);
 			status_code = 500;
 			state = ERROR_STATE;
 			return;

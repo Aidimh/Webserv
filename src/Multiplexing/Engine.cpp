@@ -336,11 +336,7 @@ void Socket::setup(int port, const std::string& host)
     _host = host;
     this->fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
-    {
-        ERR() << "Socket::setup: socket failed host=" << host << " port=" << port
-              << ": " << strerror(errno);
         throw Error::Socket();
-    }
     int opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     fcntl(fd, F_SETFD, FD_CLOEXEC);
@@ -352,17 +348,9 @@ void Socket::setup(int port, const std::string& host)
     addr.sin_addr.s_addr = inet_addr(host.c_str());
 
     if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-    {
-        ERR() << "Socket::setup: bind failed on " << host << ":" << port
-              << " fd=" << fd << ": " << strerror(errno);
         throw Error::Bind();
-    }
     if (listen(fd, SOMAXCONN) == -1)
-    {
-        ERR() << "Socket::setup: listen failed on " << host << ":" << port
-              << " fd=" << fd << ": " << strerror(errno);
         throw Error::Listen();
-    }
 }
 
 int Socket::get_listen_port()
@@ -381,10 +369,7 @@ Multiplexer::Multiplexer() : _epoll_fd(-1)
 {
     _epoll_fd = epoll_create(MAX_EVENTS);
     if (_epoll_fd == -1)
-    {
-        ERR() << "Multiplexer::Multiplexer: epoll_create failed: " << strerror(errno);
         throw Error::Epoll();
-    }
     fcntl(_epoll_fd, F_SETFD, FD_CLOEXEC);
 }
 
@@ -663,7 +648,6 @@ void Multiplexer::run()
         {
             if (errno == EINTR)
                 break;
-            ERR() << "Multiplexer::run: epoll_wait failed: " << strerror(errno);
             throw Error::Epoll();
         }
         if (ready == 0)

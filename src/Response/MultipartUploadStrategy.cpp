@@ -351,10 +351,7 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
     std::ofstream outFile(path.c_str(),std::ios::binary | std::ios::trunc);
 
     if (!outFile.is_open())
-    {
-        ERR() << "MultipartUploadStrategy::saveUploadedFile: open file failed path=" << path << ": " << strerror(errno);
         return false;
-    }
 
     outFile.write(content.data(), static_cast<std::streamsize>(content.size()));
 

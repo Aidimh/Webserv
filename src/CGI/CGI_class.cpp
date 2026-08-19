@@ -322,11 +322,7 @@ bool Multiplexer::openCgiBodySource(Client& client)
     }
     client.cgi.body_fd = open(request.getTmpFilePath().c_str(), O_RDONLY);
     if (client.cgi.body_fd == -1)
-    {
-        ERR() << "Multiplexer::openCgiBodySource: open body file failed path="
-              << request.getTmpFilePath() << ": " << strerror(errno);
         return false;
-    }
     unlink(request.getTmpFilePath().c_str());
     return true;
 }
@@ -336,13 +332,9 @@ bool Multiplexer::openCgiBodySource(Client& client)
 bool CGI::openPipes()
 {
     if (pipe(stdin_pipe) == -1)
-    {
-        ERR() << "CGI::openPipes: pipe failed: " << strerror(errno);
         return false;
-    }
     if (pipe(stdout_pipe) == -1)
     {
-        ERR() << "CGI::openPipes: pipe failed: " << strerror(errno);
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         stdin_pipe[0] = -1;
@@ -360,7 +352,6 @@ bool CGI::execute()
     pid = fork();
     if (pid == -1)
     {
-        ERR() << "CGI::execute: fork failed: " << strerror(errno);
         close(stdin_pipe[0]);
         close(stdin_pipe[1]);
         close(stdout_pipe[0]);

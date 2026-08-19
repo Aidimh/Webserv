@@ -32,10 +32,7 @@ bool POST::saveBody(const std::string& path, const std::string& body) const
     std::ofstream file(path.c_str(), std::ios::binary | std::ios::trunc);
 
     if (!file.is_open())
-    {
-        ERR() << "POST::saveBody: open file failed path=" << path << ": " << strerror(errno);
         return false;
-    }
 
     file.write(body.data(), static_cast<std::streamsize>(body.size()));
 

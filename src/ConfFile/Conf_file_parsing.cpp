@@ -342,11 +342,7 @@ int every_server_has_listen_port()
     while (i < Conf_File::Servers.size())
     {
         if (!Conf_File::Servers[i].listen_found)
-        {
-            ERR() << "every_server_has_listen_port: invalid config: server block "
-                  << error_nb << " has no listen port";
             return error_nb;
-        }
         i++;
         error_nb++;
     }

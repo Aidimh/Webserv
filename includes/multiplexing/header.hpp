@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include <sys/socket.h>
-// #include <netinit/in.h>
 #include <arpa/inet.h>
 #include <vector>
 #include <sys/select.h>
@@ -26,12 +25,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <set>
+#include <sys/time.h>
 #include <limits>
 #include <map>
 #include "../../includes/Errors/Error.hpp"
 #include <sstream>
 #include "../Request/ClientRequest.hpp"
-// #include "include/request/RequestHelpers.hpp"
 #define ERROR 1
 #define SUCESS 0
 #define MAX_KB 20000
@@ -44,25 +43,11 @@
 #define MAX_BY 22000000
 #define CGI_TIMEOUT 25
 static const size_t CGI_CHUNK_SIZE = 65536;
-// static const int EPOLL_TIMEOUT_MS = 1000;
 static const size_t CGI_MAX_PENDING = 1048576;
-// static const int EPOLL_TIMEOUT_MS = 1000;
 static const int MAX_EVENTS = 256;
 static const size_t MAX_CLIENTS = 4096;
 static const time_t CLIENT_IDLE_TIMEOUT = 65;
 static const int EPOLL_TIMEOUT_MS = 1000;
-// static const int MAX_EVENTS = 256;
-
-
-
-// #include "include/request/ClientRequest.hpp"
-// #include "include/request/RequestHelpers.hpp"
-
-
-// --------------------------------------- Config File Header Part ------------------------------------- //
-
-// class ClientRequest;
-// int client_uniq_id;
 
 
 enum HttpStatus
@@ -204,15 +189,6 @@ class Server_block
         }
 };
 
-/*
-listen
-host
-root
-server_name
-client_max_body_size
-error_page
-
-*/
 
 class Conf_File
 {
@@ -383,10 +359,9 @@ class Multiplexer
     private:
         std::vector<Socket *>           _servers;
         std::map<int, Client>           _clients;
-        // std::vector<struct pollfd>      _pollfds;
         std::map<int , int>             _cgi_pipes;
         std::map<int, pid_t>            _cgi_pids;
-        std::map<int, uint32_t>         _watched;    /* mirror of the kernel interest list */
+        std::map<int, uint32_t>         _watched;
         std::set<int>                   _dead_fds;
         std::map<int, time_t>           cgi_timeouts;
         std::map<int, std::string>      client_ids;
@@ -400,11 +375,9 @@ class Multiplexer
         void                            _writeClient(int fd);
         void                            _removeClient(int fd);
 		void							handlePeerShutdown(int fd, Client& client);
-        // std::string&                    _fill_cgi_response(int fd);
         void                            prepareResponse(Client &client); // Katwjd (prepare) response ghir mara wa7da. call despatcher just one call 
         bool                            sendResponse(int fd, Client &client); // Sift l HTTP response (headers/body). 
         void                            sendStreaming(int fd, Client &client); // Sift file kbira chunk b chunk
-        // void                            disableWrite(int fd); // Salina, ma b9inach m7tajin POLLOUT. donc db server khaso isayn request jdida.
         bool                            is_cgi(const std::string& path, const Location_Config& location); // checks if path extension is enabled in location config
         bool                            openCgiBodySource(Client& client);
         void                            writeCgiInput(int pipe_fd);
@@ -431,9 +404,6 @@ class Multiplexer
         void                            setEvents(int fd, uint32_t events);
         bool                            isRegistered(int fd) const;
         void                            disableWrite(int fd);
-
-        // void                            readCGI(int fd); // Read l CGI output, w sfto l client.
-        // std::string                     _generateClientID(int fd);
         char** env;
         Multiplexer();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
         ~Multiplexer();
@@ -443,14 +413,11 @@ class Multiplexer
         void run();
 };
 
-// -------------------------------- CGI Class -----------------------------------//
-
 class CGI
 {
     private:
         int stdin_pipe[2];
         int stdout_pipe[2];
-        // int client_fd;
         pid_t pid;
         std::string request_path;
         std::string request_pacceptNewClientath;
@@ -469,7 +436,6 @@ class CGI
         void addEnv(const std::string& key, const std::string& value);
         void buildEnvArray();
         void addRequestHeaders(const Client& client);
-        // void build_env_vars(Client& client); old one
         void build_env_vars(Client& client, const Server_block& server);
         std::string get_interpreter() const;
         std::string get_script() const;
@@ -479,7 +445,6 @@ class CGI
 
         void writeToChild();
         bool _find_interpreter(const Location_Config& conf, const Server_block& server);
-        // void readFromChild(int fd);
         bool execute();
         bool openPipes();
         void runChild();

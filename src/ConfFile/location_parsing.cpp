@@ -81,7 +81,7 @@ void parse_return(size_t &index)
 
         if ((Conf_File::tokens[index + 2].find("https://") != std::string::npos || Conf_File::tokens[index + 2].find("http://") != std::string::npos) && Conf_File::tokens[index + 2][0] != '/')
         {
-            std::cout << "reached here\n";
+            // std::cout << "reached here\n";
             Conf_File::Servers[server_index].location[count].has_code_and_url = true;
             char* garbage = NULL;
             Conf_File::Servers[server_index].location[count].return_code_and_url[code] = Conf_File::tokens[index + 2];
@@ -107,13 +107,13 @@ void parse_return(size_t &index)
         index += 4;
     }
     // std::cout << Conf_File::tokens[index] << std::endl;
-    std::cout << "parse_return: parsed return directive for location=" << count
-              << " server=" << server_index
-              << " return_value_is_URL_only=" << Conf_File::Servers[server_index].location[count].return_value_is_URL_only
-              << " return_value_is_code_only=" << Conf_File::Servers[server_index].location[count].return_value_is_code_only
-              << " has_code_and_url=" << Conf_File::Servers[server_index].location[count].has_code_and_url
-              << " has_code_and_path=" << Conf_File::Servers[server_index].location[count].has_code_and_path
-              << " has_code_and_message=" << Conf_File::Servers[server_index].location[count].has_code_and_message << std::endl;
+    // std::cout << "parse_return: parsed return directive for location=" << count
+    //           << " server=" << server_index
+    //           << " return_value_is_URL_only=" << Conf_File::Servers[server_index].location[count].return_value_is_URL_only
+    //           << " return_value_is_code_only=" << Conf_File::Servers[server_index].location[count].return_value_is_code_only
+    //           << " has_code_and_url=" << Conf_File::Servers[server_index].location[count].has_code_and_url
+    //           << " has_code_and_path=" << Conf_File::Servers[server_index].location[count].has_code_and_path
+    //           << " has_code_and_message=" << Conf_File::Servers[server_index].location[count].has_code_and_message << std::endl;
     // exit(0); // Exit after printing the debug message
 }
 

@@ -40,6 +40,18 @@ std::string GET::getContentType(const std::string& path) const
         return "image/jpeg";
     else if (extension == "gif")
         return "image/gif";
+    else if (extension == "mp4")
+        return "video/mp4";
+    else if (extension == "webm")
+        return "video/webm";
+    else if (extension == "ogg")
+        return "video/ogg";
+    else if (extension == "mp3")
+        return "audio/mpeg";
+    else if (extension == "pdf")
+        return "application/pdf";
+    else if (extension == "ico")
+        return "image/x-icon";
 
     return "application/octet-stream";
 }

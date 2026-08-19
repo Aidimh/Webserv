@@ -18,17 +18,12 @@ void open_file(std::string filename)
 {
     std::ifstream file(filename.c_str());
     if (!file.is_open())
-    {
-        ERR() << "open_file: open config file failed path=" << filename << ": " << strerror(errno);
         throw Error::FileNotFound();
-    }
 
     std::string content((std::istreambuf_iterator<char>(file)),
                          std::istreambuf_iterator<char>());
     file.close();
     size_t i = 0;
-    // std::cout << content << "\n";
-    // exit(1);
 
     while (i < content.size())
     {
@@ -83,36 +78,22 @@ void open_file(std::string filename)
 
     if (Conf_File::tokens.empty())
         throw Error::EmptyConfig();
-    DEBUG("ConfFile") << "open_file: tokenized config path=" << filename
-                      << " into " << Conf_File::tokens.size() << " tokens";
 }
 
 void initDebug(string &className)
 {
 	if (className.empty())
-	{
-		INFO() << "Global Debug (-d) enabled.";
 		Logging::EnableDebug("");
-	}
 	else
-	{
-		INFO() << "Debug (-d) enabled for class: " << className;
 		Logging::EnableDebug(className);
-	}
 }
 
 void initDetailedDebug(string &className)
 {
 	if (className.empty())
-	{
-		INFO() << "Global Detailed Debug (-D) enabled";
 		Logging::EnableDetailDebug("");
-	}
 	else
-	{
-		INFO() << "Detailed Debug (-D) enabled for class: " << className;
 		Logging::EnableDetailDebug(className);
-	}
 }
 
 int ParseLoggingArgs(int argc, char *argv[])
@@ -157,16 +138,11 @@ int main(int ac , char **av, char **envp)
             throw Error::Argv();
 		
         open_file(av[fileNameIdx]);
-		INFO() << "Opening file: " << av[fileNameIdx];
         validate_file();
         parse_config_file();
         int error_nb = every_server_has_listen_port();
         if (error_nb)
-        {
-            ERR() << "main: missing listen port at server block " << error_nb
-                  << ", a server cannot operate without a listen port";
             return ERROR;
-        }
         size_t i = 0;
         Multiplexer Mux;
         while(i < Conf_File::Servers.size())
@@ -178,18 +154,14 @@ int main(int ac , char **av, char **envp)
                 Mux.env = envp;
                 s->setup(Conf_File::Servers[i].listen_port[j], Conf_File::Servers[i].host);
                 Mux.addServer(s);
-                INFO() << "main: listening on " << Conf_File::Servers[i].host
-                       << ":" << Conf_File::Servers[i].listen_port[j];
                 j++;
             }
             i++;
         }
         Mux.run();
-        INFO() << "main: server stopped";
     }
     catch(const std::exception& e)
     {
-        ERR() << "main: " << e.what();
         return ERROR;
     }
     return SUCESS;

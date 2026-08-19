@@ -974,7 +974,7 @@ void Multiplexer::run()
         closeIdleClients();
         applyCgiBackPressure();
 
-        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
+        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, EPOLL_TIMEOUT_MS);
         if (ready < 0)
         {
             if (errno == EINTR)

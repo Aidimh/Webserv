@@ -42,7 +42,7 @@
 #define DEFAULT_MAX_BODY_SIZE 1048576
 #define MAX_URI_SIZE 2048
 #define MAX_BY 22000000
-#define CGI_TIMEOUT 5
+#define CGI_TIMEOUT 25
 static const size_t CGI_CHUNK_SIZE = 65536;
 // static const int EPOLL_TIMEOUT_MS = 1000;
 static const size_t CGI_MAX_PENDING = 1048576;

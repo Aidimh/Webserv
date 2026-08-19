@@ -12,19 +12,46 @@
  * redirect and would hide the real error from the client.
  */
 
-static void setErrorPageBody(Response& response)
+void Dispatcher::setErrorPageBody(Response& response, const Server_block& server)
 {
     if (response.getStatusCode() < 400)
         return;
 
-    std::ostringstream path;
-    path << "www/error_pages/" << response.getStatusCode() << ".html";
+    int code = response.getStatusCode();
+    std::string filePath;
 
-    std::ifstream file(path.str().c_str(), std::ios::binary);
+    std::map<int, std::string>::const_iterator it = server.error_pages.find(code);
+    if (it != server.error_pages.end())
+    {
+        std::string root = server.root;
+        if (!root.empty() && root[root.size() - 1] == '/')
+            root.erase(root.size() - 1);
+        std::string customPath = it->second;
+        if (!customPath.empty() && customPath[0] != '/')
+            filePath = root + "/" + customPath;
+        else
+            filePath = root + customPath;
+    }
+    else
+    {
+        std::ostringstream defaultPath;
+        defaultPath << "www/error_pages/" << code << ".html";
+        filePath = defaultPath.str();
+    }
+
+    std::ifstream file(filePath.c_str(), std::ios::binary);
     if (!file.is_open())
     {
-        WARN() << "Dispatcher::setErrorPageBody: error page not found path=" << path.str()
-               << ", serving status=" << response.getStatusCode() << " with no body";
+        std::ostringstream defaultPath;
+        defaultPath << "www/error_pages/" << code << ".html";
+        filePath = defaultPath.str();
+        file.open(filePath.c_str(), std::ios::binary);
+    }
+
+    if (!file.is_open())
+    {
+        WARN() << "Dispatcher::setErrorPageBody: error page not found path=" << filePath
+               << ", serving status=" << code << " with default body";
         return;
     }
 
@@ -33,8 +60,8 @@ static void setErrorPageBody(Response& response)
 
     response.setBody(page.str());
     response.addHeader("content-type", "text/html");
-    DEBUG("Dispatcher") << "setErrorPageBody: loaded error page path=" << path.str()
-                        << " for status=" << response.getStatusCode();
+    DEBUG("Dispatcher") << "setErrorPageBody: loaded error page path=" << filePath
+                        << " for status=" << code;
 }
 
 
@@ -116,7 +143,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     {
         DEBUG("Dispatcher") << "dispatch: request already in error state, status=" << client.parsed_request.getStatusCode() << " fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(client.parsed_request.getStatusCode(), statusMessage(client.parsed_request.getStatusCode()));
-        setErrorPageBody(response);
+        setErrorPageBody(response, server);
         return response;
     }
 
@@ -125,7 +152,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
     {
         DEBUG("Dispatcher") << "dispatch: no location matched, responding status=404 fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(HTTP_404_NOT_FOUND, "Not Found");
-        setErrorPageBody(response);
+        setErrorPageBody(response, server);
         return response;
     }
     
@@ -135,7 +162,7 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod() << " not allowed on location=" << location->path<< ", responding status=405 fd=" << client.fd;
         Response response = AMethod::buildErrorResponse(HTTP_405_METHOD_NOT_ALLOWED, "Method Not Allowed");
         response.addHeader("Allow", Router::allowedMethodList(*location));
-        setErrorPageBody(response);
+        setErrorPageBody(response, server);
         return response;
     }
 
@@ -155,12 +182,12 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         Response res;
         res.setStatusCode(501);
         res.setReasonPhrase("Not Implemented");
-        setErrorPageBody(res);
+        setErrorPageBody(res, server);
         return res;
     }
     Response response = method->execute(client, server);
     delete method;
-    setErrorPageBody(response);
+    setErrorPageBody(response, server);
     DEBUG("Dispatcher") << "dispatch: responding status=" << response.getStatusCode()<< " fd=" << client.fd;
     return response;
 }

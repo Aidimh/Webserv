@@ -207,7 +207,11 @@ void Multiplexer::killTimedOutCgi()
         if (client.cgi.headers_done)
             client.response += "0\r\n\r\n";
         else
-            client.response = AMethod::buildErrorResponse(HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout").toString();
+        {
+            Response response = AMethod::buildErrorResponse(HTTP_504_GATEWAY_TIMEOUT, "Gateway Timeout");
+            Dispatcher::setErrorPageBody(response, client.Client_server);
+            client.response = response.toString();
+        }
         releaseCgi(client);
         enableWrite(client.fd);
     }
@@ -974,7 +978,7 @@ void Multiplexer::run()
         closeIdleClients();
         applyCgiBackPressure();
 
-        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, -1);
+        int ready = epoll_wait(_epoll_fd, events, MAX_EVENTS, EPOLL_TIMEOUT_MS);
         if (ready < 0)
         {
             if (errno == EINTR)

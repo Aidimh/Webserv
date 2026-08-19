@@ -1,74 +1,117 @@
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
 <head>
-    <meta charset='UTF-8'>
-    <title>200 OK</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>200 OK | WebServ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-dark: #050508;
+            --bg-card: #12121a;
+            --text-main: #ffffff;
+            --text-muted: #8b8b9e;
+            --neon-cyan: #00e5ff;
+            --gradient-cyan: linear-gradient(135deg, #00e5ff 0%, #0077ff 100%);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #0a0a0a;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
         }
-        .container {
+
+        .error-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            padding: 60px 50px;
+            border-radius: 25px;
             text-align: center;
-            border: 2px solid #00ff88;
-            padding: 60px 80px;
-            border-radius: 12px;
-            box-shadow: 0 0 40px #00ff8855, 0 0 80px #00ff8822;
-            background-color: #0d1f0d;
-        }
-        .code {
-            font-size: 120px;
-            font-weight: bold;
-            color: #00ff88;
-            text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
-            letter-spacing: 10px;
-        }
-        .divider {
+            max-width: 580px;
             width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #00ff88, transparent);
-            margin: 20px 0;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.15);
+            animation: fadeIn 0.5s ease-out;
         }
-        .message {
-            font-size: 28px;
-            color: #00cc66;
-            letter-spacing: 4px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .error-code {
+            font-size: 7rem;
+            font-weight: 800;
+            line-height: 1;
+            background: var(--gradient-cyan);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 229, 255, 0.4);
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+        }
+
+        .divider {
+            width: 140px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--neon-cyan), transparent);
+            margin: 20px auto;
+        }
+
+        .error-message {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 15px;
             text-transform: uppercase;
-            margin-bottom: 30px;
+            letter-spacing: 1px;
         }
-        .sub {
-            font-size: 14px;
-            color: #005522;
-            letter-spacing: 2px;
+
+        .error-sub {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin-bottom: 35px;
+            line-height: 1.6;
         }
-        a {
-            display: inline-block;
-            margin-top: 40px;
-            padding: 12px 30px;
-            border: 1px solid #00ff88;
-            color: #00ff88;
+
+        .btn {
+            padding: 14px 36px;
+            border-radius: 50px;
             text-decoration: none;
-            letter-spacing: 3px;
-            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: var(--gradient-cyan);
+            color: #000;
+            box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.95rem;
         }
-        a:hover {
-            background-color: #00ff88;
-            color: #0a0a0a;
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 229, 255, 0.5);
         }
     </style>
 </head>
 <body>
-    <div class='container'>
-        <div class='code'>200</div>
-        <div class='divider'></div>
-        <div class='message'>OK</div>
-        <div class='sub'>the server could not process your request</div>
-        <a href='/'>return home</a>
+    <div class="error-card">
+        <div class="error-code">200</div>
+        <div class="divider"></div>
+        <div class="error-message">OK</div>
+        <div class="error-sub">The request has succeeded and the server returned the requested data.</div>
+        <a href="/" class="btn"><i class="fas fa-home"></i> Return Home</a>
     </div>
 </body>
 </html>

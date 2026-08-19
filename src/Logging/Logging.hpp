@@ -114,9 +114,9 @@ public:
 };
 
 
-// #define DISABLE_LOGGING
-#define PRINT_LOGGING true
-#define WRITE_FILE true
+#define DISABLE_LOGGING
+#define PRINT_LOGGING false
+#define WRITE_FILE false
 
 
 

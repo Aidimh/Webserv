@@ -128,15 +128,6 @@ static std::string statusMessage(short code)
 
 Response Dispatcher::dispatch(Client& client,const Server_block& server)
 {
-    // Temporary validation (for testing only)
-    // if (client.parsed_request.getRequestPath().empty() || client.parsed_request.getRequestPath()[0] != '/') //  || client.parsed_request.state = ERROR_STATE
-    // {
-    //     Response response = AMethod::buildErrorResponse(HTTP_400_BAD_REQUEST, "Bad Request");
-    //     setErrorPageBody(response);
-    //     return response;
-    // }
-
-    // checck this line TEST path != ["/"] return 400errorState
 
     DEBUG("Dispatcher") << "dispatch: method=" << client.parsed_request.getMethod() << " path=" << client.parsed_request.getRequestPath()<< " fd=" << client.fd;
     if (client.parsed_request.state == ClientRequest::ERROR_STATE)
@@ -155,6 +146,70 @@ Response Dispatcher::dispatch(Client& client,const Server_block& server)
         setErrorPageBody(response, server);
         return response;
     }
+
+    /* check return status */
+	if (location->return_value_is_URL_only && !location->return_url.empty())
+	{
+		Response response;
+		response.setStatusCode(301);
+		response.setReasonPhrase("Moved Permanently");
+		response.addHeader("Location", location->return_url);
+		response.setBody("");
+		return response;
+	}
+	
+	if (location->return_value_is_code_only && location->return_code > 0)
+	{
+		Response response = AMethod::buildErrorResponse(location->return_code, statusMessage(location->return_code));
+		setErrorPageBody(response, server);
+		return response;
+	}
+
+	if (location->has_code_and_url)
+	{
+		std::map<int, std::string>::const_iterator it = location->return_code_and_url.begin();
+		if (it != location->return_code_and_url.end())
+		{
+			Response response;
+			response.setStatusCode(it->first);
+			response.setReasonPhrase(statusMessage(it->first));
+			response.addHeader("Location", it->second);
+			response.setBody("");
+			return response;
+		}
+	}
+
+	if (location->has_code_and_path)
+	{
+		std::map<int, std::string>::const_iterator it = location->return_code_and_path.begin();
+		if (it != location->return_code_and_path.end())
+		{
+			Response response;
+			response.setStatusCode(it->first);
+			response.setReasonPhrase(statusMessage(it->first));
+			response.addHeader("Location", it->second);
+			response.setBody("");
+			return response;
+		}
+	}
+
+	if (location->has_code_and_message)
+	{
+		std::map<int, std::string>::const_iterator it = location->return_code_and_message.begin();
+		if (it != location->return_code_and_message.end())
+		{
+			Response response;
+			response.setStatusCode(it->first);
+			response.setReasonPhrase(statusMessage(it->first));
+			std::string msg = it->second;
+			// Remove surrounding quotes if present
+			if (!msg.empty() && msg[0] == '"') msg.erase(0, 1);
+			if (!msg.empty() && msg[msg.size() - 1] == '"') msg.erase(msg.size() - 1);
+			response.setBody(msg);
+			response.addHeader("content-type", "text/html");
+			return response;
+		}
+	}
     
     // this method khasha tkon inside this object (location)
     if (!Router::isMethodAllowed(client.parsed_request.getMethod(), *location)) 

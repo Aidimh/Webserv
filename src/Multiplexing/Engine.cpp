@@ -110,6 +110,7 @@ void Multiplexer::prepareResponse(Client &client)
     client.response_prepared = true;
     if (!response.isCGI())
     {
+        response.addHeader("Connection", "close");
         client.response = response.toString();
         return;
     }
@@ -377,7 +378,7 @@ void Socket::setup(int port, const std::string& host)
     DEBUG("Socket") << "setup: opened listening socket fd=" << fd;
     int opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
     fcntl(fd, F_SETFL, O_NONBLOCK);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -824,6 +825,9 @@ void Multiplexer::_removeClient(int fd)
     if (it == _clients.end())
         return;
     releaseCgi(it->second);
+    if (it->second.stream_file_fd != -1) {
+        close(it->second.stream_file_fd);
+    }
     DEBUG("Multiplexer") << "_removeClient: closed client fd=" << fd;
     removeFd(fd);
     close(fd);
@@ -1013,21 +1017,7 @@ Client* Multiplexer::findClientByPipe(int pipe_fd)
 ///////////////////////////////////////////////// 23: connection always closed ////////////////////////////////////////////////////
 
 
-static bool clientWantsKeepAlive(const ClientRequest& request)
-{
-    std::map<std::string, std::string>::const_iterator it =
-        request.getHeaders().find("connection");
-    std::string value;
 
-    if (it != request.getHeaders().end())
-    {
-        value = it->second;
-        MyToLower(value);
-    }
-    if (request.getVersion() == "HTTP/1.0")
-        return value == "keep-alive";
-    return value != "close";
-}
 
 void Multiplexer::advanceRequest(int fd, Client& client)
 {
@@ -1060,25 +1050,7 @@ void Multiplexer::setEvents(int fd, uint32_t events)
     it->second = events;
 }
 
-void Multiplexer::finishResponse(int fd, Client& client)
-{
-    if (client.close_after_response || !clientWantsKeepAlive(client.parsed_request))
-    {
-        _removeClient(fd);
-        return;
-    }
-
-    std::string pipelined;
-
-    pipelined.swap(client.request);
-    client.reset();
-    client.request.swap(pipelined);
-    client.last_activity = time(NULL);
-    setEvents(fd, EPOLLIN);
-    DDEBUG("Multiplexer") << "finishResponse: connection kept alive fd=" << fd;
-    if (!client.request.empty())
-        advanceRequest(fd, client);
-}
+    // finishResponse logic removed
 
 
 bool Multiplexer::isEvictable(const Client& client) const

@@ -43,7 +43,6 @@ bool path_file_exists(std::string& name)
 {
     struct stat buffer;
     bool exists = (stat(name.c_str(), &buffer) == 0);
-    DDEBUG("ConfFile") << "path_file_exists: path=" << name << " exists=" << (exists ? "yes" : "no");
     return exists;
 }
 

@@ -62,7 +62,6 @@ std::string GET::readFile(const std::string& path, bool& success) const
 
     if (!file.is_open())
     {
-        ERR() << "GET::readFile: open file failed path=" << path << ": " << strerror(errno);
         success = false;
         return "";
     }
@@ -71,7 +70,6 @@ std::string GET::readFile(const std::string& path, bool& success) const
     buffer << file.rdbuf();
 
     success = true;
-    DEBUG("GET") << "readFile: read " << buffer.str().size() << " bytes from path=" << path;
     return buffer.str();
 }
 
@@ -80,10 +78,7 @@ Response GET::serveFile(Client& client, const std::string& path) const
     struct stat fileInfo;
 
     if (stat(path.c_str(), &fileInfo) != 0)
-    {
-        ERR() << "GET::serveFile: stat failed path=" << path << ": " << strerror(errno);
         return buildErrorResponse(500, "Internal Server Error");
-    }
 
     std::string type = getContentType(path);
 
@@ -92,13 +87,8 @@ Response GET::serveFile(Client& client, const std::string& path) const
         int streamFd = open(path.c_str(), O_RDONLY);
 
         if (streamFd == -1)
-        {
-            ERR() << "GET::serveFile: open file failed path=" << path << ": " << strerror(errno);
             return buildErrorResponse(500, "Internal Server Error");
-        }
 
-        DEBUG("GET") << "serveFile: opened stream file fd=" << streamFd << " path=" << path
-                     << " size=" << fileInfo.st_size << " bytes, streaming";
         client.stream_file_fd = streamFd;
         client.stream_bytes_remaining = fileInfo.st_size;
         Response response = buildStreamingFileResponse(fileInfo.st_size, type);
@@ -112,8 +102,6 @@ Response GET::serveFile(Client& client, const std::string& path) const
     if (!success)
         return buildErrorResponse(500, "Internal Server Error");
 
-    DEBUG("GET") << "serveFile: serving path=" << path << " size=" << body.size()
-                 << " bytes content_type=" << type;
     return buildFileResponse(body, type);
 }
 
@@ -154,14 +142,10 @@ Response GET::handleDirectory(Client& client, const std::string& path, const Ser
 
         candidatePath += indexFiles[i];
         if (fileExists(candidatePath) && !isDirectory(candidatePath))
-        {
-            DEBUG("GET") << "handleDirectory: serving index file path=" << candidatePath;
             return serveFile(client, candidatePath);
-        }
     }
     if (isAutoindexEnabled(server, location))
     {
-        DEBUG("GET") << "handleDirectory: no index file found, generating autoindex for path=" << path;
         std::string html = generateAutoIndex(path);
 
         if (html.empty())
@@ -170,7 +154,6 @@ Response GET::handleDirectory(Client& client, const std::string& path, const Ser
         return buildFileResponse(html, "text/html");
     }
 
-    DEBUG("GET") << "handleDirectory: no index file and autoindex off, responding status=403 path=" << path;
     return buildErrorResponse(403, "Forbidden");
 }
 
@@ -179,11 +162,7 @@ std::string GET::generateAutoIndex(const std::string& path) const
     DIR* dir = opendir(path.c_str());
 
     if (dir == NULL)
-    {
-        ERR() << "GET::generateAutoIndex: opendir failed path=" << path << ": " << strerror(errno);
         return "";
-    }
-    DEBUG("GET") << "generateAutoIndex: opened directory path=" << path;
 
     std::ostringstream html;
 
@@ -194,7 +173,6 @@ std::string GET::generateAutoIndex(const std::string& path) const
     buildAutoIndexFooter(html);
 
     closedir(dir);
-    DEBUG("GET") << "generateAutoIndex: closed directory path=" << path;
 
     return html.str();
 }
@@ -255,49 +233,23 @@ Response GET::execute(Client& client, const Server_block& server)
     std::string target = resolveTarget(client, server, location);
     const std::string& requestPath = client.parsed_request.getRequestPath();
 
-    DEBUG("GET") << "execute: uri=" << requestPath << " target=" << target << " fd=" << client.fd;
-
     if (target.empty())
-    {
-        DEBUG("GET") << "execute: target resolution failed, responding status=403 uri=" << requestPath;
         return buildErrorResponse(404, "Not Found");
-    }
     PathType type = getPathType(target);
-
-
-    // std::cout << "===== PATH TYPE DEBUG =====\n";
-    // std::cout << "target = [" << target << "]\n";
-    // if (type == NOT_FOUND)
-    //     std::cout << "type = NOT_FOUND\n";
-    // else if (type == DIRECTORY_PATH)
-    //     std::cout << "type = DIRECTORY_PATH\n";
-    // else if (type == FILE_PATH)
-    //     std::cout << "type = FILE_PATH\n";
-    // else if (type == PERMISSION_DENIED)
-    //     std::cout << "type = PERMISSION_DENIED\n";
-
-    
-    // std::cout << "===========================\n";
 
     switch (type)
     {
         case PERMISSION_DENIED:
-            DEBUG("GET") << "execute: target not readable, responding status=403 target=" << target;
             return buildErrorResponse(403, "Forbidden");
         case NOT_FOUND:
-            DEBUG("GET") << "execute: target does not exist, responding status=404 target=" << target;
             return buildErrorResponse(404, "Not Found");
         case FILE_PATH:
             return serveFile(client, target);
         case DIRECTORY_PATH:
             if (needsDirectoryRedirect(requestPath, target))
-            {
-                DEBUG("GET") << "execute: directory without trailing slash, responding status=301 uri=" << requestPath;
                 return buildRedirectResponse(requestPath);
-            }
             return handleDirectory(client, target, server, location);
         default:
-            ERR() << "GET::execute: unknown path type for target=" << target;
             return buildErrorResponse(500, "Internal Server Error");
     }
 }

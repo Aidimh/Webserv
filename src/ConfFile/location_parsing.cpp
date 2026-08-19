@@ -3,19 +3,6 @@
 
 extern int server_index;
 
-// void parse_root_path(size_t &index)
-// {
-//     if (index + 2 >= Conf_File::tokens.size())
-//         throw Error::Root();
-//     if (Conf_File::tokens[index + 2] !=  ";")
-//         throw Error::SemiColon();
-//     if (!path_file_exists(Conf_File::tokens[index + 1]))
-//         throw std::runtime_error(Conf_File::tokens[index + 1] + " : No such File or Directory!.");
-//     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].root = next_token(Conf_File::tokens, index);
-//     index += 2;
-// } 
-
-
 void parse_root_path(size_t &index)
 {
     if (index + 2 >= Conf_File::tokens.size())
@@ -30,8 +17,6 @@ void parse_root_path(size_t &index)
     Conf_File::Servers[server_index].location[count].root = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].location[count].has_root = true;
     index += 2;
-    DEBUG("ConfFile") << "parse_root_path: parsed root=" << Conf_File::Servers[server_index].location[count].root
-                      << " location=" << count << " server=" << server_index;
 }
 
 void parse_return(size_t &index)
@@ -100,21 +85,9 @@ void parse_return(size_t &index)
         {
             Conf_File::Servers[server_index].location[count].has_code_and_message = true;
             Conf_File::Servers[server_index].location[count].return_code_and_message[code] = Conf_File::tokens[index + 2];
-            // std::string &msg = Conf_File::Servers[server_index].location[count].return_code_and_message[code];
-            // if (!msg.empty() && msg[msg.length() - 1] != '"')
-            //     throw Error::Return();
         }
         index += 4;
     }
-    // std::cout << Conf_File::tokens[index] << std::endl;
-    // std::cout << "parse_return: parsed return directive for location=" << count
-    //           << " server=" << server_index
-    //           << " return_value_is_URL_only=" << Conf_File::Servers[server_index].location[count].return_value_is_URL_only
-    //           << " return_value_is_code_only=" << Conf_File::Servers[server_index].location[count].return_value_is_code_only
-    //           << " has_code_and_url=" << Conf_File::Servers[server_index].location[count].has_code_and_url
-    //           << " has_code_and_path=" << Conf_File::Servers[server_index].location[count].has_code_and_path
-    //           << " has_code_and_message=" << Conf_File::Servers[server_index].location[count].has_code_and_message << std::endl;
-    // exit(0); // Exit after printing the debug message
 }
 
 
@@ -129,10 +102,6 @@ void parse_autoindex(size_t &index)
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex = next_token(Conf_File::tokens, index);
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].has_autoindex = true;
     index += 2;
-    DEBUG("ConfFile") << "parse_autoindex: parsed autoindex="
-                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].autoindex
-                      << " location=" << Conf_File::Servers[server_index].location_count
-                      << " server=" << server_index;
 }
 
 void parse_upload_store(size_t &index)
@@ -143,20 +112,11 @@ void parse_upload_store(size_t &index)
         throw Error::SemiColon();
     if (!path_file_exists(Conf_File::tokens[index + 1]))
     {
-        DEBUG("ConfFile") << "parse_upload_store: mkdir " << Conf_File::tokens[index + 1];
         if (mkdir(Conf_File::tokens[index + 1].c_str(), 777) != 0)
-        {
-            DEBUG("ConfFile") << "parse_upload_store: mkdir failed path=" << Conf_File::tokens[index + 1]
-                              << ": " << strerror(errno);
             throw std::runtime_error("Could not create the path : " + Conf_File::tokens[index + 1]);
-        }
     }
     Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].upload_path = next_token(Conf_File::tokens, index);
     index += 2;
-    DEBUG("ConfFile") << "parse_upload_store: parsed upload_store="
-                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].upload_path
-                      << " location=" << Conf_File::Servers[server_index].location_count
-                      << " server=" << server_index;
 }
 
 void parse_methods(size_t &index)
@@ -177,10 +137,6 @@ void parse_methods(size_t &index)
     if (index >= Conf_File::tokens.size())
         throw Error::UnexpectedEndOfFile();
     index++;
-    DEBUG("ConfFile") << "parse_methods: parsed allowed_methods count="
-                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].allowed_methods.size()
-                      << " location=" << Conf_File::Servers[server_index].location_count
-                      << " server=" << server_index;
 }
 
 void parse_location_max(size_t &index)
@@ -190,7 +146,6 @@ void parse_location_max(size_t &index)
         throw Error::MaxUploads();
 
     size_t count = Conf_File::Servers[server_index].location_count;
-    // Location_Config& location = Conf_File::Servers[server_index].location[count];
     char *unit = NULL;
     Conf_File::Servers[server_index].location[count].max_body_size = strtol(next_token(Conf_File::tokens, index).substr(0, size).c_str(), &unit, 10);
     if (unit != NULL && *unit != '\0')
@@ -212,9 +167,6 @@ void parse_location_max(size_t &index)
     }
     index += 2;
     Conf_File::Servers[server_index].location[count].has_max_body_size = true;
-    DEBUG("ConfFile") << "parse_max_body_size: parsed client_max_body_size="
-                      << Conf_File::Servers[server_index].max_body_size
-                      << " bytes server=" << server_index;
 }
 
 void parse_cgi_extension(size_t &index)
@@ -238,21 +190,4 @@ void parse_cgi_extension(size_t &index)
     if (i != j)
         throw Error::CGI_Path();
     index += 2;
-    DEBUG("ConfFile") << "parse_cgi_extension: parsed cgi extension="
-                      << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_extensions.back()
-                      << " path=" << Conf_File::Servers[server_index].location[Conf_File::Servers[server_index].location_count].cgi_paths.back()
-                      << " location=" << Conf_File::Servers[server_index].location_count
-                      << " server=" << server_index;
 }
-
-// void parse_cgi_path(size_t &index)
-// {
-//     if (index + 2 >= Conf_File::tokens.size())
-//         throw Error::CGI_Extension();
-//     if (Conf_File::tokens[index + 2] !=  ";")
-//         throw Error::SemiColon();
-//     if (!path_file_exists(Conf_File::tokens[index + 1]))
-//         throw Error::CGI_Path();
-//     Conf_File::Servers[server_index].location.cgi_path = next_token(Conf_File::tokens, index);
-//     index += 2;
-// }

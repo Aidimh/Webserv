@@ -1,8 +1,5 @@
 #include "../../includes/Request/ClientRequest.hpp"
 #include "../../includes/multiplexing/header.hpp"
-#include "../Logging/Logging.hpp"
-// #define max_body_size 9999999
-
 
 ClientRequest::ClientRequest() : state(HEADERS), status_code(200), TmpFileFd(-1), BodySize(0), ContentLength(0), HasContentLength(false), HasTransferEncoding(false){}
 
@@ -58,7 +55,6 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 
 		if (TmpFileFd != -1)
 		{
-			DEBUG("ClientRequest") << "operator=: closed temp file fd=" << TmpFileFd;
 			close(TmpFileFd);
 			TmpFileFd = -1;
 		}
@@ -66,20 +62,12 @@ ClientRequest& ClientRequest::operator=(const ClientRequest& other)
 		{
 			int dupfd = dup(other.TmpFileFd);
 			if (dupfd == -1)
-			{
-				ERR() << "ClientRequest::operator=: dup failed for temp file fd=" << other.TmpFileFd
-				      << ": " << strerror(errno);
 				TmpFileFd = -1;
-			}
 			else
-			{
-				DEBUG("ClientRequest") << "operator=: duplicated temp file fd=" << other.TmpFileFd
-				                       << " to fd=" << dupfd;
 				TmpFileFd = dupfd;
-			}
-		}
-    }
-    return *this;
+    	}
+}
+	return *this;
 }
 
 ClientRequest::~ClientRequest(){removeTempFile();}
@@ -88,7 +76,6 @@ void ClientRequest::removeTempFile()
 {
 	if (TmpFileFd != -1)
     {
-        DEBUG("ClientRequest") << "~ClientRequest: closed temp file fd=" << TmpFileFd;
         close(TmpFileFd);
         TmpFileFd = -1;
     }
@@ -192,14 +179,12 @@ bool ClientRequest::RequestLineValidate(void)
 {
     if (!isMethod(method))
     {
-        WARN() << "ClientRequest::RequestLineValidate: rejected status=501 unsupported method=" << method;
         status_code = 400;
         state = ERROR_STATE;
         return (false);
     }
 	if ((method != "GET" && method != "POST" && method != "DELETE"))
     {
-        WARN() << "ClientRequest::RequestLineValidate: rejected status=501 unsupported method=" << method;
         status_code = 501;
         state = ERROR_STATE;
         return (false);
@@ -214,7 +199,6 @@ bool ClientRequest::RequestLineValidate(void)
     }
     if (request_path.empty() || request_path[0] != '/')
     {
-        WARN() << "ClientRequest::RequestLineValidate: rejected status=400 path is empty or not absolute, path=" << request_path;
         status_code = 400;
         state = ERROR_STATE;
         return (false);
@@ -224,22 +208,18 @@ bool ClientRequest::RequestLineValidate(void)
     {
         if (version.find("HTTP/") == 0)
         {
-            WARN() << "ClientRequest::RequestLineValidate: rejected status=505 unsupported version=" << version;
             status_code = 505;
             state = ERROR_STATE;
             return (false);
         }
         else
         {
-            WARN() << "ClientRequest::RequestLineValidate: rejected status=400 malformed version=" << version;
             status_code = 400;
             state = ERROR_STATE;
             return (false);
         }
     }
 
-    DEBUG("ClientRequest") << "RequestLineValidate: accepted method=" << method
-                           << " path=" << request_path << " version=" << version;
     return (true);
 }
 
@@ -280,7 +260,6 @@ void ClientRequest::RequestLineParser(std::string line)
     first_space = line.find(" ");
     if (first_space == std::string::npos)
     {
-        WARN() << "ClientRequest::RequestLineParser: rejected status=400 request line has no space separator";
         status_code = 400;
         state = ERROR_STATE;
         return;
@@ -288,7 +267,6 @@ void ClientRequest::RequestLineParser(std::string line)
     second_space = line.find(" ", first_space + 1);
     if (second_space == std::string::npos || second_space == first_space + 1)
     {
-        WARN() << "ClientRequest::RequestLineParser: rejected status=400 request line is missing the version field";
         status_code = 400;
         state = ERROR_STATE;
         return;
@@ -298,15 +276,12 @@ void ClientRequest::RequestLineParser(std::string line)
 	SplitQueryString();
 	if (request_path.length() > MAX_URI_SIZE)
 	{
-		WARN() << "ClientRequest::RequestLineParser: rejected status=414 uri length=" << request_path.length()
-		       << " exceeds limit=2048";
 		status_code = 414;
 		state = ERROR_STATE;
 		return;
 	}
 	if (uriHasForbiddenByte(request_path))
 	{
-		WARN() << "ClientRequest::RequestLineParser: rejected status=400 uri contains a null or control byte";
 		status_code = 400;
 		state = ERROR_STATE;
 		return;
@@ -315,7 +290,6 @@ void ClientRequest::RequestLineParser(std::string line)
     end = line.find_last_not_of(" \r\n");
     if (end == std::string::npos || end < second_space)
     {
-        WARN() << "ClientRequest::RequestLineParser: rejected status=400 truncated request line";
         status_code = 400;
         state = ERROR_STATE;
         return;
@@ -324,8 +298,6 @@ void ClientRequest::RequestLineParser(std::string line)
     if (!RequestLineValidate())
         return;
     CleanUri();
-    DEBUG("ClientRequest") << "RequestLineParser: parsed method=" << method
-                           << " path=" << request_path << " version=" << version;
 }
 
 
@@ -349,7 +321,6 @@ void ClientRequest::HeadersParser(std::string headers)
         std::string header = headers.substr(start, end - start);
         if (header.empty())
         {
-            WARN() << "ClientRequest::HeadersParser: rejected status=400 empty header line";
             status_code = 400;
             state = ERROR_STATE;
             return;
@@ -360,8 +331,6 @@ void ClientRequest::HeadersParser(std::string headers)
         {
             if (colon > 0 && header[colon -1] == ' ')
             {
-                WARN() << "ClientRequest::HeadersParser: rejected status=400 whitespace before colon in header="
-                       << header.substr(0, colon);
                 status_code     = 400;
                 state           = ERROR_STATE;
                 return;
@@ -374,7 +343,6 @@ void ClientRequest::HeadersParser(std::string headers)
 			{
 				if (isspace(key[i]))
 				{
-					WARN() << "ClientRequest::HeadersParser: rejected status=400 whitespace inside header name=" << key;
 					status_code = 400;
 					state = ERROR_STATE;
 					return;
@@ -382,14 +350,12 @@ void ClientRequest::HeadersParser(std::string headers)
 			}
             if ((key == "content-length" || key == "transfer-encoding") && this->headers.find(key) != this->headers.end())
             {
-                WARN() << "ClientRequest::HeadersParser: rejected status=400 duplicate header=" << key;
                 status_code = 400;
                 state = ERROR_STATE;
                 return;
             }
             value = RemoveFirstLastSpaces(value);
             this->headers[key] = value;
-            DDEBUG("ClientRequest") << "HeadersParser: header " << key << "=" << value;
 			if (key == "content-length")
 			{
 				HasContentLength = true;
@@ -400,7 +366,6 @@ void ClientRequest::HeadersParser(std::string headers)
         }
         else
         {
-            WARN() << "ClientRequest::HeadersParser: rejected status=400 header line has no colon";
             status_code = 400;
             state = ERROR_STATE;
             return;
@@ -409,12 +374,10 @@ void ClientRequest::HeadersParser(std::string headers)
     }
     if (this->headers.find("host") == this->headers.end())
     {
-        WARN() << "ClientRequest::HeadersParser: rejected status=400 missing Host header";
         status_code = 400;
         state = ERROR_STATE;
         return;
     }
-    DEBUG("ClientRequest") << "HeadersParser: parsed " << this->headers.size() << " headers";
 }
 
 bool ClientRequest::CheckTransferEncoding(void)
@@ -433,13 +396,9 @@ bool ClientRequest::CheckTransferEncoding(void)
         std::string value = RemoveFirstLastSpaces(it->second);
         MyToLower(value);
         if (value == "chunked")
-        {
-            DEBUG("ClientRequest") << "CheckTransferEncoding: chunked encoding detected";
             return (true);
-        }
         else
         {
-            WARN() << "ClientRequest::CheckTransferEncoding: rejected status=501 unsupported transfer-encoding=" << value;
             status_code = 501;
             state = ERROR_STATE;
             return false;
@@ -457,12 +416,10 @@ size_t ClientRequest::getContentLength(void)
     std::string&    value   = it->second;
     size_t          length  = 0;
     size_t          max     = std::numeric_limits<size_t>::max();
-	DEBUG("ClientRequest")  << value;
     for (size_t i = 0; i < value.length(); i++)
     {
         if (!isdigit(value[i]))
         {
-            WARN() << "ClientRequest::getContentLength: rejected status=400 non numeric content-length=" << value;
             status_code = 400;
             state = ERROR_STATE;
             return 0;
@@ -470,7 +427,6 @@ size_t ClientRequest::getContentLength(void)
         size_t  digit = value[i] - 48;
         if (length > (max - digit) / 10)
         {
-            WARN() << "ClientRequest::getContentLength: rejected status=400 content-length overflows, value=" << value;
             status_code = 400;
             state = ERROR_STATE;
             return 0;
@@ -487,8 +443,6 @@ bool ClientRequest::RequestLineTooLong(Client& client)
 
     if (length <= MAX_REQUEST_LINE_SIZE)
         return false;
-    WARN() << "ClientRequest::RequestLineTooLong: rejected status=414 request line length="
-           << length << " exceeds limit=" << MAX_REQUEST_LINE_SIZE << " fd=" << client.fd;
     status_code = 414;
     state = ERROR_STATE;
     return true;
@@ -515,20 +469,14 @@ void ClientRequest::parse(Client& client)
 	{
 		if (client.request.length() > MAX_HEADER_SIZE)
 		{
-			WARN() << "ClientRequest::parse: rejected status=431 header block exceeds limit=" << MAX_HEADER_SIZE
-			       << " with no terminator, fd=" << client.fd;
 			this->status_code = 431;
 			this->state = ERROR_STATE;
 		}
-		DDEBUG("ClientRequest") << "parse: headers incomplete, buffered=" << client.request.length()
-		                        << " bytes fd=" << client.fd;
 		return;
 	}
 
 	if (check > MAX_HEADER_SIZE)
 	{
-		WARN() << "ClientRequest::parse: rejected status=431 header size=" << check
-		       << " exceeds limit=" << MAX_HEADER_SIZE << " fd=" << client.fd;
 		this->status_code = 431;
 		this->state = ERROR_STATE;
 		return;
@@ -537,7 +485,6 @@ void ClientRequest::parse(Client& client)
 
 	if (headers.find('\0') != std::string::npos)
 	{
-		WARN() << "ClientRequest::parse: rejected status=400 null byte in header block fd=" << client.fd;
 		status_code = 400;
 		state = ERROR_STATE;
 		return;
@@ -550,8 +497,6 @@ void ClientRequest::parse(Client& client)
 	bool is_chunked = HasTransferEncoding;
 	if(is_chunked && HasContentLength)
 	{
-		WARN() << "ClientRequest::parse: rejected status=400 both content-length and transfer-encoding present fd="
-		       << client.fd;
 		status_code = 400;
 		state = ERROR_STATE;
 		return;
@@ -559,9 +504,6 @@ void ClientRequest::parse(Client& client)
 
 	state = BODY;
 	client.request.erase(0, check + 4);
-	DEBUG("ClientRequest") << "parse: state HEADERS to BODY, fd=" << client.fd
-	                       << " chunked=" << (is_chunked ? "yes" : "no")
-	                       << " content_length=" << ContentLength;
 }
 
 void ClientRequest::BodyRequest(Client& client)
@@ -575,7 +517,6 @@ void ClientRequest::BodyRequest(Client& client)
 	}
 	if (!HasContentLength && !HasTransferEncoding)
 	{
-		DEBUG("ClientRequest") << "BodyRequest: state BODY to DONE, no body expected fd=" << client.fd;
 		state = DONE;
 		return;
 	}
@@ -616,12 +557,9 @@ bool ClientRequest::openTempFile(int ClientFd)
 	}
 
 	TmpFileFd = fd;
-	DEBUG("ClientRequest") << "openTempFile: opened temp file fd=" << fd << " path=" << FilePath;
 	if (!body.empty())
 	{
 		write(fd, body.data(), body.length());
-		DEBUG("ClientRequest") << "openTempFile: wrote " << body.length()
-		                       << " buffered bytes to fd=" << fd;
 		std::string().swap(body);
 	}
 
@@ -659,8 +597,6 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		}
         if (pos > 100)
 		{
-			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 chunk size line too long="
-			       << pos << " fd=" << client.fd;
 			status_code = 400;
 			state = ERROR_STATE;
 			return;
@@ -668,8 +604,6 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
         std::string	SizeLine	=	client.request.substr(0, pos);
 		if (SizeLine.find('-') != std::string::npos)
 		{
-			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 negative chunk size="
-			       << SizeLine << " fd=" << client.fd;
 			status_code = 400;
 			state = ERROR_STATE;
 			return;
@@ -686,23 +620,15 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 
 		if (ss.fail() || !ss.eof())
 		{
-			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 malformed chunk size="
-			       << SizeLine << " fd=" << client.fd;
 			status_code = 400;
 			state		= ERROR_STATE;
 			return;
 		}
 		size_t	needs = pos + 2 + ChunkSize + 2;
 		if (ChunkSize != 0 && client.request.length() < needs)
-		{
-			DDEBUG("ClientRequest") << "HandleTransferEncoding: chunk incomplete, have="
-			                        << client.request.length() << " need=" << needs << " fd=" << client.fd;
 			return;
-		}
 		if (ChunkSize != 0 && client.request.substr(pos + 2 + ChunkSize, 2) != "\r\n")
 		{
-			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=400 chunk not terminated by CRLF fd="
-			       << client.fd;
 			status_code = 400;
 			state = ERROR_STATE;
 			return;
@@ -712,31 +638,20 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 		{
 			size_t end = chunkedTerminatorEnd(client.request, pos + 2);
 			if (end == std::string::npos)
-			{
-				DDEBUG("ClientRequest") << "HandleTransferEncoding: waiting for the trailer section fd="
-				                        << client.fd;
 				return;
-			}
 			if (TmpFileFd != -1)
 			{
-				DEBUG("ClientRequest") << "HandleTransferEncoding: closed temp file fd=" << TmpFileFd;
 				close(TmpFileFd);
 				TmpFileFd = -1;
 			}
 			client.request.erase(0, end);
 			state = DONE;
-			DEBUG("ClientRequest") << "HandleTransferEncoding: state BODY to DONE, received body_size="
-			                       << BodySize << " bytes fd=" << client.fd;
 			return;
 		}
 		if (BodySize + ChunkSize > max_body_size)
 		{
-			WARN() << "ClientRequest::HandleTransferEncoding: rejected status=413 body_size="
-			       << (BodySize + ChunkSize) << " exceeds max_body_size=" << max_body_size
-			       << " fd=" << client.fd;
 			if (TmpFileFd != -1)
 			{
-				DEBUG("ClientRequest") << "HandleTransferEncoding: closed temp file fd=" << TmpFileFd;
 				close (TmpFileFd);
 				TmpFileFd = -1;
 			}
@@ -773,8 +688,6 @@ void	ClientRequest::HandleTransferEncoding(Client& client)
 				state = ERROR_STATE;
 				return;
 			}
-			DDEBUG("ClientRequest") << "HandleTransferEncoding: wrote " << written
-			                        << " bytes to temp file fd=" << TmpFileFd;
 			BodySize += written;
 		}
 		client.request.erase(0, needs);
@@ -787,11 +700,8 @@ void ClientRequest::HandleContentLength(Client& client)
 
 	if (getContentLength() > max_body_size)
 	{
-		WARN() << "ClientRequest::HandleContentLength: rejected status=413 content_length=" << getContentLength()
-		       << " exceeds max_body_size=" << max_body_size << " fd=" << client.fd;
 		if (TmpFileFd != -1)
 		{
-			DEBUG("ClientRequest") << "HandleContentLength: closed temp file fd=" << TmpFileFd;
 			close(TmpFileFd);
 			TmpFileFd = -1;
 		}
@@ -805,13 +715,10 @@ void ClientRequest::HandleContentLength(Client& client)
 	{
 		if (TmpFileFd != -1)
 		{
-			DEBUG("ClientRequest") << "HandleContentLength: closed temp file fd=" << TmpFileFd;
 			close(TmpFileFd);
 			TmpFileFd = -1;
 		}
 		state = DONE;
-		DEBUG("ClientRequest") << "HandleContentLength: state BODY to DONE, received body_size="
-		                       << BodySize << " bytes fd=" << client.fd;
 		return;
 	}
 
@@ -849,26 +756,19 @@ void ClientRequest::HandleContentLength(Client& client)
 			state = ERROR_STATE;
 			return;
 		}
-		DDEBUG("ClientRequest") << "HandleContentLength: wrote " << written
-		                        << " bytes to temp file fd=" << TmpFileFd;
 		bytesToTake = written;
 		BodySize += written;
 	}
 	client.request.erase(0, bytesToTake);
-	DDEBUG("ClientRequest") << "HandleContentLength: body progress " << BodySize
-	                        << "/" << getContentLength() << " bytes fd=" << client.fd;
 
 	if (BodySize >= getContentLength())
 	{
 		if (TmpFileFd != -1)
 		{
-			DEBUG("ClientRequest") << "HandleContentLength: closed temp file fd=" << TmpFileFd;
 			close(TmpFileFd);
 			TmpFileFd = -1;
 		}
 		state = DONE;
-		DEBUG("ClientRequest") << "HandleContentLength: state BODY to DONE, received body_size="
-		                       << BodySize << " bytes fd=" << client.fd;
 	}
 
 }

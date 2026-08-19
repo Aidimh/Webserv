@@ -19,20 +19,13 @@ bool MultipartUploadStrategy::isMultipartUpload(const std::map<std::string, std:
 bool MultipartUploadStrategy::validateRequest(const std::map<std::string, std::string>& headers, std::string& boundary) const
 {
     if (!isMultipartUpload(headers))
-    {
-        WARN() << "MultipartUploadStrategy::validateRequest: content-type is not multipart/form-data";
         return false;
-    }
 
     boundary = extractBoundary(headers);
 
     if (boundary.empty())
-    {
-        WARN() << "MultipartUploadStrategy::validateRequest: multipart request has no boundary";
         return false;
-    }
 
-    DEBUG("MultipartUploadStrategy") << "validateRequest: boundary=" << boundary;
     return true;
 }
 
@@ -87,28 +80,15 @@ void MultipartUploadStrategy::parseMultipart(const std::string& body, const std:
     while (parseNextPart(ctx, headers, partBody))
     {
         partCount++;
-        DDEBUG("MultipartUploadStrategy") << "parseMultipart: part " << partCount
-                                          << " name=" << headers.name
-                                          << " filename=" << headers.filename
-                                          << " size=" << partBody.size() << " bytes";
-
         if (!headers.filename.empty() && saveUploadedFile(target, headers.filename, partBody))
             savedFileCount++;
     }
-    DEBUG("MultipartUploadStrategy") << "parseMultipart: parsed parts=" << partCount
-                                     << " saved files=" << savedFileCount
-                                     << " target=" << target;
 }
 
 Response MultipartUploadStrategy::buildSummaryResponse(size_t partCount, size_t savedFileCount) const
 {
     if (partCount == 0)
-    {
-        WARN() << "MultipartUploadStrategy::buildSummaryResponse: no parts parsed, responding status=400";
         return buildErrorResponse(400, "Bad Request", "Invalid multipart body");
-    }
-    INFO() << "MultipartUploadStrategy::buildSummaryResponse: saved " << savedFileCount
-           << " of " << partCount << " part(s)";
 
     std::ostringstream html;
     html << "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>"
@@ -146,8 +126,6 @@ Response MultipartUploadStrategy::handleMultipartUpload(const std::string& body,
     size_t partCount = 0;
     size_t savedFileCount = 0;
 
-    DEBUG("MultipartUploadStrategy") << "handleMultipartUpload: body_size=" << body.size()
-                                     << " bytes target=" << target;
     parseMultipart(body, delimiter, target, partCount, savedFileCount);
 
     return buildSummaryResponse(partCount, savedFileCount);
@@ -352,36 +330,13 @@ std::string MultipartUploadStrategy::sanitizeFilename(const std::string& filenam
 }
 
 
-// Response MultipartUploadStrategy::handleMultipartRequest(const Client& client, const std::string& target)
-// {
-//     if (getPathType(target) != DIRECTORY_PATH)
-//     {
-//         DEBUG("POST") << "handleMultipartRequest: upload target is not a directory, responding status=400 target="
-//                     << target;
-//         return buildErrorResponse(400, "Upload target must be a directory");
-//     }
-
-//     if (!canWrite(target))
-//     {
-//         DEBUG("POST") << "handleMultipartRequest: upload target not writable, responding status=403 target="
-//                     << target;
-//         return buildErrorResponse(403, "Forbidden");
-//     }
-
-//     DEBUG("POST") << "handleMultipartRequest: handling multipart upload into target=" << target;
-//     std::string body = client.parsed_request.readBody();
-//     return multiPart.handleMultipartUpload(body, client.parsed_request.getHeaders(), target);
-// }
 
 bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const std::string& filename, const std::string& content) const
 {
     std::string safeFilename = sanitizeFilename(filename);
 
     if (safeFilename.empty())
-    {
-        WARN() << "MultipartUploadStrategy::saveUploadedFile: rejected unsafe filename=" << filename;
         return false;
-    }
 
     std::string path = target;
 
@@ -392,10 +347,7 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
 
     struct stat fileInfo;
     if (stat(path.c_str(), &fileInfo) == 0)
-    {
-        WARN() << "MultipartUploadStrategy::saveUploadedFile: file already exists, not overwriting path=" << path;
         return false;
-    }
     std::ofstream outFile(path.c_str(),std::ios::binary | std::ios::trunc);
 
     if (!outFile.is_open())
@@ -409,11 +361,5 @@ bool MultipartUploadStrategy::saveUploadedFile(const std::string& target, const 
     bool success = outFile.good();
 
     outFile.close();
-
-    if (success)
-        DEBUG("MultipartUploadStrategy") << "saveUploadedFile: wrote " << content.size() << " bytes to path=" << path;
-    else
-        ERR() << "MultipartUploadStrategy::saveUploadedFile: write failed path=" << path;
-
     return success;
 }

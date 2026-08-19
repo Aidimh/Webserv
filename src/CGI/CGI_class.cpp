@@ -158,17 +158,12 @@ bool CGI::_find_interpreter(const Location_Config& conf, const Server_block& ser
         break;
     }
     if (!extension_found)
-    {
-        DEBUG("CGI") << "_find_interpreter: no interpreter configured for extension=" << extension;
         return false;
-    }
 
     std::string root = server.root;
     if (conf.has_root && !conf.root.empty())
         root = conf.root;
     script = joinPath(root, request_path);
-    DEBUG("CGI") << "_find_interpreter: extension=" << extension
-                 << " interpreter=" << interpreter << " script=" << script;
     return true;
 }
 
@@ -195,12 +190,6 @@ bool CGI::isRunnable() const
     return extension_found;
 }
 
-// CGI::~CGI()
-// {
-//     for(size_t i = 0; request_vars[i] != NULL; i++)
-//         free(request_vars[i]);
-//     delete[] request_vars;
-// }
 
 CGI::~CGI()
 {
@@ -211,38 +200,16 @@ CGI::~CGI()
     delete[] request_vars;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////
-
-
 std::string CGI::get_script() const
 {
     return script;
 }
 
-// CGI::CGI(Client& client, const Location_Config& conf) : request_path(client.parsed_request.getRequestPath()) ,body(client.parsed_request.getBody())
-// {
-//     _find_interpreter(conf);
-//     build_env_vars(client);
-// }
-
-
 void CGI::writeToChild()
 {
     write(stdin_pipe[1], body.c_str(), body.size());
-    DEBUG("CGI") << "writeToChild: wrote " << body.size() << " bytes to stdin pipe fd=" << stdin_pipe[1];
     close(stdin_pipe[1]);
-    DEBUG("CGI") << "writeToChild: closed stdin pipe fd=" << stdin_pipe[1];
 }
-
-// void CGI::readFromChild(int fd)
-// {
-//     char buffer[4096];
-
-// }
-
-
-
-////////////////////////////////////////// 26: cgi working directory ////////////////////////////////////////////
 
 static std::string directoryOf(const std::string& path)
 {
@@ -261,10 +228,6 @@ static std::string fileNameOf(const std::string& path)
         return path;
     return path.substr(slash + 1);
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////// 8 : cgi_body_lost & deadlock //////////////////////////////////////////////////
 
 static bool refillCgiBody(CgiState& cgi)
 {
@@ -295,13 +258,11 @@ void Multiplexer::writeCgiInput(int pipe_fd)
     ssize_t written = write(pipe_fd, client->cgi.body_buffer.data(), client->cgi.body_buffer.size());
     if (written <= 0)
     {
-        DEBUG("Multiplexer") << "writeCgiInput: cgi stopped reading fd=" << pipe_fd;
         closeCgiInput(*client);
         return;
     }
     client->cgi.body_buffer.erase(0, written);
     client->cgi.last_activity = time(NULL);
-    DDEBUG("Multiplexer") << "writeCgiInput: wrote " << written << " body bytes to cgi fd=" << pipe_fd;
 }
 
 
@@ -314,8 +275,6 @@ void Multiplexer::closeCgiInput(Client& client)
         removeFd(client.cgi.stdin_fd);
         _cgi_pipes.erase(client.cgi.stdin_fd);
         close(client.cgi.stdin_fd);
-        DEBUG("Multiplexer") << "closeCgiInput: closed cgi input fd=" << client.cgi.stdin_fd
-                             << " client fd=" << client.fd;
         client.cgi.stdin_fd = -1;
     }
     if (client.cgi.body_fd != -1)
@@ -326,26 +285,6 @@ void Multiplexer::closeCgiInput(Client& client)
     client.cgi.body_buffer.clear();
 }
 
-
-// void CGI::runChild()
-// {
-//     char *argv[3];
-
-//     argv[0] = const_cast<char *>(interpreter.c_str());
-//     argv[1] = const_cast<char *>(script.c_str());
-//     argv[2] = NULL;
-
-//     if (dup2(stdin_pipe[0], STDIN_FILENO) == -1 || dup2(stdout_pipe[1], STDOUT_FILENO) == -1)
-//         _exit(1);
-
-//     close(stdin_pipe[0]);
-//     close(stdin_pipe[1]);
-//     close(stdout_pipe[0]);
-//     close(stdout_pipe[1]);
-
-//     execve(interpreter.c_str(), argv, request_vars);
-//     _exit(1);
-// }
 
 void CGI::runChild()
 {
@@ -410,8 +349,6 @@ bool CGI::openPipes()
         stdin_pipe[1] = -1;
         return false;
     }
-    DEBUG("CGI") << "openPipes: stdin pipe fd=" << stdin_pipe[0] << "," << stdin_pipe[1]
-                 << " stdout pipe fd=" << stdout_pipe[0] << "," << stdout_pipe[1];
     return true;
 }
 
@@ -439,19 +376,8 @@ bool CGI::execute()
     stdout_pipe[1] = -1;
     fcntl(stdin_pipe[1], F_SETFL, O_NONBLOCK);
     fcntl(stdout_pipe[0], F_SETFL, O_NONBLOCK);
-    DEBUG("CGI") << "execute: forked pid=" << pid << " script=" << script
-                 << " input fd=" << stdin_pipe[1] << " output fd=" << stdout_pipe[0];
     return true;
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////// 14: cgi output is not http ///////////////////////////////////////////////////////////////////////
-
-
-// static void appendChunk
 
 static void appendChunk(std::string& out, const char* data, size_t size)
 {
@@ -482,7 +408,6 @@ void Multiplexer::readCgiOutput(int pipe_fd)
     client->cgi.last_activity = time(NULL);
     appendCgiPayload(*client, buffer, count);
     enableWrite(client->fd);
-    DDEBUG("Multiplexer") << "readCgiOutput: read " << count << " bytes from cgi fd=" << pipe_fd;
 }
 
 void Multiplexer::appendCgiPayload(Client& client, const char* data, size_t size)
@@ -507,13 +432,11 @@ void Multiplexer::finishCgiOutput(Client& client)
 
         client.response = response.toString();
         client.cgi.headers_done = true;
-        DEBUG("Multiplexer") << "finishCgiOutput: CGI process exited without valid headers, serving status=502 fd=" << client.fd;
         releaseCgi(client);
         enableWrite(client.fd);
         return;
     }
     client.response += "0\r\n\r\n";
-    DEBUG("Multiplexer") << "finishCgiOutput: cgi answer complete client fd=" << client.fd;
     releaseCgi(client);
     enableWrite(client.fd);
 }

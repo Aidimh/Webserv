@@ -3,255 +3,603 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WEBSERV // ONLINE</title>
+    <title>WebServ | Vibrant Dark</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Modern clean UI */
-        :root{
-            --bg: #f7fafc; /* light gray */
-            --card: #ffffff;
-            --muted: #6b7280;
-            --text: #0f172a;
-            --primary: #2563eb; /* blue */
-            --accent: #06b6d4; /* cyan */
-            --success: #16a34a;
-            --danger: #ef4444;
-            --radius: 10px;
+        :root {
+            --bg-dark: #050508;
+            --bg-card: #12121a;
+            --bg-input: #1a1a24;
+            --text-main: #ffffff;
+            --text-muted: #8b8b9e;
+            
+            /* Vibrant Accents */
+            --neon-cyan: #00e5ff;
+            --neon-purple: #bd00ff;
+            --neon-pink: #ff0055;
+            --neon-green: #39ff14;
+            
+            --gradient-cyan: linear-gradient(135deg, #00e5ff 0%, #0077ff 100%);
+            --gradient-purple: linear-gradient(135deg, #bd00ff 0%, #7000ff 100%);
+            --gradient-pink: linear-gradient(135deg, #ff0055 0%, #ff00aa 100%);
         }
 
-        *{box-sizing: border-box;margin:0;padding:0}
-        html,body{height:100%}
-        body{font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .container{max-width:1100px;margin:32px auto;padding:24px}
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-        header.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
-        .brand{display:flex;align-items:center;gap:12px}
-        .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px}
-        .site-title{font-size:20px;font-weight:700}
-        .site-sub{font-size:12px;color:var(--muted)}
+        /* --- HERO SLIDER --- */
+        .hero-slider {
+            position: relative;
+            height: 85vh;
+            width: 100%;
+            overflow: hidden;
+        }
 
-        .grid{display:grid;grid-template-columns:1fr 360px;gap:20px}
-        @media (max-width:960px){.grid{grid-template-columns:1fr}}
+        .slide {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: cover;
+            background-position: center;
+        }
 
-        /* Main card style */
-        .card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 18px rgba(16,24,40,0.06);padding:20px}
-        .card h2{font-size:16px;margin-bottom:12px}
-        .muted{color:var(--muted);font-size:13px}
+        .slide.active { opacity: 1; }
 
-        /* Status tiles */
-        .status-row{display:flex;gap:12px;margin-bottom:16px}
-        .tile{flex:1;padding:14px;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px solid #e6eefc}
-        .tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-        .tile .v{font-size:18px;font-weight:700;margin-top:6px}
+        /* Dark vibrant overlays for each slide */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 8, 0.75);
+            z-index: 1;
+        }
 
-        /* forms */
-        form.row{display:flex;gap:12px;align-items:center}
-        input[type='text'],input[type='file'],button,select{font-family:inherit}
-        .input{flex:1;padding:10px 12px;border:1px solid #e6e9ef;border-radius:8px;background:#fff}
-        .btn{padding:10px 14px;border-radius:8px;border:none;background:var(--primary);color:white;font-weight:600;cursor:pointer}
-        .btn.secondary{background:transparent;color:var(--primary);border:1px solid #dbe7ff}
-        .btn.danger{background:var(--danger)}
+        .slide:nth-child(1)::before { background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(5, 5, 8, 0.9)); }
+        .slide:nth-child(2)::before { background: linear-gradient(135deg, rgba(189, 0, 255, 0.3), rgba(5, 5, 8, 0.9)); }
+        .slide:nth-child(3)::before { background: linear-gradient(135deg, rgba(255, 0, 85, 0.3), rgba(5, 5, 8, 0.9)); }
 
-        /* actions list */
-        .actions{display:grid;gap:12px}
+        .slide-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 800px;
+            padding: 20px;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.8s ease 0.3s;
+        }
 
-        /* right-side column */
-        .sidebar .card{padding:16px}
-        .terminal-sample{background:#0b1220;color:#e6f2ff;padding:12px;border-radius:8px;font-family:monospace;font-size:13px;max-height:260px;overflow:auto}
+        .slide.active .slide-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
 
-        footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+        .slide-content h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            letter-spacing: -2px;
+            text-transform: uppercase;
+        }
 
-        a.link{color:var(--primary);text-decoration:none}
-        .small{font-size:13px;color:var(--muted)}
+        .slide:nth-child(1) .slide-content h1 { color: var(--neon-cyan); text-shadow: 0 0 30px rgba(0, 229, 255, 0.5); }
+        .slide:nth-child(2) .slide-content h1 { color: var(--neon-purple); text-shadow: 0 0 30px rgba(189, 0, 255, 0.5); }
+        .slide:nth-child(3) .slide-content h1 { color: var(--neon-pink); text-shadow: 0 0 30px rgba(255, 0, 85, 0.5); }
 
-        /* subtle helper styles */
-        .row-flex{display:flex;gap:12px;align-items:center}
-        .label{font-size:13px;color:var(--muted);min-width:110px}
-        .center{display:flex;align-items:center;justify-content:center}
+        .slide-content p {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
 
+        .slide-dots {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active { background: var(--neon-cyan); box-shadow: 0 0 15px var(--neon-cyan); }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(18, 18, 26, 0.8);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            z-index: 100;
+            padding: 20px 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-cyan);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: var(--text-main); }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 14px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-cyan { background: var(--gradient-cyan); color: #000; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3); }
+        .btn-cyan:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0, 229, 255, 0.5); }
+        
+        .btn-purple { background: var(--gradient-purple); color: #fff; box-shadow: 0 4px 20px rgba(189, 0, 255, 0.3); }
+        .btn-purple:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(189, 0, 255, 0.5); }
+
+        .btn-pink { background: var(--gradient-pink); color: #fff; box-shadow: 0 4px 20px rgba(255, 0, 85, 0.3); }
+        .btn-pink:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(255, 0, 85, 0.5); }
+
+        .btn-outline { background: transparent; color: var(--neon-cyan); border: 2px solid var(--neon-cyan); }
+        .btn-outline:hover { background: var(--neon-cyan); color: #000; }
+
+        /* --- MAIN LAYOUT --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 80px 20px; }
+        
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-header h2 { font-size: 2.8rem; margin-bottom: 15px; }
+        .section-header p { color: var(--text-muted); font-size: 1.2rem; }
+
+        /* --- STATUS BAR --- */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 80px;
+        }
+
+        .status-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .status-card:hover { transform: translateY(-5px); border-color: var(--neon-cyan); box-shadow: 0 10px 30px rgba(0, 229, 255, 0.1); }
+        .status-value { font-size: 2rem; font-weight: 800; color: var(--neon-cyan); margin-bottom: 10px; }
+        .status-label { color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; }
+        .status-online { display: inline-block; width: 10px; height: 10px; background: var(--neon-green); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 10px var(--neon-green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* --- FEATURES --- */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--gradient-cyan);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover::before { transform: scaleX(1); }
+        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        .feature-icon {
+            width: 60px; height: 60px;
+            background: rgba(0, 229, 255, 0.1);
+            border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: var(--neon-cyan);
+            margin-bottom: 25px;
+        }
+
+        .feature-card h3 { font-size: 1.4rem; margin-bottom: 15px; }
+        .feature-card p { color: var(--text-muted); }
+
+        /* --- TESTING SECTION --- */
+        .testing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .test-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .test-card h3 { font-size: 1.5rem; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
+        .test-card h3 i { color: var(--neon-purple); }
+        .test-card p { color: var(--text-muted); margin-bottom: 30px; }
+
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-main); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-input);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus { outline: none; border-color: var(--neon-purple); box-shadow: 0 0 20px rgba(189, 0, 255, 0.2); }
+
+        /* --- CONTACT --- */
+        .contact-section {
+            background: var(--bg-card);
+            border-radius: 30px;
+            padding: 80px 40px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 80px;
+        }
+
+        .contact-section h2 { font-size: 2.5rem; margin-bottom: 20px; }
+        .contact-section p { color: var(--text-muted); font-size: 1.2rem; margin-bottom: 40px; }
+
+        .social-links { display: flex; justify-content: center; gap: 25px; margin-top: 40px; }
+        .social-links a {
+            width: 60px; height: 60px;
+            background: var(--bg-input);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .social-links a:hover { transform: translateY(-5px) scale(1.1); }
+        .social-links a:nth-child(1):hover { background: #333; border-color: #fff; box-shadow: 0 10px 20px rgba(255,255,255,0.2); }
+        .social-links a:nth-child(2):hover { background: #0077b5; border-color: #0077b5; box-shadow: 0 10px 20px rgba(0, 119, 181, 0.4); }
+        .social-links a:nth-child(3):hover { background: #1da1f2; border-color: #1da1f2; box-shadow: 0 10px 20px rgba(29, 161, 242, 0.4); }
+
+        /* --- FOOTER --- */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .slide-content h1 { font-size: 2.5rem; }
+            .nav-links { display: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="app-header">
-            <div class="brand">
-                <div class="logo">WS</div>
-                <div>
-                    <div class="site-title">WebServ</div>
-                    <div class="site-sub">HTTP server dashboard • v1.0</div>
-                </div>
+
+    <!-- HERO SLIDER -->
+    <section class="hero-slider">
+        <!-- Slide 1: Team Member 1 -->
+        <div class="slide active" style="background-image: url('/photos/imgi_1_moel-aid.jpg');">
+            <div class="slide-content">
+                <h1>WebServ</h1>
+                <p>High-Performance HTTP Server Built with C++98</p>
+                <a href="#features" class="btn btn-cyan"><i class="fas fa-rocket"></i> Explore Features</a>
             </div>
-            <div class="small">Port: <strong>8080</strong> • Protocol: <strong>HTTP/1.1</strong></div>
-        </header>
-
-        <div class="grid">
-            <!-- Main column -->
-            <main>
-                <section class="card">
-                    <h2>Overview</h2>
-                    <div class="status-row">
-                        <div class="tile"><div class="k">Status</div><div class="v">Online</div></div>
-                        <div class="tile"><div class="k">Uptime</div><div class="v">Active</div></div>
-                        <div class="tile"><div class="k">Methods</div><div class="v">GET • POST • DELETE</div></div>
-                    </div>
-                    <p class="muted">This dashboard replaces the old embedded CGI/iframe flows with a modern UX: every interaction that returns content opens in a new page for clarity and for browser-like behavior.</p>
-                </section>
-
-                <section class="card" style="margin-top:16px">
-                    <h2>File operations</h2>
-                    <div class="actions">
-                        <!-- Upload -->
-                        <div>
-                            <div class="small" style="margin-bottom:8px">Upload a file to the server (response opens in a new page)</div>
-                            <form id="upload-form" class="row" onsubmit="handleUpload(event)">
-                                <input id="upload-file" class="input" type="file" name="file" required />
-                                <button class="btn" type="submit">Upload</button>
-                            </form>
-                        </div>
-
-                        <!-- Delete -->
-                        <div style="margin-top:12px">
-                            <div class="small" style="margin-bottom:8px">Delete a file (response opens in a new page)</div>
-                            <form id="delete-form" class="row" onsubmit="handleDelete(event)">
-                                <input id="delete-filename" class="input" type="text" placeholder="filename.ext" required />
-                                <button class="btn danger" type="submit">Delete</button>
-                            </form>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="card" style="margin-top:16px">
-                    <h2>CGI & Scripts</h2>
-                    <div class="small" style="margin-bottom:10px">Run a CGI script or open a dynamic endpoint. The response will open in a new tab so you can see full headers/body like a browser would.</div>
-                    <form id="cgi-form" class="row" onsubmit="handleCgi(event)">
-                        <input id="cgi-path" class="input" type="text" placeholder="/cgi-bin/test.py or /some/endpoint" required />
-                        <button class="btn secondary" type="submit">Open</button>
-                    </form>
-
-                    <div style="margin-top:12px" class="small">Session scripts should be opened directly in a new tab (no iframe). Enter a script path and click open.</div>
-                    <form id="session-form" class="row" onsubmit="handleSession(event)">
-                        <input id="session-path" class="input" type="text" value="/session/session.py" required />
-                        <button class="btn" type="submit">Open Session Page</button>
-                    </form>
-                </section>
-
-            </main>
-
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="card">
-                    <h2>Live Console (sample)</h2>
-                    <div class="terminal-sample">
-                        <div>$ curl -I http://localhost:8080/</div>
-                        <div>HTTP/1.1 200 OK</div>
-                        <div>Content-Type: text/html</div>
-                        <div>Server: webserv/1.0</div>
-                        <div>Connection: keep-alive</div>
-                    </div>
-                </div>
-
-                <div class="card" style="margin-top:12px">
-                    <h2>Cookies</h2>
-                    <div class="small" id="cookie-display">Checking...</div>
-                </div>
-
-                <div class="card" style="margin-top:12px">
-                    <h2>Features</h2>
-                    <ul class="small" style="margin-top:8px;line-height:1.6">
-                        <li>CGI Support</li>
-                        <li>Multiplexing</li>
-                        <li>File Uploads</li>
-                        <li>Virtual Hosts</li>
-                    </ul>
-                </div>
-
-            </aside>
+        </div>
+        <!-- Slide 2: Team Member 2 -->
+        <div class="slide" style="background-image: url('/photos/imgi_25_mzanana.jpg');">
+            <div class="slide-content">
+                <h1>Dynamic CGI</h1>
+                <p>Execute Python, PHP, and custom scripts seamlessly</p>
+                <a href="#testing" class="btn btn-purple"><i class="fas fa-terminal"></i> Test CGI</a>
+            </div>
+        </div>
+        <!-- Slide 3: Team Member 3 -->
+        <div class="slide" style="background-image: url('/photos/imgi_28_salhali.jpg');">
+            <div class="slide-content">
+                <h1>Secure Sessions</h1>
+                <p>Cookie-based authentication and session management</p>
+                <a href="#testing" class="btn btn-pink"><i class="fas fa-user-lock"></i> Try Sessions</a>
+            </div>
         </div>
 
-        <footer>WebServ • 42 School Project • Built in C++98</footer>
+        <div class="slide-dots">
+            <div class="dot active" onclick="goToSlide(0)"></div>
+            <div class="dot" onclick="goToSlide(1)"></div>
+            <div class="dot" onclick="goToSlide(2)"></div>
+        </div>
+    </section>
+
+    <!-- NAVIGATION -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">WEBSERV</div>
+            <div class="nav-links">
+                <a href="#status">Status</a>
+                <a href="#features">Features</a>
+                <a href="#testing">Testing</a>
+                <a href="#contact" class="btn btn-outline" style="padding: 10px 24px; font-size: 0.9rem;">Contact Us</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- STATUS -->
+        <section id="status">
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-value"><span class="status-online"></span>ONLINE</div>
+                    <div class="status-label">Server Status</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-value">:8080</div>
+                    <div class="status-label">Listening Port</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-value">Active</div>
+                    <div class="status-label">Uptime</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-value">GET/POST/DEL</div>
+                    <div class="status-label">Methods</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section id="features">
+            <div class="section-header">
+                <h2>Powerful Features</h2>
+                <p>Everything you need in a modern, non-blocking HTTP server</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-code"></i></div>
+                    <h3>CGI Support</h3>
+                    <p>Execute dynamic content through Common Gateway Interface. Full support for Python and other CGI-compatible languages.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                    <h3>Non-Blocking I/O</h3>
+                    <p>Efficient event-driven architecture using poll() for handling multiple concurrent connections without blocking the main thread.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-upload"></i></div>
+                    <h3>File Uploads</h3>
+                    <p>Handle multipart/form-data POST requests with support for large file uploads and proper content-length validation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-server"></i></div>
+                    <h3>Virtual Hosts</h3>
+                    <p>Configure multiple server blocks on different ports with custom settings, error pages, and routing for each host.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Session Management</h3>
+                    <p>Cookie-based authentication with server-side session tracking and automatic expiration timeouts.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-folder-open"></i></div>
+                    <h3>Auto Index</h3>
+                    <p>Automatic directory listing when enabled. Browse server directories with a clean, generated index page.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TESTING -->
+        <section id="testing">
+            <div class="section-header">
+                <h2>Test Your Server</h2>
+                <p>Interact with your server endpoints directly. Results open in new tabs.</p>
+            </div>
+            <div class="testing-grid">
+                <!-- CGI -->
+                <div class="test-card">
+                    <h3><i class="fas fa-terminal"></i> CGI Script Tester</h3>
+                    <p>Execute CGI scripts and view the output in a full new page</p>
+                    <form onsubmit="event.preventDefault(); openCustomPath();">
+                        <div class="form-group">
+                            <label for="cgi-path">CGI Script Path</label>
+                            <input type="text" id="cgi-path" placeholder="/cgi_tester/..." value="/cgi_tester/..." required>
+                        </div>
+                        <button type="submit" class="btn btn-purple" style="width: 100%;">
+                            <i class="fas fa-external-link-alt"></i> Execute & Open in New Tab
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Session -->
+                <div class="test-card">
+                    <h3><i class="fas fa-user-lock"></i> Session Management</h3>
+                    <p>Test cookie-based authentication in a full new page</p>
+                    <form onsubmit="event.preventDefault(); openSessionPath();">
+                        <div class="form-group">
+                            <label for="session-path">Session Endpoint</label>
+                            <input type="text" id="session-path" value="/session/..." required>
+                        </div>
+                        <button type="submit" class="btn btn-purple" style="width: 100%;">
+                            <i class="fas fa-sign-in-alt"></i> Open Session Manager
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Upload -->
+                <div class="test-card">
+                    <h3><i class="fas fa-file-upload"></i> File Upload</h3>
+                    <p>Upload files to the server using POST requests</p>
+                    <form action="/upload" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="file-upload">Select File</label>
+                            <input type="file" id="file-upload" name="file" required>
+                        </div>
+                        <button type="submit" class="btn btn-cyan" style="width: 100%;">
+                            <i class="fas fa-upload"></i> Upload File
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Delete -->
+                <div class="test-card">
+                    <h3><i class="fas fa-trash-alt"></i> File Deletion</h3>
+                    <p>Delete files from the server using DELETE method</p>
+                    <form onsubmit="handleDelete(event)">
+                        <div class="form-group">
+                            <label for="delete-file">Filename to Delete</label>
+                            <input type="text" id="delete-file" name="filename" placeholder="example.txt" required>
+                        </div>
+                        <button type="submit" class="btn btn-pink" style="width: 100%;">
+                            <i class="fas fa-trash"></i> Delete File
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTACT -->
+        <section id="contact" class="contact-section">
+            <h2>Get In Touch</h2>
+            <p>Have questions about the project or want to connect with the team?</p>
+            <a href="mailto:team@webserv.42.fr" class="btn btn-cyan"><i class="fas fa-envelope"></i> Email Us</a>
+            
+            <div class="social-links">
+                <a href="https://github.com/yourusername" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                <a href="https://linkedin.com/in/yourusername" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://twitter.com/yourusername" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+        </section>
     </div>
 
+    <!-- FOOTER -->
+    <footer>
+        <p>&copy; 2024 WebServ - 42 School Project. Built with C++98</p>
+    </footer>
+
     <script>
-        // Helper to open a new tab and write a simple result page.
-        function openResultWindow(title, headers, bodyText) {
-            try {
-                const w = window.open('', '_blank');
-                if (!w) { alert('Pop-up blocked: allow popups for this site to see responses in a new page.'); return; }
-                const safeBody = bodyText ? escapeHtml(bodyText) : '';
-                const headerHtml = headers ? '<pre style="font-family:monospace;white-space:pre-wrap">' + escapeHtml(headers) + '</pre>' : '';
-                const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
-                    <meta name="viewport" content="width=device-width,initial-scale=1">
-                    <style>body{font-family:Inter,system-ui,Arial;padding:20px;background:#fff;color:#111}pre{background:#f3f6fb;padding:12px;border-radius:8px;border:1px solid #e6eefc}</style>
-                    </head><body><h2>${escapeHtml(title)}</h2>${headerHtml}<pre>${safeBody}</pre></body></html>`;
-                w.document.open(); w.document.write(html); w.document.close();
-            } catch (e) { console.error('openResultWindow', e); }
+        // --- SLIDER LOGIC ---
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dots = document.querySelectorAll('.dot');
+
+        function goToSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            dots[currentSlide].classList.remove('active');
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
         }
 
-        function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-        // Upload: POST multipart form and open response in a new page
-        async function handleUpload(e){
-            e.preventDefault();
-            const input = document.getElementById('upload-file');
-            if(!input.files || input.files.length===0){ alert('Select a file first'); return; }
-            const fd = new FormData(); fd.append('file', input.files[0]);
-            const tab = window.open('', '_blank'); // open early to avoid popup blocking
-            if(!tab){ alert('Allow popups to view upload result'); return; }
-            try{
-                const res = await fetch('/upload', { method: 'POST', body: fd });
-                const headers = `Status: ${res.status} ${res.statusText}\nContent-Type: ${res.headers.get('content-type') || 'unknown'}`;
-                let body = '';
-                try{ body = await res.text(); } catch(e){ body = '[could not read body]'; }
-                const html = `<!doctype html><html><head><meta charset="utf-8"><title>Upload result</title><meta name="viewport" content="width=device-width,initial-scale=1">
-                    <style>body{font-family:Inter,system-ui,Arial;padding:20px;background:#fff;color:#111}pre{background:#f3f6fb;padding:12px;border-radius:8px;border:1px solid #e6eefc}</style></head><body><h2>Upload result</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
-                tab.document.open(); tab.document.write(html); tab.document.close();
-            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
+        function nextSlide() {
+            goToSlide((currentSlide + 1) % slides.length);
         }
 
-        // Delete: send DELETE and open result
-        async function handleDelete(e){
-            e.preventDefault();
-            const name = document.getElementById('delete-filename').value.trim();
-            if(!name) { alert('Enter filename'); return; }
-            const tab = window.open('', '_blank'); if(!tab){ alert('Allow popups to view delete result'); return; }
-            try{
-                const res = await fetch('/upload/' + encodeURIComponent(name), { method: 'DELETE' });
-                const headers = `Status: ${res.status} ${res.statusText}`;
-                let body = '';
-                try{ body = await res.text(); } catch(e){ body = ''; }
-                const html = `<!doctype html><html><head><meta charset="utf-8"><title>Delete result</title></head><body><h2>Delete result</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
-                tab.document.open(); tab.document.write(html); tab.document.close();
-            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
-        }
+        // Auto-advance slider every 5 seconds
+        setInterval(nextSlide, 5000);
 
-        // CGI: GET the path and open response in a new page
-        async function handleCgi(e){
-            e.preventDefault();
+        // --- FORM LOGIC ---
+        function openCustomPath() {
             const path = document.getElementById('cgi-path').value.trim();
-            if(!path) { alert('Enter endpoint'); return; }
-            const tab = window.open('', '_blank'); if(!tab){ alert('Allow popups to view CGI result'); return; }
-            try{
-                const res = await fetch(path, { method: 'GET', headers: { 'X-Requested-With':'webserv-dashboard' } });
-                const headers = `Status: ${res.status} ${res.statusText}\nContent-Type: ${res.headers.get('content-type') || 'unknown'}`;
-                let body = '';
-                try{ body = await res.text(); } catch(e){ body = '[could not read body]'; }
-                const html = `<!doctype html><html><head><meta charset="utf-8"><title>CGI result</title></head><body><h2>CGI result for ${escapeHtml(path)}</h2><pre>${escapeHtml(headers)}</pre><pre>${escapeHtml(body)}</pre></body></html>`;
-                tab.document.open(); tab.document.write(html); tab.document.close();
-            }catch(err){ tab.document.open(); tab.document.write('<p>Error: '+escapeHtml(err.message)+'</p>'); tab.document.close(); }
+            if (path) window.open(path, '_blank');
+            else alert('Please enter a valid path');
         }
 
-        // Session: open session URL in a new tab (not in iframe)
-        function handleSession(e){
-            e.preventDefault();
+        function openSessionPath() {
             const path = document.getElementById('session-path').value.trim();
-            if(!path) { alert('Enter session path'); return; }
-            window.open(path, '_blank');
+            if (path) window.open(path, '_blank');
+            else alert('Please enter a valid path');
         }
 
-        // Cookie display
-        function updateCookieDisplay(){ const el = document.getElementById('cookie-display'); if(el) el.textContent = document.cookie || 'None'; }
-        updateCookieDisplay(); setInterval(updateCookieDisplay,1000);
+        async function handleDelete(e) {
+            e.preventDefault();
+            const filename = document.getElementById('delete-file').value;
+            try {
+                const response = await fetch(`/upload/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('File deleted successfully!');
+                    document.getElementById('delete-file').value = '';
+                } else {
+                    alert('Failed to delete file: ' + response.status);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
 
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     </script>
 </body>
 </html>

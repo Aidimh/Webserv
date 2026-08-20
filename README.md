@@ -181,7 +181,7 @@ The web server returns a HTTP based response. The response is divides by three s
 Determining which resource to return is what we refer by routing, connecting request with the requested resource that being requested, there is two types of routing, static and dynamic, in webserv project we use just the static : 
   + Static routing: Serving actual files out of a folder, we can point the web server to a specific file inside a directory to return anything that's requested, example `localhost:1337/www/profile.png`
 
-    # HTTP Request & Method Handling
+## HTTP Request & Method Handling
 
 ## Overview
 
